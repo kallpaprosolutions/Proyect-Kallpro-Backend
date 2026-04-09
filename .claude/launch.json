@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Backend - KallpaPro",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5000,
+      "cwd": "${workspaceFolder}/Proyect-Kallpro-Backend"
+    },
+    {
+      "name": "Frontend - KallpaPro",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "${workspaceFolder}/Proyect-Kallpro-Frontend"
+    },
+    {
+      "name": "PostgreSQL (Docker)",
+      "runtimeExecutable": "docker-compose",
+      "runtimeArgs": ["up", "-d", "postgres"],
+      "port": 5432,
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

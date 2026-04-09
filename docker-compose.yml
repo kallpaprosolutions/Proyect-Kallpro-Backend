@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kallpapro_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kallpapro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kallpapro_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kallpapro_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kallpapro.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - kallpapro_network
+
+volumes:
+  postgres_data:
+
+networks:
+  kallpapro_network:
+    driver: bridge
