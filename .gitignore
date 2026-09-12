@@ -1,0 +1,5 @@
+Credenciales/
+node_modules/
+.obsidian/
+*.log
+.DS_Store

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
+    "module": "CommonJS",
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -13,7 +13,16 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@casl/ability": ["node_modules/@casl/ability/dist/types/index.d.ts"],
+      "@casl/prisma": ["node_modules/@casl/prisma/dist/types/index.d.ts"]
+    }
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "esm": false
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "tests"]

@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://api.anthropic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+<title>KallpaPro — Plataforma Logística Segura</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root{
+  --navy:#0D1F6E;--navy-mid:#1A3DB5;--cyan:#00B8E0;--cyan-dark:#0086a8;
+  --bg:#EEF2FF;--surface:#F8FAFF;--white:#FFFFFF;
+  --green:#10B981;--green-light:#ECFDF5;
+  --amber:#F59E0B;--amber-light:#FFFBEB;
+  --red:#EF4444;--red-light:#FEF2F2;
+  --purple:#7C3AED;--purple-light:#F5F3FF;
+  --blue-light:#EFF6FF;
+  --text:#0F172A;--text-mid:#475569;--text-light:#94A3B8;
+  --border:#E2E8F0;--border-light:#F1F5F9;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -1px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);
+  --r:8px;--r-lg:12px;--r-xl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow:hidden;height:100vh}
+button{font-family:'Outfit',sans-serif;cursor:pointer}
+input,select,textarea{font-family:'Outfit',sans-serif}
+
+/* ============================================================
+   SECURITY: LOGIN SCREEN
+   ============================================================ */
+#sec-login{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0D1F6E 0%,#1A3DB5 40%,#0086a8 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-card{
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+  border-radius:20px;padding:40px;width:400px;
+  box-shadow:0 25px 60px rgba(0,0,0,.3);
+  animation:fadeUp .4s ease;
+}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center}
+.login-logo-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--navy-mid),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff}
+.login-logo h1{font-size:20px;font-weight:800;color:var(--navy)}
+.login-logo p{font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.1em}
+.login-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text-light);margin-bottom:24px}
+.sec-input-wrap{position:relative;margin-bottom:14px}
+.sec-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--text);outline:none;transition:all .15s;background:var(--surface)}
+.sec-input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,61,181,.1);background:#fff}
+.sec-input.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+.pwd-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-light);font-size:14px;cursor:pointer;padding:4px}
+.login-btn{width:100%;padding:12px;background:var(--navy-mid);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px}
+.login-btn:hover{background:var(--navy);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.login-btn:disabled{opacity:.6;transform:none;cursor:not-allowed}
+.login-error{background:var(--red-light);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:10px 12px;font-size:12px;color:#991B1B;margin-bottom:14px;display:none}
+.login-role-tabs{display:flex;gap:6px;margin-bottom:20px}
+.role-tab{flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .15s;text-align:center}
+.role-tab.active{border-color:var(--navy-mid);background:var(--blue-light);color:var(--navy-mid)}
+.login-hint{margin-top:16px;font-size:11px;color:var(--text-light);text-align:center;background:var(--surface);border-radius:var(--r);padding:10px;border:1px solid var(--border)}
+.login-hint strong{color:var(--text-mid)}
+.captcha-wrap{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:14px;background:var(--surface)}
+.captcha-check{width:18px;height:18px;cursor:pointer;accent-color:var(--navy-mid)}
+.captcha-label{font-size:12px;color:var(--text-mid)}
+.sec-badge{font-size:10px;color:var(--text-light);display:flex;align-items:center;gap:5px;justify-content:center;margin-top:12px}
+
+/* ============================================================
+   TRACKING PUBLIC INTERFACE
+   ============================================================ */
+#sec-tracking{
+  position:fixed;inset:0;z-index:9998;background:var(--bg);
+  display:none;flex-direction:column;
+}
+.tracking-header{background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:12px}
+.tracking-header h1{color:#fff;font-size:15px;font-weight:700}
+.tracking-header p{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.tracking-content{flex:1;overflow-y:auto;padding:24px;max-width:700px;margin:0 auto;width:100%}
+.tracking-search-box{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-md);margin-bottom:24px}
+.tracking-search-box h2{font-size:16px;font-weight:700;margin-bottom:6px}
+.tracking-search-box p{font-size:13px;color:var(--text-light);margin-bottom:16px}
+.tracking-input-row{display:flex;gap:10px}
+.tracking-result{background:var(--white);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-md);display:none}
+
+/* ============================================================
+   MAIN APP LAYOUT
+   ============================================================ */
+#app{display:none;height:100vh;flex-direction:column}
+.app-wrap{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--navy);display:flex;flex-direction:column;height:100vh;transition:width .2s;position:relative;z-index:10}
+.sidebar-logo{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:8px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy-mid),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+.logo-text h1{font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.logo-text p{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+.nav-group{padding:0 8px;margin-bottom:4px}
+.nav-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;margin-bottom:1px;font-size:13px;font-weight:500;background:none;border:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.nav-item.active{background:var(--navy-mid);color:#fff;box-shadow:0 2px 8px rgba(26,61,181,.4)}
+.nav-item.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:var(--cyan);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px}
+.nav-badge.ai{background:linear-gradient(135deg,var(--purple),var(--cyan));animation:pulse 2s infinite}
+.sidebar-bottom{margin-top:auto;padding:12px 8px;border-top:1px solid rgba(255,255,255,.08)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s}
+.user-chip:hover{background:rgba(255,255,255,.08)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:#fff}
+.user-role{font-size:10px;color:rgba(255,255,255,.4)}
+.role-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:auto}
+.role-pill.admin{background:rgba(239,68,68,.25);color:#FCA5A5}
+.role-pill.manager{background:rgba(0,184,224,.2);color:#67E8F9}
+.role-pill.viewer{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+
+/* TOPBAR */
+.topbar{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;flex-shrink:0;position:relative}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:12px;color:var(--text-light);margin-left:4px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--border);background:none;display:flex;align-items:center;justify-content:center;color:var(--text-mid);transition:all .15s;position:relative;cursor:pointer}
+.icon-btn:hover{background:var(--bg);border-color:var(--text-light)}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
+.sec-indicator{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);font-weight:600;background:var(--green-light);padding:4px 10px;border-radius:20px;border:1px solid rgba(16,185,129,.2)}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:var(--r);font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--navy-mid);color:#fff}
+.btn-primary:hover{background:var(--navy);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.btn-primary:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-secondary{background:var(--bg);color:var(--text-mid);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border-light);color:var(--text)}
+.btn-cyan{background:var(--cyan);color:#fff}
+.btn-cyan:hover{background:var(--cyan-dark);transform:translateY(-1px)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#DC2626;transform:translateY(-1px)}
+.btn-ghost{background:none;color:var(--text-mid);border:1px solid transparent}
+.btn-ghost:hover{background:var(--bg);border-color:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11px}
+.btn-ai{background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.3)}
+.btn-ai:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,58,237,.4)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:#059669;transform:translateY(-1px)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .2s ease}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* KPI CARDS */
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:all .2s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.kpi-card.blue::before{background:var(--navy-mid)}.kpi-card.cyan::before{background:var(--cyan)}.kpi-card.green::before{background:var(--green)}.kpi-card.amber::before{background:var(--amber)}.kpi-card.red::before{background:var(--red)}.kpi-card.purple::before{background:var(--purple)}
+.kpi-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.kpi-card.blue .kpi-icon{background:var(--blue-light)}.kpi-card.cyan .kpi-icon{background:#E0F7FD}.kpi-card.green .kpi-icon{background:var(--green-light)}.kpi-card.amber .kpi-icon{background:var(--amber-light)}.kpi-card.red .kpi-icon{background:var(--red-light)}.kpi-card.purple .kpi-icon{background:var(--purple-light)}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text);line-height:1}
+.kpi-label{font-size:11px;color:var(--text-light);margin-top:4px;font-weight:500}
+.kpi-trend{font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px;margin-top:6px;padding:2px 7px;border-radius:10px}
+.kpi-trend.up{background:var(--green-light);color:#059669}.kpi-trend.down{background:var(--red-light);color:#DC2626}.kpi-trend.neutral{background:var(--bg);color:var(--text-mid)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge-transit{background:#EFF6FF;color:#1D4ED8}.badge-transit::before{background:#3B82F6}
+.badge-pending{background:var(--amber-light);color:#92400E}.badge-pending::before{background:var(--amber)}
+.badge-delivered{background:#F0FFF4;color:#166534}.badge-delivered::before{background:#22C55E}
+.badge-cancelled{background:var(--red-light);color:#991B1B}.badge-cancelled::before{background:var(--red)}
+.badge-new{background:var(--purple-light);color:#5B21B6}.badge-new::before{background:var(--purple)}
+.badge-review{background:#FFF7ED;color:#C2410C}.badge-review::before{background:#F97316}
+.badge-approved{background:var(--green-light);color:#065F46}.badge-approved::before{background:var(--green)}
+
+/* TABLES */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+th.sort-asc::after{content:' ▲';font-size:8px}
+th.sort-desc::after{content:' ▼';font-size:8px}
+td{padding:11px 12px;border-bottom:1px solid var(--border-light);font-size:13px;color:var(--text-mid)}
+td:first-child{color:var(--text);font-weight:500}
+tr:last-child td{border-bottom:none}
+tr.row-hover:hover td{background:var(--bg);cursor:pointer}
+.td-mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-light)}
+
+/* FORMS */
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.form-required{color:var(--red);font-size:10px}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--white);transition:all .15s;outline:none}
+.form-input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,61,181,.1)}
+.form-input:invalid.touched{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+.form-input.readonly{background:var(--surface);color:var(--text-mid)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-hint{font-size:11px;color:var(--text-light);margin-top:4px}
+.form-error-msg{font-size:11px;color:var(--red);margin-top:4px;display:none}
+
+/* WIZARD */
+.wizard-steps{display:flex;align-items:center;margin-bottom:24px}
+.wizard-step{display:flex;align-items:center;gap:8px;flex:1}
+.wizard-step:not(:last-child)::after{content:'';flex:1;height:1px;background:var(--border);margin:0 8px}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .2s;border:2px solid var(--border);background:var(--white);color:var(--text-light)}
+.step-circle.done{background:var(--green);border-color:var(--green);color:#fff}
+.step-circle.current{background:var(--navy-mid);border-color:var(--navy-mid);color:#fff}
+.step-label{font-size:11px;font-weight:600;color:var(--text-light);white-space:nowrap}
+.step-label.current{color:var(--navy-mid)}.step-label.done{color:var(--green)}
+
+/* PROVIDER CARDS */
+.provider-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;transition:all .2s;box-shadow:var(--shadow)}
+.provider-card:hover{border-color:var(--navy-mid);box-shadow:var(--shadow-md);transform:translateY(-2px);cursor:pointer}
+.provider-card.selected{border-color:var(--navy-mid);border-width:2px;background:var(--blue-light)}
+.prov-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.prov-avatar{width:38px;height:38px;border-radius:9px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.prov-name{font-size:13px;font-weight:600;color:var(--text)}
+.prov-type{font-size:11px;color:var(--text-light)}
+.stars{color:var(--amber);font-size:12px}
+.prov-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);padding:3px 0;border-bottom:1px solid var(--border-light)}
+.prov-stat:last-child{border:none}
+.prov-stat span{color:var(--text);font-weight:600}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* ACTIVITY */
+.activity-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.activity-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.act-text{font-size:12px;color:var(--text-mid);line-height:1.5}
+.act-text strong{color:var(--text);font-weight:600}
+.act-time{font-size:10px;color:var(--text-light);margin-top:2px}
+
+/* MAP */
+.map-container{background:linear-gradient(135deg,#0D1F6E,#1A3DB5 50%,#0086a8);border-radius:var(--r-lg);overflow:hidden;position:relative}
+
+/* TRACKING TIMELINE */
+.track-timeline{display:flex;flex-direction:column}
+.track-step{display:flex;gap:14px;position:relative}
+.track-step:not(:last-child)::before{content:'';position:absolute;left:11px;top:28px;bottom:-4px;width:2px;background:var(--border-light)}
+.track-step.done::before{background:var(--green)}
+.track-step.active-step::before{background:linear-gradient(var(--green),var(--border-light))}
+.track-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;position:relative;z-index:1;border:2px solid var(--border);background:var(--white)}
+.track-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.track-dot.active{background:var(--cyan);border-color:var(--cyan);color:#fff;box-shadow:0 0 0 4px rgba(0,184,224,.2)}
+.track-info{padding-bottom:20px}
+.track-title{font-size:13px;font-weight:600;color:var(--text)}
+.track-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+.track-time{font-size:10px;color:var(--text-light);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:var(--r-xl);width:600px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 22px 0}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--text-light);margin-top:2px}
+.modal-close{background:none;border:none;font-size:20px;color:var(--text-light);cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;margin-top:-4px}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{padding:16px 22px}
+.modal-footer{padding:12px 22px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border)}
+
+/* NOTIFICATION PANEL */
+.notif-panel{position:absolute;top:52px;right:50px;width:320px;background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:50;display:none;overflow:hidden}
+.notif-panel.show{display:block;animation:fadeUp .2s ease}
+.notif-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.notif-item{padding:12px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
+.notif-item:hover{background:var(--bg)}
+.notif-item:last-child{border-bottom:none}
+.notif-unread{width:7px;height:7px;background:var(--cyan);border-radius:50%;flex-shrink:0;margin-top:4px}
+
+/* TOAST */
+.toast-container{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;box-shadow:var(--shadow-lg);font-size:13px;display:flex;align-items:center;gap:10px;min-width:280px;animation:fadeUp .25s ease;pointer-events:all}
+.toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--navy-mid)}.toast.warning{border-left:3px solid var(--amber)}
+
+/* SEARCH */
+.search-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:none;align-items:flex-start;justify-content:center;padding-top:80px;backdrop-filter:blur(4px)}
+.search-overlay.show{display:flex}
+.search-box{background:var(--white);border-radius:var(--r-xl);width:560px;max-width:90vw;box-shadow:0 25px 60px rgba(0,0,0,.2);overflow:hidden;animation:fadeUp .2s ease}
+.search-input-wrap{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.search-main-input{flex:1;font-size:15px;border:none;outline:none;color:var(--text);background:transparent}
+.search-results{max-height:340px;overflow-y:auto}
+.search-result-item{padding:12px 20px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:12px}
+.search-result-item:hover{background:var(--bg)}
+.search-result-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
+/* AI PANEL */
+.ai-panel{width:360px;min-width:360px;background:var(--white);border-left:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:all .3s;overflow:hidden}
+.ai-panel.closed{width:0;min-width:0;border:none}
+.ai-header{padding:16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(0,184,224,.06));display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ai-avatar-wrap{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.ai-msg{display:flex;gap:8px;animation:fadeUp .2s ease}
+.ai-msg.user-msg{flex-direction:row-reverse}
+.ai-bubble{max-width:85%;padding:10px 13px;border-radius:12px;font-size:12px;line-height:1.6}
+.ai-msg:not(.user-msg) .ai-bubble{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px 12px 12px 12px}
+.ai-msg.user-msg .ai-bubble{background:var(--navy-mid);color:#fff;border-radius:12px 4px 12px 12px}
+.ai-msg-avatar{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.ai-typing{display:flex;gap:4px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:4px 12px 12px 12px;width:fit-content}
+.ai-typing span{width:6px;height:6px;background:var(--text-light);border-radius:50%;animation:pulse .9s infinite}
+.ai-typing span:nth-child(2){animation-delay:.15s}.ai-typing span:nth-child(3){animation-delay:.3s}
+.ai-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ai-chip{padding:5px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-mid);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ai-chip:hover{border-color:var(--navy-mid);color:var(--navy-mid);background:var(--blue-light)}
+.ai-input-area{padding:14px;border-top:1px solid var(--border);flex-shrink:0}
+.ai-input-row{display:flex;gap:8px}
+.ai-text-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;outline:none;background:var(--surface);transition:all .15s}
+.ai-text-input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,61,181,.08);background:#fff}
+.ai-send-btn{padding:9px 14px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.ai-send-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.3)}
+.ai-send-btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* SECURITY LOG */
+.sec-log-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);font-size:12px}
+.sec-log-item:last-child{border-bottom:none}
+.sec-log-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+
+/* TABS */
+.tab-group{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:3px;gap:2px}
+.tab-btn{padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;border:none;color:var(--text-mid);background:none;cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--white);color:var(--text);box-shadow:var(--shadow)}
+
+/* ANIMATIONS */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(1.6);opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake .4s ease}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;position:relative}
+.live-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--green);animation:ping 1.5s infinite;opacity:.35}
+
+/* REPORT KPI */
+.report-kpi{text-align:center;padding:16px;background:var(--bg);border-radius:var(--r)}
+.report-kpi .val{font-size:22px;font-weight:800;display:block}
+.report-kpi .lbl{font-size:10px;color:var(--text-light);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-light)}
+
+/* ROLE RESTRICTED */
+.role-restricted{display:none!important}
+.role-visible{display:flex!important}
+
+/* USER MGMT TABLE */
+.user-row td:first-child{display:flex;align-items:center;gap:8px}
+.user-avatar-sm{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SECURITY LAYER 1: LOGIN SCREEN
+     ============================================================ -->
+<div id="sec-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">KP</div>
+      <div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy)">KallpaPro</div>
+        <div style="font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.1em">Plataforma Logística Segura</div>
+      </div>
+    </div>
+
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-sub">Accede con tu cuenta corporativa o consulta un pedido</div>
+
+    <div class="login-role-tabs" id="login-role-tabs">
+      <div class="role-tab active" onclick="setLoginRole('admin',this)">🛡️ Administrador</div>
+      <div class="role-tab" onclick="setLoginRole('manager',this)">📊 Gerente</div>
+      <div class="role-tab" onclick="setLoginRole('viewer',this)">👁️ Visualizador</div>
+      <div class="role-tab" onclick="setLoginRole('tracking',this)">📦 Tracking</div>
+    </div>
+
+    <div id="login-error" class="login-error">⚠️ <span id="login-error-msg">Credenciales incorrectas. Intenta de nuevo.</span></div>
+
+    <div id="login-form-section">
+      <div class="sec-input-wrap">
+        <input type="email" id="login-email" class="sec-input" placeholder="correo@empresa.com" autocomplete="email" oninput="clearLoginError()">
+      </div>
+      <div class="sec-input-wrap" id="pwd-wrap">
+        <input type="password" id="login-pwd" class="sec-input" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')attemptLogin()">
+        <button class="pwd-toggle" onclick="togglePwd()" type="button">👁</button>
+      </div>
+
+      <div class="captcha-wrap">
+        <input type="checkbox" class="captcha-check" id="captcha-check">
+        <label for="captcha-check" class="captcha-label">No soy un robot</label>
+        <div style="margin-left:auto;font-size:18px">🔒</div>
+      </div>
+
+      <button class="login-btn" id="login-btn" onclick="attemptLogin()">Ingresar de forma segura</button>
+    </div>
+
+    <div id="tracking-form-section" style="display:none">
+      <div class="sec-input-wrap">
+        <input type="text" id="track-order-input" class="sec-input" placeholder="Ej: KP-2051" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')goPublicTracking()">
+      </div>
+      <div class="sec-input-wrap">
+        <input type="text" id="track-doc-input" class="sec-input" placeholder="RUC o cédula del remitente">
+      </div>
+      <button class="login-btn" onclick="goPublicTracking()">Consultar pedido</button>
+    </div>
+
+    <div class="login-hint">
+      <strong>Demo · Cuentas de prueba</strong><br>
+      Admin: admin@kallpapro.com / Admin123! &nbsp;|&nbsp; Gerente: gerente@kallpapro.com / Mgr456! &nbsp;|&nbsp; Viewer: viewer@kallpapro.com / View789!
+    </div>
+    <div class="sec-badge">🔒 Conexión cifrada TLS 1.3 · Sesión expira en 8h</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECURITY LAYER 2: PUBLIC TRACKING INTERFACE
+     ============================================================ -->
+<div id="sec-tracking" style="display:none;flex-direction:column">
+  <div class="tracking-header">
+    <div class="logo-mark" style="width:30px;height:30px;font-size:12px">KP</div>
+    <div>
+      <div style="color:#fff;font-size:14px;font-weight:700">KallpaPro — Seguimiento de Pedido</div>
+      <div style="color:rgba(255,255,255,.5);font-size:11px">Consulta pública y segura</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px">
+      <button class="btn btn-secondary btn-sm" onclick="backToLogin()" style="font-size:12px">← Volver</button>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:24px">
+    <div style="max-width:680px;margin:0 auto">
+      <div class="tracking-search-box card" style="margin-bottom:20px">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Consultar estado de pedido</h2>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:14px">Ingresa el número de pedido y tu documento de identidad</p>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <input type="text" id="track-search-id" class="form-input" placeholder="Nº de pedido (Ej: KP-2051)" style="flex:1" oninput="this.value=this.value.toUpperCase()">
+          <input type="text" id="track-search-doc" class="form-input" placeholder="RUC / Cédula" style="width:180px">
+          <button class="btn btn-primary" onclick="searchTracking()">Buscar</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-light)">🔒 Solo se muestran datos del pedido consultado. No se comparte información sensible.</div>
+      </div>
+      <div id="tracking-result-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APPLICATION
+     ============================================================ -->
+<div id="app" style="display:none;height:100vh">
+  <div style="display:flex;flex:1;overflow:hidden;height:100%">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">KP</div>
+        <div class="logo-text">
+          <h1>KallpaPro</h1>
+          <p>Plataforma Logística</p>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Principal</div>
+        <button class="nav-item active" onclick="navigate('dashboard',this)" id="nav-dashboard">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-item" onclick="navigate('solicitud',this)" id="nav-solicitud">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3l2 2"/></svg>
+          Nueva Solicitud
+        </button>
+        <button class="nav-item" onclick="navigate('pedidos',this)" id="nav-pedidos">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M4.5 6h7M4.5 9h5"/></svg>
+          Mis Pedidos
+          <span class="nav-badge" id="pedidos-badge">7</span>
+        </button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Gestión</div>
+        <button class="nav-item" onclick="navigate('proveedores',this)" id="nav-proveedores">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.2-5 5-5"/><circle cx="12" cy="11" r="3"/></svg>
+          Proveedores
+        </button>
+        <button class="nav-item" onclick="navigate('rutas',this)" id="nav-rutas">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="M4 6v4a2 2 0 002 2h2"/></svg>
+          Rutas en Vivo
+          <span class="nav-badge">3</span>
+        </button>
+        <button class="nav-item" onclick="navigate('reportes',this)" id="nav-reportes">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V4l3 4 3-5 3 3 3-2"/></svg>
+          Reportes & POV
+        </button>
+        <button class="nav-item admin-only" onclick="navigate('usuarios',this)" id="nav-usuarios">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5"/></svg>
+          Usuarios
+          <span class="role-pill admin">ADMIN</span>
+        </button>
+        <button class="nav-item admin-only" onclick="navigate('seguridad',this)" id="nav-seguridad">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l5 2v4c0 3-2 5.5-5 7-3-1.5-5-4-5-7V3z"/></svg>
+          Seguridad
+          <span class="role-pill admin">ADMIN</span>
+        </button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">IA</div>
+        <button class="nav-item" onclick="toggleAI()">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 2a1 1 0 00-1 1v2a1 1 0 00.293.707l1.5 1.5a1 1 0 001.414-1.414L9 7.586V6a1 1 0 00-1-1z"/></svg>
+          Asistente IA
+          <span class="nav-badge ai">✦</span>
+        </button>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="user-chip" onclick="navigate('perfil',null)">
+          <div class="avatar" id="sidebar-avatar">MC</div>
+          <div>
+            <div class="user-name" id="sidebar-name">María Correa</div>
+            <div class="user-role" id="sidebar-role-label">Gerente Logística</div>
+          </div>
+          <span class="role-pill admin" id="sidebar-role-pill" style="margin-left:auto"></span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="margin-top:4px;color:rgba(255,100,100,.7)">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div>
+          <span class="topbar-title" id="page-title">Dashboard</span>
+          <span class="topbar-sub" id="page-sub">/ Resumen ejecutivo</span>
+        </div>
+        <div class="topbar-right">
+          <div class="sec-indicator" id="sec-status-indicator">
+            <span class="live-dot" style="width:6px;height:6px"></span>
+            Sesión segura
+          </div>
+          <button class="icon-btn" onclick="openSearch()" title="Buscar (Ctrl+K)">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6.5" cy="6.5" r="5"/><path d="M11 11l2.5 2.5"/></svg>
+          </button>
+          <button class="icon-btn" onclick="toggleNotifs()" id="notif-btn">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7.5 2a4.5 4.5 0 00-4.5 4.5c0 3-1 4-1 4h11s-1-1-1-4A4.5 4.5 0 007.5 2z"/><path d="M6 12.5a1.5 1.5 0 003 0"/></svg>
+            <div class="notif-dot" id="notif-dot"></div>
+          </button>
+          <button class="btn btn-ai btn-sm" onclick="toggleAI()">✦ IA</button>
+          <button class="btn btn-danger btn-sm" onclick="logout()" style="font-size:11px">Salir</button>
+        </div>
+
+        <!-- NOTIF PANEL -->
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-header">
+            <span style="font-size:13px;font-weight:600">Notificaciones</span>
+            <span style="font-size:11px;color:var(--cyan);cursor:pointer;font-weight:600" onclick="markAllRead()">Marcar todo leído</span>
+          </div>
+          <div class="notif-item" id="n1">
+            <div class="notif-unread"></div>
+            <div><div style="font-size:12px;font-weight:600">⚠️ KP-2051 — Alerta temperatura</div><div style="font-size:11px;color:var(--text-light)">Temperatura subió a 6°C · hace 5 min</div></div>
+          </div>
+          <div class="notif-item" id="n2">
+            <div class="notif-unread"></div>
+            <div><div style="font-size:12px;font-weight:600">📦 KP-2049 — Sin proveedor asignado</div><div style="font-size:11px;color:var(--text-light)">Fecha de recogida mañana · hace 1h</div></div>
+          </div>
+          <div class="notif-item">
+            <div style="width:7px;height:7px;background:var(--border);border-radius:50%;flex-shrink:0;margin-top:4px"></div>
+            <div><div style="font-size:12px;font-weight:600">📊 Reporte Abril disponible</div><div style="font-size:11px;color:var(--text-light)">Proof of Value mensual · hace 3h</div></div>
+          </div>
+          <div class="notif-item">
+            <div style="width:7px;height:7px;background:var(--border);border-radius:50%;flex-shrink:0;margin-top:4px"></div>
+            <div><div style="font-size:12px;font-weight:600">✅ Transportes Noreste aprobado</div><div style="font-size:11px;color:var(--text-light)">Nuevo proveedor homologado · hace 45min</div></div>
+          </div>
+          <div style="padding:10px 14px;text-align:center">
+            <button class="btn btn-ghost btn-sm" style="font-size:11px;width:100%" onclick="navigate('seguridad',document.getElementById('nav-seguridad'));toggleNotifs()">Ver todas las alertas</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="page-dashboard" class="page active">
+          <div class="grid4" style="margin-bottom:16px">
+            <div class="kpi-card blue" onclick="navigate('pedidos',document.getElementById('nav-pedidos'))" style="cursor:pointer">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1A3DB5" stroke-width="1.8"><rect x="1" y="5" width="16" height="10" rx="2"/><path d="M5 5V4a4 4 0 018 0v1"/></svg></div>
+              <div class="kpi-val">$68K</div>
+              <div class="kpi-label">GMV Abril</div>
+              <div class="kpi-trend up">↑ 11.4% vs marzo</div>
+            </div>
+            <div class="kpi-card cyan" onclick="navigate('pedidos',document.getElementById('nav-pedidos'))" style="cursor:pointer">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#00B8E0" stroke-width="1.8"><rect x="1" y="3" width="16" height="12" rx="2"/><path d="M5 3v12M13 3v12M1 9h16"/></svg></div>
+              <div class="kpi-val" id="kpi-pedidos">47</div>
+              <div class="kpi-label">Pedidos activos</div>
+              <div class="kpi-trend up">↑ 6.8%</div>
+            </div>
+            <div class="kpi-card green" onclick="navigate('reportes',document.getElementById('nav-reportes'))" style="cursor:pointer">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#10B981" stroke-width="1.8"><path d="M3 9l4 4 8-8"/></svg></div>
+              <div class="kpi-val">94.7%</div>
+              <div class="kpi-label">OTIF Global</div>
+              <div class="kpi-trend up">↑ 1.3%</div>
+            </div>
+            <div class="kpi-card amber">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F59E0B" stroke-width="1.8"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 3"/></svg></div>
+              <div class="kpi-val">4h 12m</div>
+              <div class="kpi-label">Tiempo prom. entrega</div>
+              <div class="kpi-trend up">↓ 8 min</div>
+            </div>
+          </div>
+
+          <!-- NEW KPI ROW -->
+          <div class="grid4" style="margin-bottom:16px">
+            <div class="kpi-card red">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#EF4444" stroke-width="1.8"><path d="M9 3v6l3 3"/><circle cx="9" cy="9" r="7"/></svg></div>
+              <div class="kpi-val">2</div>
+              <div class="kpi-label">Alertas activas</div>
+              <div class="kpi-trend down">↑ Requiere atención</div>
+            </div>
+            <div class="kpi-card purple">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7C3AED" stroke-width="1.8"><path d="M2 10l4-6 4 4 3-3 3 5"/></svg></div>
+              <div class="kpi-val">$9,240</div>
+              <div class="kpi-label">Ahorro vs mercado</div>
+              <div class="kpi-trend up">↑ 18.7% refrigerado</div>
+            </div>
+            <div class="kpi-card blue">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1A3DB5" stroke-width="1.8"><circle cx="9" cy="6" r="3"/><path d="M3 15c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>
+              <div class="kpi-val">24</div>
+              <div class="kpi-label">Proveedores activos</div>
+              <div class="kpi-trend neutral">→ Sin cambio</div>
+            </div>
+            <div class="kpi-card cyan">
+              <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#00B8E0" stroke-width="1.8"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M6 9l2 2 4-4"/></svg></div>
+              <div class="kpi-val">98.2%</div>
+              <div class="kpi-label">Uptime plataforma</div>
+              <div class="kpi-trend up">↑ Sistema estable</div>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-bottom:16px">
+            <!-- MAP -->
+            <div class="card">
+              <div class="card-header">
+                <div><div class="card-title">Rutas activas — Ecuador</div><div class="card-sub">3 vehículos · Tiempo real</div></div>
+                <button class="btn btn-secondary btn-sm" onclick="navigate('rutas',document.getElementById('nav-rutas'))">Ver completo →</button>
+              </div>
+              <div class="map-container" style="height:210px">
+                <svg viewBox="0 0 300 210" style="position:absolute;inset:0;width:100%;height:100%">
+                  <path d="M80,35 L120,25 L180,30 L220,55 L230,95 L220,135 L200,165 L160,178 L120,174 L90,155 L70,125 L60,85 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>
+                  <path d="M108,140 L148,96 L188,76" stroke="#00B8E0" stroke-width="2.5" stroke-dasharray="7,5" fill="none" opacity=".85"/>
+                  <path d="M148,96 Q128,120 108,140" stroke="#10B981" stroke-width="2" stroke-dasharray="5,4" fill="none" opacity=".7"/>
+                  <path d="M128,155 Q138,125 148,96" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,4" fill="none" opacity=".6"/>
+                  <g onclick="showToast('Guayaquil: Hub principal · 3 pedidos activos','info')" style="cursor:pointer">
+                    <circle cx="108" cy="140" r="9" fill="#00B8E0" opacity=".9"/><circle cx="108" cy="140" r="15" fill="#00B8E0" opacity=".15"/>
+                    <text x="108" y="160" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Guayaquil</text>
+                  </g>
+                  <g onclick="showToast('Quito: Hub Sierra · 2 pedidos recibidos','info')" style="cursor:pointer">
+                    <circle cx="148" cy="96" r="9" fill="#1A3DB5" opacity=".9"/><circle cx="148" cy="96" r="15" fill="#1A3DB5" opacity=".15"/>
+                    <text x="148" y="116" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Quito</text>
+                  </g>
+                  <g onclick="showToast('Cuenca: 1 pedido en camino','info')" style="cursor:pointer">
+                    <circle cx="188" cy="76" r="7" fill="#7C3AED" opacity=".9"/>
+                    <text x="188" y="96" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Cuenca</text>
+                  </g>
+                  <circle cx="128" cy="155" r="6" fill="#F59E0B" opacity=".9"/>
+                  <text x="107" y="170" text-anchor="middle" fill="white" font-size="7" font-family="Outfit,sans-serif">Manta</text>
+                  <!-- Animated truck 1 -->
+                  <circle r="5" fill="white" opacity=".95"><animateMotion dur="7s" repeatCount="indefinite" path="M108,140 Q128,118 188,76"/></circle>
+                  <!-- Animated truck 2 -->
+                  <circle r="4" fill="#10B981" opacity=".9"><animateMotion dur="10s" repeatCount="indefinite" path="M148,96 Q128,118 108,140"/></circle>
+                  <rect x="6" y="178" width="90" height="24" rx="4" fill="rgba(0,0,0,.35)"/>
+                  <text x="12" y="188" fill="rgba(255,255,255,.5)" font-size="7" font-family="Outfit,sans-serif">Vehículos activos</text>
+                  <text x="12" y="198" fill="white" font-size="10" font-family="Outfit,sans-serif" font-weight="700">3 / 22 flota</text>
+                  <rect x="106" y="178" width="90" height="24" rx="4" fill="rgba(0,0,0,.35)"/>
+                  <text x="112" y="188" fill="rgba(255,255,255,.5)" font-size="7" font-family="Outfit,sans-serif">Distancia hoy</text>
+                  <text x="112" y="198" fill="white" font-size="10" font-family="Outfit,sans-serif" font-weight="700">1,247 km</text>
+                </svg>
+              </div>
+            </div>
+
+            <!-- ACTIVITY -->
+            <div class="card">
+              <div class="card-header">
+                <div><div class="card-title">Actividad Reciente</div><div class="card-sub">Últimas 2 horas</div></div>
+                <button class="btn btn-ghost btn-sm" onclick="navigate('seguridad',document.getElementById('nav-seguridad'))">Ver todo →</button>
+              </div>
+              <div class="activity-item"><div class="act-dot" style="background:#10B981"></div><div><div class="act-text"><strong>Entrega confirmada</strong> — KP-2048 en Quito (Bodega Norte). OTIF ✓</div><div class="act-time">hace 8 min · Transportes Andinos</div></div></div>
+              <div class="activity-item"><div class="act-dot" style="background:#3B82F6"></div><div><div class="act-text"><strong>En tránsito</strong> — KP-2051 salió de Guayaquil hacia Cuenca</div><div class="act-time">hace 22 min · FlotaEcu Logística</div></div></div>
+              <div class="activity-item"><div class="act-dot" style="background:var(--amber)"></div><div><div class="act-text"><strong>Nuevo proveedor</strong> — Transportes Noreste aprobado</div><div class="act-time">hace 45 min · Módulo procurement</div></div></div>
+              <div class="activity-item"><div class="act-dot" style="background:var(--red)"></div><div><div class="act-text"><strong>⚠️ Alerta temperatura</strong> — KP-2051 temperatura 6°C detectada</div><div class="act-time">hace 1h 5min · Requiere revisión</div></div></div>
+              <div class="activity-item"><div class="act-dot" style="background:var(--purple)"></div><div><div class="act-text"><strong>Login detectado</strong> — viewer@kallpapro.com desde IP 190.24.x.x</div><div class="act-time">hace 1h 30min · Seguridad</div></div></div>
+            </div>
+          </div>
+
+          <!-- ORDERS TABLE -->
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Últimos Pedidos</div><div class="card-sub">Abril 2026 · Todos los estados</div></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="openFilterModal()">⚙ Filtrar</button>
+                <button class="btn btn-secondary btn-sm" onclick="exportTable()">↓ Exportar</button>
+                <button class="btn btn-primary btn-sm" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">+ Nueva solicitud</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="main-orders-table">
+                <thead><tr>
+                  <th onclick="sortTable('main-orders-table',0)">Pedido</th>
+                  <th onclick="sortTable('main-orders-table',1)">Ruta</th>
+                  <th onclick="sortTable('main-orders-table',2)">Proveedor</th>
+                  <th onclick="sortTable('main-orders-table',3)">Carga</th>
+                  <th onclick="sortTable('main-orders-table',4)">Fecha</th>
+                  <th onclick="sortTable('main-orders-table',5)">Costo</th>
+                  <th>Estado</th><th>Acciones</th>
+                </tr></thead>
+                <tbody>
+                  <tr class="row-hover" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12 ton · Carga seca','05 Abr 2026','$1,240','transit',62)"><td class="td-mono">KP-2051</td><td>Guayaquil → Cuenca</td><td>FlotaEcu Logística</td><td>12 ton · Carga seca</td><td>05 Abr 2026</td><td style="font-weight:600">$1,240</td><td><span class="badge badge-transit">En tránsito</span></td><td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12 ton · Carga seca','05 Abr 2026','$1,240','transit',62)">Ver</button> <button class="btn btn-ghost btn-xs admin-only" onclick="editOrderModal('KP-2051')">Editar</button></td></tr>
+                  <tr class="row-hover" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5 ton · Refrigerado','04 Abr 2026','$890','transit',35)"><td class="td-mono">KP-2050</td><td>Quito → Guayaquil</td><td>Transportes Andinos</td><td>5 ton · Refrigerado</td><td>04 Abr 2026</td><td style="font-weight:600">$890</td><td><span class="badge badge-transit">En tránsito</span></td><td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5 ton · Refrigerado','04 Abr 2026','$890','transit',35)">Ver</button> <button class="btn btn-ghost btn-xs admin-only" onclick="editOrderModal('KP-2050')">Editar</button></td></tr>
+                  <tr class="row-hover" onclick="openOrderModal('KP-2049','Manta → Quito','Sin asignar','8 ton · Agroindustria','04 Abr 2026','$1,580','pending',0)"><td class="td-mono">KP-2049</td><td>Manta → Quito</td><td><span style="color:var(--red)">Sin asignar</span></td><td>8 ton · Agroindustria</td><td>04 Abr 2026</td><td style="font-weight:600">$1,580</td><td><span class="badge badge-pending">Pendiente</span></td><td onclick="event.stopPropagation()"><button class="btn btn-primary btn-xs" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Asignar</button></td></tr>
+                  <tr class="row-hover" onclick="openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15 ton · Carga general','03 Abr 2026','$2,100','delivered',100)"><td class="td-mono">KP-2048</td><td>Guayaquil → Quito</td><td>Transportes Andinos</td><td>15 ton · Carga general</td><td>03 Abr 2026</td><td style="font-weight:600">$2,100</td><td><span class="badge badge-delivered">Entregado</span></td><td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15 ton · Carga general','03 Abr 2026','$2,100','delivered',100)">POD</button></td></tr>
+                  <tr class="row-hover"><td class="td-mono">KP-2047</td><td>Cuenca → Guayaquil</td><td>FlotaEcu Logística</td><td>6 ton · Manufactura</td><td>02 Abr 2026</td><td style="font-weight:600">$760</td><td><span class="badge badge-delivered">Entregado</span></td><td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2047','Cuenca → Guayaquil','FlotaEcu Logística','6 ton · Manufactura','02 Abr 2026','$760','delivered',100)">POD</button></td></tr>
+                  <tr class="row-hover"><td class="td-mono">KP-2046</td><td>Quito → Ibarra</td><td>Flota Norte Express</td><td>3 ton · Última milla</td><td>02 Abr 2026</td><td style="font-weight:600">$380</td><td><span class="badge badge-delivered">Entregado</span></td><td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs">POD</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== NUEVA SOLICITUD ===== -->
+        <div id="page-solicitud" class="page">
+          <div class="card" style="max-width:800px;margin:0 auto">
+            <h2 style="font-size:17px;font-weight:700;margin-bottom:4px">Nueva Solicitud de Transporte</h2>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">Complete todos los campos. Los proveedores se mostrarán en el paso 3.</p>
+            <div class="wizard-steps">
+              <div class="wizard-step"><div class="step-circle current" id="sc1">1</div><div class="step-label current" id="sl1">Origen / Destino</div></div>
+              <div class="wizard-step"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">Carga & Vehículo</div></div>
+              <div class="wizard-step"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">Proveedor</div></div>
+              <div class="wizard-step"><div class="step-circle" id="sc4">4</div><div class="step-label" id="sl4">Confirmar</div></div>
+            </div>
+
+            <!-- STEP 1 -->
+            <div id="step1">
+              <div class="form-row"><div class="form-group"><label class="form-label">Ciudad de origen <span class="form-required">*</span></label><select class="form-input form-select" id="s-origen"><option value="">Seleccione...</option><option value="Guayaquil" selected>Guayaquil</option><option value="Quito">Quito</option><option value="Cuenca">Cuenca</option><option value="Manta">Manta</option><option value="Ambato">Ambato</option><option value="Ibarra">Ibarra</option><option value="Esmeraldas">Esmeraldas</option></select></div><div class="form-group"><label class="form-label">Ciudad de destino <span class="form-required">*</span></label><select class="form-input form-select" id="s-destino"><option value="">Seleccione...</option><option value="Guayaquil">Guayaquil</option><option value="Quito" selected>Quito</option><option value="Cuenca">Cuenca</option><option value="Manta">Manta</option><option value="Ambato">Ambato</option><option value="Ibarra">Ibarra</option><option value="Esmeraldas">Esmeraldas</option></select></div></div>
+              <div class="form-group"><label class="form-label">Dirección de recogida exacta <span class="form-required">*</span></label><input type="text" class="form-input" id="s-pickup-addr" value="Av. Juan Tanca Marengo km 2.5, Zona Industrial Norte, Guayaquil" placeholder="Dirección completa con referencia"></div>
+              <div class="form-group"><label class="form-label">Dirección de entrega exacta <span class="form-required">*</span></label><input type="text" class="form-input" id="s-delivery-addr" value="Parque Industrial Turubamba, Av. Pedro Vicente Maldonado, Quito" placeholder="Dirección completa con referencia"></div>
+              <div class="form-row3">
+                <div class="form-group"><label class="form-label">Fecha de recogida <span class="form-required">*</span></label><input type="date" class="form-input" id="s-date" value="2026-04-07"></div>
+                <div class="form-group"><label class="form-label">Ventana horaria</label><select class="form-input form-select" id="s-window"><option>08:00 – 12:00</option><option>12:00 – 16:00</option><option selected>14:00 – 18:00</option><option>Flexible (24h)</option></select></div>
+                <div class="form-group"><label class="form-label">Urgencia</label><select class="form-input form-select" id="s-urgency"><option value="normal" selected>Normal</option><option value="urgente">Urgente (+25%)</option><option value="expres">Exprés (+50%)</option></select></div>
+              </div>
+              <!-- NUEVOS CAMPOS ORIGEN/DESTINO -->
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Contacto en origen</label><input type="text" class="form-input" id="s-contact-origin" placeholder="Nombre · Teléfono"></div>
+                <div class="form-group"><label class="form-label">Contacto en destino</label><input type="text" class="form-input" id="s-contact-dest" placeholder="Nombre · Teléfono"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">RUC del remitente <span class="form-required">*</span></label><input type="text" class="form-input" id="s-ruc" placeholder="1234567890001" maxlength="13"></div>
+                <div class="form-group"><label class="form-label">Número de OC / Referencia interna</label><input type="text" class="form-input" id="s-oc" placeholder="OC-2026-XXXX"></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="validateStep1()">Siguiente →</button></div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div id="step2" style="display:none">
+              <div class="form-row"><div class="form-group"><label class="form-label">Tipo de carga <span class="form-required">*</span></label><select class="form-input form-select" id="s-carga-tipo" onchange="toggleTempField()"><option value="seca">Carga seca / general</option><option value="refrigerada" selected>Carga refrigerada</option><option value="peligrosa">Carga peligrosa (ADR)</option><option value="granel">Granel sólido</option><option value="maquinaria">Maquinaria pesada</option><option value="valorado">Carga valorada</option></select></div><div class="form-group"><label class="form-label">Peso estimado (ton) <span class="form-required">*</span></label><input type="number" class="form-input" id="s-peso" value="8" min="0.1" max="35" step="0.5"></div></div>
+              <div class="form-row"><div class="form-group"><label class="form-label">Volumen estimado (m³)</label><input type="number" class="form-input" id="s-volumen" placeholder="Ej: 24" min="0"></div><div class="form-group"><label class="form-label">Tipo de vehículo requerido</label><select class="form-input form-select" id="s-vehiculo"><option>Camión 5 ton</option><option>Camión 10 ton</option><option selected>Camión 20 ton (plataforma)</option><option>Furgón refrigerado</option><option>Volqueta</option><option>Plataforma cama baja</option></select></div></div>
+              <div class="form-row" id="temp-field-wrap"><div class="form-group"><label class="form-label">Rango de temperatura requerido</label><input type="text" class="form-input" id="s-temp" value="2°C – 8°C" placeholder="Ej: -18°C o 2°C – 8°C"></div><div class="form-group"><label class="form-label">Humedad relativa (%)</label><input type="number" class="form-input" id="s-humedad" placeholder="Ej: 85" min="0" max="100"></div></div>
+              <div class="form-group"><label class="form-label">Descripción de la mercancía <span class="form-required">*</span></label><textarea class="form-input" rows="2" id="s-descripcion">Camarones enteros congelados IQF. Contenedores herméticos. No apilar más de 3 cajas. Mantener cadena de frío.</textarea></div>
+              <div class="form-row"><div class="form-group"><label class="form-label">Valor declarado USD <span class="form-required">*</span></label><input type="number" class="form-input" id="s-valor" value="85000" placeholder="Para cálculo de seguro"></div><div class="form-group"><label class="form-label">¿Requiere seguro adicional?</label><select class="form-input form-select" id="s-seguro"><option value="basico" selected>Básico (incluido)</option><option value="ampliado">Ampliado (+0.5% valor)</option><option value="total">Total (cobertura completa)</option></select></div></div>
+              <!-- NUEVOS CAMPOS CARGA -->
+              <div class="form-row"><div class="form-group"><label class="form-label">Número de bultos / pallets</label><input type="number" class="form-input" id="s-bultos" placeholder="Ej: 48 cajas"></div><div class="form-group"><label class="form-label">Código HS / NCM (arancelario)</label><input type="text" class="form-input" id="s-hs" placeholder="Ej: 0306.13.00.00"></div></div>
+              <div class="form-row"><div class="form-group"><label class="form-label">Requiere escolta de seguridad</label><select class="form-input form-select" id="s-escolta"><option value="no" selected>No</option><option value="si">Sí (carga de alto valor)</option></select></div><div class="form-group"><label class="form-label">Instrucciones de manejo</label><input type="text" class="form-input" id="s-manejo" placeholder="Ej: Frágil, no voltear, cuidado"></div></div>
+              <div style="display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="nextStep(1)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(3)">Ver proveedores →</button></div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div id="step3" style="display:none">
+              <div style="background:var(--blue-light);border:1px solid rgba(26,61,181,.15);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--navy-mid)">
+                <strong>Ruta:</strong> <span id="route-summary">GYE → UIO</span> · <strong>Carga:</strong> <span id="cargo-summary">8 ton refrigerada</span> · <strong>Fecha:</strong> <span id="date-summary">07 Abr</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <p style="font-size:12px;color:var(--text-light)">3 proveedores disponibles:</p>
+                <button class="btn btn-ai btn-sm" onclick="aiSuggestProvider()">✦ Recomendación IA</button>
+              </div>
+              <div class="grid3" style="margin-bottom:16px">
+                <div class="provider-card selected" onclick="selectProvider(this)" data-name="FlotaEcu Logística" data-price="$1,280" data-eta="6.5h" data-otif="96.2">
+                  <div class="prov-header"><div class="prov-avatar">FA</div><div><div class="prov-name">FlotaEcu Logística</div><div class="prov-type">3PL · Guayaquil</div></div></div>
+                  <div class="stars">★★★★★</div><div style="font-size:11px;color:var(--text-light);margin-bottom:8px">4.9 · 312 operaciones</div>
+                  <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,280 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+                  <div class="prov-stat">OTIF<span style="color:var(--green)">96.2%</span></div><div class="prov-stat">ETA<span>6.5h</span></div><div class="prov-stat">Refrigerado<span>✓</span></div>
+                  <div style="margin-top:8px;font-size:10px;color:var(--green);font-weight:600" class="sel-tag">✓ Seleccionado</div>
+                </div>
+                <div class="provider-card" onclick="selectProvider(this)" data-name="Transportes Andinos" data-price="$1,150" data-eta="7.2h" data-otif="94.8">
+                  <div class="prov-header"><div class="prov-avatar" style="background:#059669">TA</div><div><div class="prov-name">Transportes Andinos</div><div class="prov-type">Pesada · Quito</div></div></div>
+                  <div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:8px">4.7 · 189 operaciones</div>
+                  <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,150 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+                  <div class="prov-stat">OTIF<span style="color:var(--green)">94.8%</span></div><div class="prov-stat">ETA<span>7.2h</span></div><div class="prov-stat">Refrigerado<span>✓</span></div>
+                </div>
+                <div class="provider-card" onclick="selectProvider(this)" data-name="Expresos del Norte" data-price="$1,080" data-eta="8.0h" data-otif="93.1">
+                  <div class="prov-header"><div class="prov-avatar" style="background:#7C3AED">EN</div><div><div class="prov-name">Expresos del Norte</div><div class="prov-type">Courier · Manta</div></div></div>
+                  <div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:8px">4.5 · 92 operaciones</div>
+                  <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,080 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+                  <div class="prov-stat">OTIF<span style="color:var(--amber)">93.1%</span></div><div class="prov-stat">ETA<span>8.0h</span></div><div class="prov-stat">Refrigerado<span>✓</span></div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="nextStep(2)">← Anterior</button><button class="btn btn-primary" onclick="nextStep(4)">Continuar →</button></div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div id="step4" style="display:none">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;margin-bottom:20px" id="order-summary-box"></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Email para notificaciones</label><input type="email" class="form-input" id="s-email-notif" placeholder="correo@empresa.com" value="mco@empresa.ec"></div>
+                <div class="form-group"><label class="form-label">Teléfono para alertas SMS</label><input type="tel" class="form-input" id="s-tel-notif" placeholder="+593 9XXXXXXXXX" value="+593 98 765 4321"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Instrucciones adicionales para el conductor</label><textarea class="form-input" rows="2" id="s-notas" placeholder="Notas especiales, acceso a planta, persona de contacto..."></textarea></div>
+              <div class="form-group">
+                <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text-mid)">
+                  <input type="checkbox" id="s-terms" style="accent-color:var(--navy-mid);margin-top:2px">
+                  Acepto los <strong style="color:var(--navy-mid)">Términos y Condiciones</strong> de servicio y confirmo que los datos declarados son verídicos.
+                </label>
+              </div>
+              <div style="display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="nextStep(3)">← Anterior</button><button class="btn btn-success" onclick="confirmOrder()">✓ Confirmar pedido</button></div>
+            </div>
+
+            <!-- SUCCESS -->
+            <div id="step-success" style="display:none;text-align:center;padding:32px 0">
+              <div style="width:64px;height:64px;border-radius:50%;background:var(--green-light);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">✓</div>
+              <h3 style="font-size:18px;font-weight:700;margin-bottom:6px">¡Pedido confirmado!</h3>
+              <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">Tu solicitud <strong id="new-order-id" style="color:var(--navy-mid);font-family:'JetBrains Mono',monospace">KP-2053</strong> fue registrada. El proveedor fue notificado por email y WhatsApp.</p>
+              <div style="display:flex;gap:8px;justify-content:center">
+                <button class="btn btn-secondary" onclick="resetWizard()">+ Nuevo pedido</button>
+                <button class="btn btn-primary" onclick="navigate('pedidos',document.getElementById('nav-pedidos'))">Ver mis pedidos →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PEDIDOS ===== -->
+        <div id="page-pedidos" class="page">
+          <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+            <div class="tab-group">
+              <button class="tab-btn active" onclick="filterPedidos('activos',this)">Activos (4)</button>
+              <button class="tab-btn" onclick="filterPedidos('completados',this)">Completados (38)</button>
+              <button class="tab-btn" onclick="filterPedidos('cancelados',this)">Cancelados (2)</button>
+              <button class="tab-btn" onclick="filterPedidos('todos',this)">Todos</button>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <input type="text" class="form-input" id="pedido-search" style="width:220px;padding:7px 12px" placeholder="Buscar ID, ruta, proveedor..." oninput="searchPedidos(this.value)">
+              <select class="form-input form-select" id="pedido-estado-filter" style="width:140px;padding:7px 12px" onchange="applyPedidosFilter()">
+                <option value="">Todos estados</option>
+                <option value="transit">En tránsito</option>
+                <option value="pending">Pendiente</option>
+                <option value="delivered">Entregado</option>
+                <option value="new">Nuevo</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">+ Nueva</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>ID</th><th>Ruta</th><th>Proveedor</th><th>Carga</th><th>Inicio</th>
+                  <th>ETA / Entrega</th><th>OTIF</th><th>Costo</th><th>Estado</th><th>Acciones</th>
+                </tr></thead>
+                <tbody id="pedidos-body">
+                  <tr class="row-hover pedido-row" data-status="activos" data-estado="new"><td class="td-mono">KP-2052</td><td>Guayaquil → Quito</td><td>FlotaEcu</td><td>8t · Ref.</td><td>07 Abr</td><td>07 Abr 18:00h</td><td>—</td><td>$1,280</td><td><span class="badge badge-new">Nuevo</span></td><td><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2052','Guayaquil → Quito','FlotaEcu Logística','8t · Refrigerado','07 Abr 2026','$1,280','new',5)">Ver</button> <button class="btn btn-ghost btn-xs" onclick="copyTrackingLink('KP-2052')">🔗</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="activos" data-estado="transit"><td class="td-mono">KP-2051</td><td>Guayaquil → Cuenca</td><td>FlotaEcu</td><td>12t · Seca</td><td>05 Abr</td><td>Hoy 16:45h</td><td><span style="color:var(--green);font-weight:600">96%</span></td><td>$1,240</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-cyan btn-xs" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Carga seca','05 Abr 2026','$1,240','transit',62)">Live</button> <button class="btn btn-ghost btn-xs" onclick="copyTrackingLink('KP-2051')">🔗</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="activos" data-estado="transit"><td class="td-mono">KP-2050</td><td>Quito → Guayaquil</td><td>Andinos</td><td>5t · Ref.</td><td>04 Abr</td><td>Hoy 19:20h</td><td><span style="color:var(--green);font-weight:600">94%</span></td><td>$890</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-cyan btn-xs" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit',35)">Live</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="activos" data-estado="pending"><td class="td-mono">KP-2049</td><td>Manta → Quito</td><td><span style="color:var(--red)">Sin asignar</span></td><td>8t · Agro.</td><td>04 Abr</td><td>—</td><td>—</td><td>$1,580</td><td><span class="badge badge-pending">Sin asignar</span></td><td><button class="btn btn-primary btn-xs" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Asignar</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="completados" data-estado="delivered"><td class="td-mono">KP-2048</td><td>GYE → UIO</td><td>Andinos</td><td>15t · General</td><td>03 Abr</td><td>03 Abr 17:20h</td><td><span style="color:var(--green);font-weight:600">98%</span></td><td>$2,100</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-xs" onclick="openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15t · Carga general','03 Abr 2026','$2,100','delivered',100)">POD</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="completados" data-estado="delivered"><td class="td-mono">KP-2047</td><td>CUE → GYE</td><td>FlotaEcu</td><td>6t · Mfg.</td><td>02 Abr</td><td>02 Abr 15:10h</td><td><span style="color:var(--green);font-weight:600">100%</span></td><td>$760</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-xs">POD</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="completados" data-estado="delivered"><td class="td-mono">KP-2046</td><td>UIO → IBA</td><td>Norte Express</td><td>3t · Últ. milla</td><td>02 Abr</td><td>02 Abr 11:45h</td><td><span style="color:var(--amber);font-weight:600">89%</span></td><td>$380</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-xs">POD</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="cancelados" data-estado="cancelled"><td class="td-mono">KP-2044</td><td>GYE → MAN</td><td>Noreste</td><td>4t · Seca</td><td>28 Mar</td><td>—</td><td>—</td><td>$520</td><td><span class="badge badge-cancelled">Cancelado</span></td><td><button class="btn btn-ghost btn-xs">Ver</button></td></tr>
+                  <tr class="row-hover pedido-row" data-status="cancelados" data-estado="cancelled"><td class="td-mono">KP-2041</td><td>AMB → GYE</td><td>Sin asignar</td><td>2t · Frag.</td><td>25 Mar</td><td>—</td><td>—</td><td>$340</td><td><span class="badge badge-cancelled">Cancelado</span></td><td><button class="btn btn-ghost btn-xs">Ver</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-light)">
+              <span style="font-size:12px;color:var(--text-light)" id="pedidos-count">Mostrando 4 pedidos</span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-xs">‹ Anterior</button>
+                <button class="btn btn-primary btn-xs">1</button>
+                <button class="btn btn-ghost btn-xs">2</button>
+                <button class="btn btn-ghost btn-xs">Siguiente ›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PROVEEDORES ===== -->
+        <div id="page-proveedores" class="page">
+          <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+            <div style="font-size:13px;color:var(--text-mid)"><strong style="color:var(--text)">24 proveedores</strong> activos</div>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <input type="text" class="form-input" style="width:180px;padding:7px 12px" placeholder="Buscar proveedor..." oninput="filterProviders(this.value)">
+              <select class="form-input form-select" style="width:160px;padding:7px 12px" onchange="filterProvidersType(this.value)">
+                <option value="">Todos los tipos</option><option>Transporte pesado</option><option>Refrigerado</option><option>Última milla</option><option>3PL</option>
+              </select>
+              <button class="btn btn-primary btn-sm admin-only" onclick="openInviteProvider()">+ Invitar proveedor</button>
+            </div>
+          </div>
+          <div class="grid3" id="providers-grid">
+            <div class="provider-card"><div class="prov-header"><div class="prov-avatar">FA</div><div><div class="prov-name">FlotaEcu Logística</div><div class="prov-type">3PL · Guayaquil</div></div></div><div class="stars">★★★★★</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.9 · 312 ops</div><div class="prov-stat">Flota<span>22 vehículos</span></div><div class="prov-stat">OTIF<span style="color:var(--green)">96.2%</span></div><div class="prov-stat">Especialidad<span>Refrigerado</span></div><div class="prov-stat">Estado<span><span class="badge badge-approved" style="padding:2px 6px">Activo</span></span></div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-secondary btn-sm" style="flex:1" onclick="showProviderProfile('FlotaEcu Logística','FA','#0D1F6E')">Perfil</button><button class="btn btn-primary btn-sm" style="flex:1" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Cotizar</button></div></div>
+            <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#059669">TA</div><div><div class="prov-name">Transportes Andinos</div><div class="prov-type">Carga pesada · Quito</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.7 · 189 ops</div><div class="prov-stat">Flota<span>14 vehículos</span></div><div class="prov-stat">OTIF<span style="color:var(--green)">94.8%</span></div><div class="prov-stat">Especialidad<span>Granel, General</span></div><div class="prov-stat">Estado<span><span class="badge badge-approved" style="padding:2px 6px">Activo</span></span></div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-secondary btn-sm" style="flex:1" onclick="showProviderProfile('Transportes Andinos','TA','#059669')">Perfil</button><button class="btn btn-primary btn-sm" style="flex:1" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Cotizar</button></div></div>
+            <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#7C3AED">EN</div><div><div class="prov-name">Expresos del Norte</div><div class="prov-type">Courier + Carga · Manta</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.5 · 92 ops</div><div class="prov-stat">Flota<span>8 vehículos</span></div><div class="prov-stat">OTIF<span style="color:var(--amber)">93.1%</span></div><div class="prov-stat">Especialidad<span>Costa Norte</span></div><div class="prov-stat">Estado<span><span class="badge badge-approved" style="padding:2px 6px">Activo</span></span></div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-secondary btn-sm" style="flex:1" onclick="showProviderProfile('Expresos del Norte','EN','#7C3AED')">Perfil</button><button class="btn btn-primary btn-sm" style="flex:1" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Cotizar</button></div></div>
+            <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#0891B2">FL</div><div><div class="prov-name">Flota Norte Express</div><div class="prov-type">Última milla · Ibarra</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.4 · 67 ops</div><div class="prov-stat">Flota<span>6 vehículos</span></div><div class="prov-stat">OTIF<span style="color:var(--amber)">91.8%</span></div><div class="prov-stat">Especialidad<span>Distribución urbana</span></div><div class="prov-stat">Estado<span><span class="badge badge-approved" style="padding:2px 6px">Activo</span></span></div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-secondary btn-sm" style="flex:1" onclick="showProviderProfile('Flota Norte Express','FL','#0891B2')">Perfil</button><button class="btn btn-primary btn-sm" style="flex:1" onclick="navigate('solicitud',document.getElementById('nav-solicitud'))">Cotizar</button></div></div>
+            <div class="provider-card" style="border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:200px;cursor:pointer" onclick="openInviteProvider()"><div style="font-size:28px;color:var(--text-light);margin-bottom:8px">+</div><div style="font-size:13px;font-weight:600;color:var(--text-mid)">Invitar proveedor</div><div style="font-size:11px;color:var(--text-light);margin-top:4px">Expandir red de operadores</div></div>
+          </div>
+        </div>
+
+        <!-- ===== RUTAS EN VIVO ===== -->
+        <div id="page-rutas" class="page">
+          <div class="grid2" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-header"><div><div class="card-title">Rutas activas</div><div class="card-sub">Actualizado hace 2 min</div></div><span class="live-dot"></span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--cyan)" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Seca','05 Abr 2026','$1,240','transit',62)"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2051</span><span class="badge badge-transit">En tránsito</span></div><div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">GYE → Cuenca · FlotaEcu · Juan Ramírez</div><div class="progress-bar"><div class="progress-fill" style="width:62%;background:var(--cyan)"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>62% · ⚠️ Alerta temperatura</span><span>ETA 16:45h</span></div></div>
+                <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--green)" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit',35)"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2050</span><span class="badge badge-transit">En tránsito</span></div><div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">UIO → GYE · Andinos · Carlos Méndez</div><div class="progress-bar"><div class="progress-fill" style="width:35%;background:var(--green)"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>35% completado</span><span>ETA 19:20h</span></div></div>
+                <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--amber)" onclick="openOrderModal('KP-2052','Guayaquil → Quito','FlotaEcu Logística','8t · Refrigerado','07 Abr 2026','$1,280','new',5)"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2052</span><span class="badge badge-new">Nuevo</span></div><div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">GYE → UIO · Por asignar conductor</div><div class="progress-bar"><div class="progress-fill" style="width:5%;background:var(--amber)"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>Preparando salida</span><span>07 Abr 14:00h</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Mapa de cobertura</div></div>
+              <div class="map-container" style="height:340px">
+                <svg viewBox="0 0 300 340" style="position:absolute;inset:0;width:100%;height:100%">
+                  <path d="M80,55 L120,45 L180,50 L225,78 L235,130 L222,180 L200,220 L160,238 L120,232 L88,210 L68,168 L58,118 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>
+                  <path d="M108,190 Q128,148 148,128" stroke="#00B8E0" stroke-width="2.5" stroke-dasharray="8,5" fill="none"/>
+                  <path d="M148,128 Q170,108 190,98" stroke="#00B8E0" stroke-width="2.5" stroke-dasharray="8,5" fill="none"/>
+                  <path d="M148,128 Q128,160 108,190" stroke="#10B981" stroke-width="2" stroke-dasharray="5,4" fill="none" opacity=".7"/>
+                  <circle cx="108" cy="190" r="11" fill="#00B8E0" opacity=".9"/><circle cx="108" cy="190" r="18" fill="#00B8E0" opacity=".12"/>
+                  <text x="108" y="213" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif" font-weight="600">Guayaquil</text>
+                  <circle cx="148" cy="128" r="11" fill="#1A3DB5" opacity=".9"/><circle cx="148" cy="128" r="18" fill="#1A3DB5" opacity=".12"/>
+                  <text x="148" y="151" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif" font-weight="600">Quito</text>
+                  <circle cx="190" cy="98" r="8" fill="#7C3AED" opacity=".9"/>
+                  <text x="190" y="118" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Cuenca</text>
+                  <circle cx="108" cy="205" r="6" fill="#F59E0B" opacity=".9"/>
+                  <text x="78" y="216" text-anchor="middle" fill="white" font-size="7" font-family="Outfit,sans-serif">Manta</text>
+                  <circle cx="165" cy="76" r="5" fill="rgba(255,255,255,.5)"/>
+                  <text x="165" y="68" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="7" font-family="Outfit,sans-serif">Ibarra</text>
+                  <g><circle r="7" fill="white" opacity=".95"><animateMotion dur="8s" repeatCount="indefinite" path="M108,190 Q148,148 190,98"/></circle></g>
+                  <g><circle r="6" fill="#10B981" opacity=".9"><animateMotion dur="11s" repeatCount="indefinite" path="M148,128 Q128,160 108,190"/></circle></g>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== REPORTES ===== -->
+        <div id="page-reportes" class="page">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>Proof of Value — <strong>Abril 2026</strong></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary btn-sm" onclick="showToast('Cargando datos de Marzo 2026...','info')">← Marzo</button>
+              <button class="btn btn-ai btn-sm" onclick="aiGenerateReport()">✦ Análisis IA</button>
+              <button class="btn btn-primary btn-sm" onclick="showToast('Exportando PDF con firma digital...','success')">↓ Exportar PDF</button>
+              <button class="btn btn-secondary btn-sm" onclick="showToast('Enviando reporte por email...','success')">📧 Enviar</button>
+            </div>
+          </div>
+          <div class="grid4" style="margin-bottom:16px">
+            <div class="report-kpi"><span class="val" style="color:var(--navy-mid)">$68,400</span><span class="lbl">GMV total</span></div>
+            <div class="report-kpi"><span class="val" style="color:var(--green)">94.7%</span><span class="lbl">OTIF global</span></div>
+            <div class="report-kpi"><span class="val" style="color:var(--cyan)">$9,240</span><span class="lbl">Ahorro vs mercado</span></div>
+            <div class="report-kpi"><span class="val" style="color:var(--amber)">47</span><span class="lbl">Pedidos gestionados</span></div>
+          </div>
+          <div class="grid2">
+            <div class="card"><div class="card-header"><div class="card-title">GMV Mensual (Nov–Abr)</div><div class="card-sub">Azul = GMV · Cyan = Pedidos</div></div><div style="height:160px;display:flex;align-items:flex-end;gap:6px;padding:20px 0 20px" id="bar-chart"></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">Ahorro vs. tarifa mercado</div></div><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Carga seca nacional</span><span style="color:var(--green);font-weight:600">−14.2%</span></div><div class="progress-bar"><div class="progress-fill" style="width:70%;background:var(--navy-mid)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Transporte refrigerado</span><span style="color:var(--green);font-weight:600">−18.7%</span></div><div class="progress-bar"><div class="progress-fill" style="width:82%;background:var(--cyan)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Última milla</span><span style="color:var(--green);font-weight:600">−11.4%</span></div><div class="progress-bar"><div class="progress-fill" style="width:60%;background:var(--purple)"></div></div></div></div><div style="margin-top:14px;background:var(--green-light);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#065F46;font-weight:600">Ahorro total Abril</span><span style="font-size:18px;font-weight:800;color:#059669">$9,240</span></div></div>
+          </div>
+        </div>
+
+        <!-- ===== USUARIOS (ADMIN ONLY) ===== -->
+        <div id="page-usuarios" class="page admin-only">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--text-mid)"><strong>4 usuarios</strong> en la plataforma</div>
+            <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Agregar usuario</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Último acceso</th><th>2FA</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="users-table-body">
+                  <tr class="user-row"><td><div class="user-avatar-sm" style="background:var(--red)">MC</div>María Correa</td><td>admin@kallpapro.com</td><td><span class="role-pill admin" style="font-size:10px;padding:3px 8px">Administrador</span></td><td>Ahora</td><td><span style="color:var(--green)">✓ Activo</span></td><td><span class="badge badge-approved">Activo</span></td><td><button class="btn btn-ghost btn-xs" onclick="editUser('MC')">Editar</button></td></tr>
+                  <tr class="user-row"><td><div class="user-avatar-sm" style="background:var(--cyan)">JP</div>Juan Pérez</td><td>gerente@kallpapro.com</td><td><span class="role-pill manager" style="font-size:10px;padding:3px 8px">Gerente</span></td><td>hace 2h</td><td><span style="color:var(--green)">✓ Activo</span></td><td><span class="badge badge-approved">Activo</span></td><td><button class="btn btn-ghost btn-xs" onclick="editUser('JP')">Editar</button> <button class="btn btn-danger btn-xs" onclick="deactivateUser('Juan Pérez')">Suspender</button></td></tr>
+                  <tr class="user-row"><td><div class="user-avatar-sm" style="background:var(--green)">AR</div>Ana Rodríguez</td><td>viewer@kallpapro.com</td><td><span class="role-pill viewer" style="font-size:10px;padding:3px 8px;background:rgba(100,116,139,.2)">Visualizador</span></td><td>ayer</td><td><span style="color:var(--amber)">⚠️ Pendiente</span></td><td><span class="badge badge-approved">Activo</span></td><td><button class="btn btn-ghost btn-xs" onclick="editUser('AR')">Editar</button> <button class="btn btn-danger btn-xs" onclick="deactivateUser('Ana Rodríguez')">Suspender</button></td></tr>
+                  <tr class="user-row"><td><div class="user-avatar-sm" style="background:var(--amber)">LS</div>Luis Silva</td><td>conductor@kallpapro.com</td><td><span class="role-pill viewer" style="font-size:10px;padding:3px 8px;background:rgba(100,116,139,.2)">Conductor</span></td><td>hace 30min</td><td><span style="color:var(--green)">✓ Activo</span></td><td><span class="badge badge-approved">Activo</span></td><td><button class="btn btn-ghost btn-xs" onclick="editUser('LS')">Editar</button> <button class="btn btn-danger btn-xs" onclick="deactivateUser('Luis Silva')">Suspender</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Política de contraseñas</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px"><div style="background:var(--green-light);border-radius:var(--r);padding:10px"><strong style="color:var(--green)">✓ Activo:</strong> Mínimo 8 caracteres</div><div style="background:var(--green-light);border-radius:var(--r);padding:10px"><strong style="color:var(--green)">✓ Activo:</strong> Mayúsculas y números requeridos</div><div style="background:var(--green-light);border-radius:var(--r);padding:10px"><strong style="color:var(--green)">✓ Activo:</strong> Sesión expira en 8 horas</div><div style="background:var(--amber-light);border-radius:var(--r);padding:10px"><strong style="color:var(--amber)">⚠ Pendiente:</strong> 2FA para todos los usuarios</div></div></div>
+        </div>
+
+        <!-- ===== SEGURIDAD (ADMIN ONLY) ===== -->
+        <div id="page-seguridad" class="page admin-only">
+          <div class="grid3" style="margin-bottom:16px">
+            <div class="kpi-card green"><div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#10B981" stroke-width="1.8"><path d="M9 1l6 2.5v5C15 12 12.3 15 9 17c-3.3-2-6-5-6-8.5V3.5z"/></svg></div><div class="kpi-val">SEGURO</div><div class="kpi-label">Estado del sistema</div><div class="kpi-trend up">↑ Sin incidentes activos</div></div>
+            <div class="kpi-card amber"><div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F59E0B" stroke-width="1.8"><circle cx="9" cy="9" r="7"/><path d="M9 6v4M9 13v.5"/></svg></div><div class="kpi-val">12</div><div class="kpi-label">Intentos login fallidos (24h)</div><div class="kpi-trend neutral">→ Normal</div></div>
+            <div class="kpi-card blue"><div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1A3DB5" stroke-width="1.8"><rect x="2" y="8" width="14" height="9" rx="1.5"/><path d="M5 8V5a4 4 0 018 0v3"/></svg></div><div class="kpi-val">TLS 1.3</div><div class="kpi-label">Cifrado de conexión</div><div class="kpi-trend up">↑ Máxima seguridad</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🛡️ Log de Auditoría de Seguridad</div><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="showToast('Exportando log de auditoría...','info')">↓ Exportar</button></div></div>
+            <div id="sec-log">
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--green-light)">✅</div><div><div style="font-size:12px;font-weight:600">Login exitoso — admin@kallpapro.com</div><div style="font-size:11px;color:var(--text-light)">IP: 190.24.12.xx · User-Agent: Chrome/124 · Hoy 09:14:22</div></div></div>
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--red-light)">⛔</div><div><div style="font-size:12px;font-weight:600">Login fallido — intento 3/5 — unknown@gmail.com</div><div style="font-size:11px;color:var(--text-light)">IP: 45.33.xx.xx · Posible ataque de fuerza bruta · Hoy 08:52:11</div></div></div>
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--amber-light)">⚠️</div><div><div style="font-size:12px;font-weight:600">Sesión expirada — gerente@kallpapro.com</div><div style="font-size:11px;color:var(--text-light)">Sesión de 8h completada · Logout automático · Ayer 21:10:05</div></div></div>
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--green-light)">🔐</div><div><div style="font-size:12px;font-weight:600">Nuevo usuario creado — viewer@kallpapro.com</div><div style="font-size:11px;color:var(--text-light)">Creado por admin@kallpapro.com · Rol: Visualizador · Ayer 14:30:17</div></div></div>
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--red-light)">🚫</div><div><div style="font-size:12px;font-weight:600">Acceso denegado — intento acceso página Admin sin permisos</div><div style="font-size:11px;color:var(--text-light)">viewer@kallpapro.com intentó acceder a /admin/usuarios · Bloqueado · Ayer 12:18:44</div></div></div>
+              <div class="sec-log-item"><div class="sec-log-icon" style="background:var(--blue-light)">📤</div><div><div style="font-size:12px;font-weight:600">Exportación de datos — tabla pedidos (50 registros)</div><div style="font-size:11px;color:var(--text-light)">Exportado por gerente@kallpapro.com · Formato CSV · 06 Abr 11:22:38</div></div></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><div class="card-title">Controles de seguridad activos</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+              <div style="background:var(--green-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>✅</span><div><strong>Rate limiting:</strong> 5 intentos login → bloqueo 15 min</div></div>
+              <div style="background:var(--green-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>✅</span><div><strong>Sanitización XSS:</strong> Inputs validados y escapados</div></div>
+              <div style="background:var(--green-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>✅</span><div><strong>RBAC:</strong> Control de acceso basado en roles</div></div>
+              <div style="background:var(--green-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>✅</span><div><strong>CSP Headers:</strong> Content Security Policy activo</div></div>
+              <div style="background:var(--green-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>✅</span><div><strong>Tokens CSRF:</strong> Protección anti-CSRF en formularios</div></div>
+              <div style="background:var(--amber-light);padding:10px;border-radius:var(--r);display:flex;align-items:center;gap:8px"><span>⚠️</span><div><strong>2FA global:</strong> Pendiente activar para todos los roles</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+
+    <!-- AI PANEL -->
+    <div class="ai-panel closed" id="ai-panel">
+      <div class="ai-header">
+        <div class="ai-avatar-wrap">✦</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Asistente KallpaPro IA</div>
+          <div style="font-size:11px;color:var(--text-light)">Powered by Claude</div>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px"><span class="live-dot" style="width:6px;height:6px"></span>Online</span>
+          <button class="btn-ghost" style="padding:4px;border:none;color:var(--text-light);font-size:16px" onclick="toggleAI()">×</button>
+        </div>
+      </div>
+      <div class="ai-messages" id="ai-messages">
+        <div class="ai-msg">
+          <div class="ai-msg-avatar" style="background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff">✦</div>
+          <div class="ai-bubble">¡Hola! Soy el asistente IA de KallpaPro. Puedo ayudarte con análisis de pedidos, recomendaciones de proveedores, KPIs y alertas operativas. ¿En qué te ayudo?</div>
+        </div>
+      </div>
+      <div class="ai-input-area">
+        <div class="ai-chips">
+          <div class="ai-chip" onclick="sendChip('¿Cuáles son mis KPIs más importantes este mes?')">📊 KPIs</div>
+          <div class="ai-chip" onclick="sendChip('¿Qué proveedor recomiendas para GYE → UIO refrigerado?')">🚛 Proveedor</div>
+          <div class="ai-chip" onclick="sendChip('Resume el estado de mis pedidos activos')">📦 Pedidos</div>
+          <div class="ai-chip" onclick="sendChip('¿Cómo mejorar el OTIF del 94.7%?')">📈 OTIF</div>
+          <div class="ai-chip" onclick="sendChip('Analiza las alertas de seguridad activas')">🛡️ Alertas</div>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" class="ai-text-input" id="ai-input" placeholder="Escribe tu consulta..." onkeydown="if(event.key==='Enter')sendMessage()">
+          <button class="ai-send-btn" id="ai-send-btn" onclick="sendMessage()">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal" onclick="if(event.target===this)closeModal('order-modal')">
+  <div class="modal"><div class="modal-header"><div><div class="modal-title" id="modal-order-id">KP-2051</div><div class="modal-sub" id="modal-order-route">Guayaquil → Cuenca</div></div><button class="modal-close" onclick="closeModal('order-modal')">×</button></div><div class="modal-body" id="modal-content"></div></div>
+</div>
+
+<!-- PROVIDER MODAL -->
+<div class="modal-overlay" id="provider-modal" onclick="if(event.target===this)closeModal('provider-modal')">
+  <div class="modal"><div class="modal-header"><div class="modal-title" id="prov-modal-name"></div><button class="modal-close" onclick="closeModal('provider-modal')">×</button></div><div class="modal-body" id="prov-modal-content"></div><div class="modal-footer"><button class="btn btn-ghost btn-sm" onclick="closeModal('provider-modal')">Cerrar</button><button class="btn btn-primary btn-sm" onclick="closeModal('provider-modal');navigate('solicitud',document.getElementById('nav-solicitud'))">Crear pedido</button></div></div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div class="modal-overlay" id="add-user-modal" onclick="if(event.target===this)closeModal('add-user-modal')">
+  <div class="modal" style="width:500px">
+    <div class="modal-header"><div class="modal-title">Agregar nuevo usuario</div><button class="modal-close" onclick="closeModal('add-user-modal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo <span class="form-required">*</span></label><input type="text" class="form-input" id="new-user-name" placeholder="Nombre Apellido"></div><div class="form-group"><label class="form-label">Email corporativo <span class="form-required">*</span></label><input type="email" class="form-input" id="new-user-email" placeholder="usuario@empresa.com"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Rol <span class="form-required">*</span></label><select class="form-input form-select" id="new-user-role"><option value="admin">Administrador</option><option value="manager" selected>Gerente</option><option value="viewer">Visualizador</option><option value="driver">Conductor</option></select></div><div class="form-group"><label class="form-label">Departamento</label><input type="text" class="form-input" id="new-user-dept" placeholder="Ej: Operaciones, Comercial..."></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input type="tel" class="form-input" id="new-user-tel" placeholder="+593 9XXXXXXXX"></div><div class="form-group"><label class="form-label">Activar 2FA</label><select class="form-input form-select" id="new-user-2fa"><option value="si">Sí (recomendado)</option><option value="no">No</option></select></div></div>
+      <div style="background:var(--amber-light);border-radius:var(--r);padding:10px;font-size:12px;color:#92400E">⚠️ Se enviará un email de bienvenida con instrucciones de primer acceso. La contraseña temporal será enviada al email registrado.</div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost btn-sm" onclick="closeModal('add-user-modal')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="createUser()">Crear usuario</button></div>
+  </div>
+</div>
+
+<!-- FILTER MODAL -->
+<div class="modal-overlay" id="filter-modal" onclick="if(event.target===this)closeModal('filter-modal')">
+  <div class="modal" style="width:480px">
+    <div class="modal-header"><div class="modal-title">Filtrar pedidos</div><button class="modal-close" onclick="closeModal('filter-modal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha desde</label><input type="date" class="form-input" id="filter-from"></div><div class="form-group"><label class="form-label">Fecha hasta</label><input type="date" class="form-input" id="filter-to"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Proveedor</label><select class="form-input form-select"><option>Todos</option><option>FlotaEcu Logística</option><option>Transportes Andinos</option><option>Expresos del Norte</option></select></div><div class="form-group"><label class="form-label">Tipo de carga</label><select class="form-input form-select"><option>Todos</option><option>Refrigerada</option><option>Carga seca</option><option>Agroindustria</option></select></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Costo mínimo (USD)</label><input type="number" class="form-input" placeholder="0"></div><div class="form-group"><label class="form-label">Costo máximo (USD)</label><input type="number" class="form-input" placeholder="10,000"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('filter-modal')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="applyFilter()">Aplicar filtros</button></div>
+  </div>
+</div>
+
+<!-- INVITE PROVIDER MODAL -->
+<div class="modal-overlay" id="invite-provider-modal" onclick="if(event.target===this)closeModal('invite-provider-modal')">
+  <div class="modal" style="width:480px">
+    <div class="modal-header"><div class="modal-title">Invitar proveedor</div><button class="modal-close" onclick="closeModal('invite-provider-modal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre de la empresa <span class="form-required">*</span></label><input type="text" class="form-input" placeholder="Transportes XYZ Cía. Ltda."></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Email de contacto <span class="form-required">*</span></label><input type="email" class="form-input" placeholder="gerente@empresa.com"></div><div class="form-group"><label class="form-label">RUC <span class="form-required">*</span></label><input type="text" class="form-input" placeholder="1234567890001" maxlength="13"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Tipo de servicio</label><select class="form-input form-select"><option>Transporte pesado</option><option>Refrigerado</option><option>Última milla</option><option>3PL</option></select></div><div class="form-group"><label class="form-label">Ciudad base</label><select class="form-input form-select"><option>Guayaquil</option><option>Quito</option><option>Cuenca</option><option>Manta</option></select></div></div>
+      <div class="form-group"><label class="form-label">Número de vehículos aproximado</label><input type="number" class="form-input" placeholder="Ej: 10" min="1"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost btn-sm" onclick="closeModal('invite-provider-modal')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="sendInvite()">Enviar invitación</button></div>
+  </div>
+</div>
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay" id="search-overlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <svg width="16" height="16" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M12 12l2.5 2.5"/></svg>
+      <input type="text" class="search-main-input" id="search-input" placeholder="Buscar pedidos, proveedores, rutas... (Ctrl+K)" oninput="doSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()">
+      <span style="font-size:11px;color:var(--text-light);background:var(--bg);padding:2px 6px;border-radius:4px;cursor:pointer" onclick="closeSearch()">Esc</span>
+    </div>
+    <div class="search-results" id="search-results"><div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar...</div></div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============================================================
+// SECURITY LAYER: CONSTANTS & STATE
+// ============================================================
+const USERS={
+  'admin@kallpapro.com':{pwd:'Admin123!',role:'admin',name:'María Correa',initials:'MC',label:'Administrador'},
+  'gerente@kallpapro.com':{pwd:'Mgr456!',role:'manager',name:'Juan Pérez',initials:'JP',label:'Gerente'},
+  'viewer@kallpapro.com':{pwd:'View789!',role:'viewer',name:'Ana Rodríguez',initials:'AR',label:'Visualizador'},
+};
+
+const SEC={
+  failedAttempts:{},
+  maxAttempts:5,
+  lockoutMs:15*60*1000,
+  sessionDuration:8*60*60*1000,
+  currentUser:null,
+  sessionStart:null,
+  csrfToken:generateToken(),
+  sessionCheckInterval:null
+};
+
+function generateToken(){
+  return Array.from(crypto.getRandomValues?crypto.getRandomValues(new Uint8Array(16)):new Array(16).fill(0).map(()=>Math.floor(Math.random()*256))).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// XSS Sanitizer
+function sanitize(str){
+  if(typeof str!=='string')return'';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/\//g,'&#x2F;');
+}
+
+// Input validator
+function validateEmail(e){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)}
+function validateRUC(r){return/^\d{10,13}$/.test(r)}
+
+// ============================================================
+// LOGIN LOGIC
+// ============================================================
+let currentLoginRole='admin';
+function setLoginRole(role,btn){
+  currentLoginRole=role;
+  document.querySelectorAll('.role-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('login-form-section').style.display=role==='tracking'?'none':'block';
+  document.getElementById('tracking-form-section').style.display=role==='tracking'?'block':'none';
+  clearLoginError();
+}
+
+function clearLoginError(){document.getElementById('login-error').style.display='none';}
+function showLoginError(msg){
+  const e=document.getElementById('login-error');
+  e.style.display='block';
+  document.getElementById('login-error-msg').textContent=sanitize(msg);
+  document.getElementById('login-card-inner').classList.add('shake');
+  setTimeout(()=>document.getElementById('login-card-inner')?.classList.remove('shake'),500);
+}
+
+function togglePwd(){
+  const i=document.getElementById('login-pwd');
+  i.type=i.type==='password'?'text':'password';
+}
+
+function attemptLogin(){
+  const email=document.getElementById('login-email').value.trim().toLowerCase();
+  const pwd=document.getElementById('login-pwd').value;
+  const captcha=document.getElementById('captcha-check').checked;
+  const btn=document.getElementById('login-btn');
+
+  // Validate captcha
+  if(!captcha){showLoginError('Por favor confirma que no eres un robot.');return;}
+
+  // Validate format
+  if(!email||!pwd){showLoginError('Ingresa tu email y contraseña.');return;}
+  if(!validateEmail(email)){showLoginError('Formato de email inválido.');return;}
+
+  // Check lockout
+  const now=Date.now();
+  if(SEC.failedAttempts[email]?.locked&&SEC.failedAttempts[email].lockedUntil>now){
+    const remaining=Math.ceil((SEC.failedAttempts[email].lockedUntil-now)/60000);
+    showLoginError(`Cuenta bloqueada por ${remaining} min. Demasiados intentos fallidos.`);
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent='Verificando...';
+
+  // Simulate server check
+  setTimeout(()=>{
+    const user=USERS[email];
+    if(user&&user.pwd===pwd){
+      // Success
+      SEC.currentUser={...user,email};
+      SEC.sessionStart=Date.now();
+      SEC.failedAttempts[email]={count:0};
+      addSecLog('✅',`Login exitoso — ${email}`,'IP: 190.24.12.xx · '+new Date().toLocaleTimeString());
+      startSession();
+    }else{
+      // Failure
+      if(!SEC.failedAttempts[email])SEC.failedAttempts[email]={count:0};
+      SEC.failedAttempts[email].count++;
+      const left=SEC.maxAttempts-SEC.failedAttempts[email].count;
+      addSecLog('⛔',`Login fallido — intento ${SEC.failedAttempts[email].count}/${SEC.maxAttempts} — ${email}`,'IP: 190.24.12.xx · '+new Date().toLocaleTimeString());
+      if(SEC.failedAttempts[email].count>=SEC.maxAttempts){
+        SEC.failedAttempts[email].locked=true;
+        SEC.failedAttempts[email].lockedUntil=Date.now()+SEC.lockoutMs;
+        showLoginError('Cuenta bloqueada por 15 minutos por múltiples intentos fallidos.');
+      }else{
+        showLoginError(`Credenciales incorrectas. ${left} intento(s) restante(s).`);
+        document.getElementById('login-pwd').value='';
+      }
+      btn.disabled=false;
+      btn.textContent='Ingresar de forma segura';
+    }
+  },700);
+}
+
+function startSession(){
+  const user=SEC.currentUser;
+  // Update sidebar
+  document.getElementById('sidebar-avatar').textContent=user.initials;
+  document.getElementById('sidebar-name').textContent=user.name;
+  document.getElementById('sidebar-role-label').textContent=user.label;
+  const pill=document.getElementById('sidebar-role-pill');
+  pill.textContent=user.role==='admin'?'ADMIN':user.role==='manager'?'MGR':'VIEW';
+  pill.className='role-pill '+user.role;
+
+  // Apply RBAC
+  applyRBAC(user.role);
+
+  // Show app
+  document.getElementById('sec-login').style.display='none';
+  document.getElementById('app').style.display='block';
+
+  // Session timer
+  SEC.sessionCheckInterval=setInterval(()=>{
+    if(Date.now()-SEC.sessionStart>SEC.sessionDuration){
+      addSecLog('⚠️',`Sesión expirada — ${user.email}`,'Logout automático por inactividad');
+      logout();
+      showLoginError('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+    }
+  },60000);
+
+  buildChart();
+  showToast(`¡Bienvenido/a, ${user.name}! Sesión segura iniciada.`,'success');
+}
+
+function applyRBAC(role){
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.display=role==='admin'?'':'none';
+  });
+  if(role==='viewer'){
+    document.getElementById('nav-solicitud').classList.add('disabled');
+    document.getElementById('nav-solicitud').title='Sin permisos para crear solicitudes';
+  }
+}
+
+function logout(){
+  clearInterval(SEC.sessionCheckInterval);
+  addSecLog('👋',`Logout — ${SEC.currentUser?.email||'usuario'}`,'Sesión cerrada · '+new Date().toLocaleTimeString());
+  SEC.currentUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('sec-tracking').style.display='none';
+  document.getElementById('sec-login').style.display='flex';
+  document.getElementById('login-pwd').value='';
+  document.getElementById('captcha-check').checked=false;
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent='Ingresar de forma segura';
+  clearLoginError();
+}
+
+// ============================================================
+// PUBLIC TRACKING
+// ============================================================
+const trackingData={
+  'KP-2051':{route:'Guayaquil → Cuenca',provider:'FlotaEcu Logística',cargo:'12 ton · Carga seca',date:'05 Abr 2026',cost:'$1,240',status:'transit',pct:62,driver:'Juan Ramírez',plate:'GYE-1842',temp:'6°C ⚠️',eta:'Hoy 16:45h',ruc:'1234567890001'},
+  'KP-2050':{route:'Quito → Guayaquil',provider:'Transportes Andinos',cargo:'5 ton · Refrigerado',date:'04 Abr 2026',cost:'$890',status:'transit',pct:35,driver:'Carlos Méndez',plate:'PIC-0321',temp:'4°C ✓',eta:'Hoy 19:20h',ruc:'0987654321001'},
+  'KP-2048':{route:'Guayaquil → Quito',provider:'Transportes Andinos',cargo:'15 ton · Carga general',date:'03 Abr 2026',cost:'$2,100',status:'delivered',pct:100,driver:'Pedro Suárez',plate:'GYE-0845',temp:'—',eta:'03 Abr 17:20h',ruc:'1234567890001'},
+};
+
+function goPublicTracking(){
+  const id=document.getElementById('track-order-input')?.value.trim().toUpperCase();
+  const doc=document.getElementById('track-doc-input')?.value.trim();
+  if(!id){showToast('Ingresa el número de pedido','warning');return;}
+  document.getElementById('sec-login').style.display='none';
+  document.getElementById('sec-tracking').style.display='flex';
+  if(id&&doc){
+    document.getElementById('track-search-id').value=id;
+    document.getElementById('track-search-doc').value=doc;
+    setTimeout(()=>searchTracking(),300);
+  }
+}
+
+function searchTracking(){
+  const id=document.getElementById('track-search-id').value.trim().toUpperCase();
+  const doc=document.getElementById('track-search-doc').value.trim();
+  const area=document.getElementById('tracking-result-area');
+  if(!id){area.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--text-light)">Ingresa un número de pedido válido</div>';return;}
+  const order=trackingData[id];
+  if(!order){area.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:24px;margin-bottom:8px">🔍</div><div style="font-weight:600;margin-bottom:4px">Pedido no encontrado</div><div style="font-size:13px;color:var(--text-light)">El número "${id}" no existe o no tienes acceso. Verifica el número e intenta de nuevo.</div></div>`;return;}
+  if(doc&&order.ruc&&doc!==order.ruc){area.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:24px;margin-bottom:8px">🔒</div><div style="font-weight:600;margin-bottom:4px">Acceso denegado</div><div style="font-size:13px;color:var(--text-light)">El documento ingresado no coincide con el registrado para este pedido.</div></div>`;return;}
+
+  const pct=order.pct;
+  const color=order.status==='delivered'?'var(--green)':order.status==='transit'?'var(--cyan)':'var(--amber)';
+  const statusLabel=order.status==='delivered'?'Entregado':order.status==='transit'?'En tránsito':'Nuevo';
+  area.innerHTML=`
+    <div class="card" style="overflow:hidden">
+      <div style="background:linear-gradient(135deg,var(--navy),var(--navy-mid));padding:16px 20px;margin:-18px -18px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#fff">${sanitize(id)}</span>
+          <span class="badge ${order.status==='delivered'?'badge-delivered':order.status==='transit'?'badge-transit':'badge-new'}">${statusLabel}</span>
+        </div>
+        <div style="color:rgba(255,255,255,.7);font-size:13px">${sanitize(order.route)} · ${sanitize(order.provider)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Mercancía</div><div style="font-size:13px;font-weight:600">${sanitize(order.cargo)}</div></div>
+        <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Conductor</div><div style="font-size:13px;font-weight:600">${sanitize(order.driver)} · ${sanitize(order.plate)}</div></div>
+        <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Temperatura</div><div style="font-size:13px;font-weight:600">${sanitize(order.temp)}</div></div>
+        <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">ETA / Entrega</div><div style="font-size:13px;font-weight:600">${sanitize(order.eta)}</div></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="font-weight:600">Progreso del envío</span><span style="color:${color};font-weight:700">${pct}% completado</span></div>
+        <div class="progress-bar" style="height:10px"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>
+      <div class="track-timeline">
+        <div class="track-step done"><div class="track-dot done">✓</div><div class="track-info"><div class="track-title">Pedido confirmado</div><div class="track-sub">Proveedor notificado y aceptó la carga</div><div class="track-time">${order.date} · 09:15h</div></div></div>
+        <div class="track-step ${pct>=20?'done':''}"><div class="track-dot ${pct>=20?'done':''}">✓</div><div class="track-info"><div class="track-title">Conductor asignado</div><div class="track-sub">${sanitize(order.driver)} · Placa ${sanitize(order.plate)}</div><div class="track-time">${order.date} · 11:30h</div></div></div>
+        <div class="track-step ${pct>=40?'done':'active-step'}"><div class="track-dot ${pct>=40?'done':'active'}">→</div><div class="track-info"><div class="track-title">En camino</div><div class="track-sub">GPS activo · Actualizando cada 5 min</div><div class="track-time">Hoy · 14:05h</div></div></div>
+        <div class="track-step"><div class="track-dot ${order.status==='delivered'?'done':''}">📍</div><div class="track-info"><div class="track-title">Entrega en destino</div><div class="track-sub">${order.status==='delivered'?'✓ Confirmado · Firma recibida':'Estimado: '+order.eta}</div><div class="track-time">${order.status==='delivered'?'Entregado · '+order.eta:'Pendiente'}</div></div></div>
+      </div>
+      <div style="margin-top:16px;background:var(--surface);border-radius:var(--r);padding:12px;font-size:11px;color:var(--text-light)">🔒 Solo se muestran datos necesarios para el seguimiento. Información sensible protegida.</div>
+    </div>`;
+}
+
+function backToLogin(){
+  document.getElementById('sec-tracking').style.display='none';
+  document.getElementById('sec-login').style.display='flex';
+}
+
+// ============================================================
+// APP NAVIGATION
+// ============================================================
+const pageMap={dashboard:'Dashboard',solicitud:'Nueva Solicitud',pedidos:'Mis Pedidos',proveedores:'Proveedores',rutas:'Rutas en Vivo',reportes:'Reportes & POV',usuarios:'Gestión de Usuarios',seguridad:'Centro de Seguridad'};
+const subMap={dashboard:'/ Resumen ejecutivo',solicitud:'/ Crear pedido',pedidos:'/ Gestión de operaciones',proveedores:'/ Marketplace de operadores',rutas:'/ Seguimiento en tiempo real',reportes:'/ Proof of Value mensual',usuarios:'/ Control de acceso',seguridad:'/ Auditoría y protección'};
+
+function navigate(id,btn){
+  // RBAC check
+  if((id==='usuarios'||id==='seguridad')&&SEC.currentUser?.role!=='admin'){
+    showToast('Acceso denegado. Solo administradores.','error');
+    addSecLog('🚫',`Acceso denegado — intento acceso a /${id} sin permisos`,SEC.currentUser?.email||'');
+    return;
+  }
+  if(id==='solicitud'&&SEC.currentUser?.role==='viewer'){
+    showToast('Sin permisos para crear solicitudes.','warning');return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  const page=document.getElementById('page-'+id);
+  if(page)page.classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-title').textContent=pageMap[id]||id;
+  document.getElementById('page-sub').textContent=subMap[id]||'';
+  if(id==='reportes')buildChart();
+  closeSearch();
+}
+
+// ============================================================
+// WIZARD
+// ============================================================
+function validateStep1(){
+  const origen=document.getElementById('s-origen').value;
+  const destino=document.getElementById('s-destino').value;
+  const pickup=document.getElementById('s-pickup-addr').value.trim();
+  const delivery=document.getElementById('s-delivery-addr').value.trim();
+  const date=document.getElementById('s-date').value;
+  const ruc=document.getElementById('s-ruc').value.trim();
+  if(!origen||origen.includes('Seleccione')){showToast('Selecciona la ciudad de origen','warning');return;}
+  if(!destino||destino.includes('Seleccione')){showToast('Selecciona la ciudad de destino','warning');return;}
+  if(origen===destino){showToast('Origen y destino no pueden ser la misma ciudad','warning');return;}
+  if(!pickup){showToast('Ingresa la dirección de recogida','warning');return;}
+  if(!delivery){showToast('Ingresa la dirección de entrega','warning');return;}
+  if(!date){showToast('Selecciona la fecha de recogida','warning');return;}
+  if(ruc&&!validateRUC(ruc)){showToast('El RUC debe tener 13 dígitos','warning');return;}
+  nextStep(2);
+}
+
+function nextStep(n){
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('step'+i);
+    if(el)el.style.display=i===n?'block':'none';
+  }
+  document.getElementById('step-success').style.display='none';
+  for(let i=1;i<=4;i++){
+    const c=document.getElementById('sc'+i);const l=document.getElementById('sl'+i);
+    if(c&&l){
+      c.className='step-circle'+(i<n?' done':i===n?' current':'');
+      l.className='step-label'+(i<n?' done':i===n?' current':'');
+      c.textContent=i<n?'✓':i;
+    }
+  }
+  if(n===3){
+    const o=document.getElementById('s-origen')?.value||'GYE';
+    const d=document.getElementById('s-destino')?.value||'UIO';
+    const p=document.getElementById('s-peso')?.value||'8';
+    const ct=document.getElementById('s-carga-tipo')?.value||'refrigerada';
+    document.getElementById('route-summary').textContent=`${o} → ${d}`;
+    document.getElementById('cargo-summary').textContent=`${p} ton ${ct}`;
+    document.getElementById('date-summary').textContent=document.getElementById('s-date')?.value||'07 Abr';
+  }
+  if(n===4){
+    const sel=document.querySelector('.provider-card.selected');
+    const o=document.getElementById('s-origen')?.value||'Guayaquil';
+    const d=document.getElementById('s-destino')?.value||'Quito';
+    const ct=document.getElementById('s-carga-tipo')?.value||'refrigerada';
+    const p=document.getElementById('s-peso')?.value||'8';
+    const dt=document.getElementById('s-date')?.value||'07 Abr 2026';
+    const pName=sel?.dataset.name||'FlotaEcu Logística';
+    const price=sel?.dataset.price||'$1,280';
+    const eta=sel?.dataset.eta||'6.5h';
+    document.getElementById('order-summary-box').innerHTML=`
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Resumen del pedido</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div style="color:var(--text-light)">Ruta</div><div style="font-weight:600">${sanitize(o)} → ${sanitize(d)}</div>
+        <div style="color:var(--text-light)">Proveedor</div><div style="font-weight:600">${sanitize(pName)}</div>
+        <div style="color:var(--text-light)">Carga</div><div style="font-weight:600">${sanitize(p)} ton · ${sanitize(ct)}</div>
+        <div style="color:var(--text-light)">Fecha recogida</div><div style="font-weight:600">${sanitize(dt)}</div>
+        <div style="color:var(--text-light)">Tiempo estimado</div><div style="font-weight:600">${sanitize(eta)}</div>
+        <div style="color:var(--text-light)">Costo estimado</div><div style="font-size:15px;font-weight:800;color:var(--navy-mid)">${sanitize(price)} + IVA</div>
+      </div>`;
+  }
+}
+
+function toggleTempField(){
+  const tipo=document.getElementById('s-carga-tipo').value;
+  document.getElementById('temp-field-wrap').style.display=(['refrigerada','peligrosa'].includes(tipo))?'grid':'none';
+}
+
+function selectProvider(card){
+  document.querySelectorAll('.provider-card').forEach(c=>{c.classList.remove('selected');c.querySelector('.sel-tag')?.remove();});
+  card.classList.add('selected');
+  const tag=document.createElement('div');tag.className='sel-tag';tag.style.cssText='margin-top:8px;font-size:10px;color:var(--green);font-weight:600';tag.textContent='✓ Seleccionado';
+  card.appendChild(tag);
+}
+
+let orderCounter=2053;
+function confirmOrder(){
+  const terms=document.getElementById('s-terms').checked;
+  if(!terms){showToast('Debes aceptar los Términos y Condiciones','warning');return;}
+  document.getElementById('step4').style.display='none';
+  const id='KP-'+(orderCounter++);
+  document.getElementById('new-order-id').textContent=id;
+  document.getElementById('step-success').style.display='block';
+  document.getElementById('pedidos-badge').textContent=parseInt(document.getElementById('pedidos-badge').textContent)+1;
+  showToast(`Pedido ${id} confirmado exitosamente`,'success');
+  addSecLog('📤',`Nuevo pedido creado — ${id}`,SEC.currentUser?.email+' · '+new Date().toLocaleTimeString());
+}
+
+function resetWizard(){document.getElementById('step-success').style.display='none';nextStep(1);}
+
+// ============================================================
+// ORDER MODAL
+// ============================================================
+function openOrderModal(id,route,provider,cargo,date,cost,status,pct){
+  document.getElementById('modal-order-id').textContent=sanitize(id);
+  document.getElementById('modal-order-route').textContent=sanitize(route)+' · '+sanitize(provider);
+  const color=status==='delivered'?'var(--green)':status==='transit'?'var(--cyan)':'var(--amber)';
+  const statusLabel=status==='delivered'?'Entregado':status==='transit'?'En tránsito':status==='new'?'Nuevo':'Pendiente';
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Carga</div><div style="font-size:13px;font-weight:600">${sanitize(cargo)}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Costo</div><div style="font-size:14px;font-weight:800;color:var(--navy-mid)">${sanitize(cost)}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Inicio</div><div style="font-size:13px;font-weight:600">${sanitize(date)}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:3px">Estado</div><div><span class="badge ${status==='delivered'?'badge-delivered':status==='transit'?'badge-transit':'badge-new'}">${statusLabel}</span></div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="font-weight:600">Progreso del envío</span><span style="color:${color};font-weight:700">${pct}% completado</span></div>
+      <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:10px">Línea de tiempo</div>
+      <div class="track-timeline">
+        <div class="track-step done"><div class="track-dot done">✓</div><div class="track-info"><div class="track-title">Pedido confirmado</div><div class="track-sub">Proveedor notificado</div><div class="track-time">${date} · 09:15h</div></div></div>
+        <div class="track-step ${pct>=20?'done':''}"><div class="track-dot ${pct>=20?'done':''}">✓</div><div class="track-info"><div class="track-title">Conductor asignado</div><div class="track-sub">Juan Ramírez · Placa GYE-1842</div><div class="track-time">${date} · 11:30h</div></div></div>
+        <div class="track-step ${pct>=40?'done':'active-step'}"><div class="track-dot ${pct>=40?'done':'active'}">→</div><div class="track-info"><div class="track-title">En camino</div><div class="track-sub">GPS activo y transmitiendo</div><div class="track-time">Hoy · 14:05h</div></div></div>
+        <div class="track-step"><div class="track-dot ${status==='delivered'?'done':''}">📍</div><div class="track-info"><div class="track-title">Entregado en destino</div><div class="track-sub">${status==='delivered'?'✓ Firma recibida':'Estimado hoy 18:45h'}</div></div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="copyTrackingLink('${sanitize(id)}')">🔗 Link tracking</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('order-modal')">Cerrar</button>
+      <button class="btn btn-ai btn-sm" onclick="closeModal('order-modal');setTimeout(()=>{openAI();setTimeout(()=>sendPrefilled('Analiza el pedido ${sanitize(id)}: ${sanitize(route)}, ${sanitize(cargo)}, ${pct}% completado. ¿Hay riesgos operativos?'),400)},200)">✦ Analizar con IA</button>
+    </div>`;
+  document.getElementById('order-modal').classList.add('show');
+}
+
+function editOrderModal(id){
+  showToast(`Abriendo editor para ${id}...`,'info');
+  // In production: open edit form
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+// ============================================================
+// PROVIDER PROFILE
+// ============================================================
+function showProviderProfile(name,initials,color='#0D1F6E'){
+  document.getElementById('prov-modal-name').textContent=sanitize(name);
+  document.getElementById('prov-modal-content').innerHTML=`
+    <div style="display:flex;gap:14px;margin-bottom:14px;align-items:center">
+      <div class="prov-avatar" style="width:52px;height:52px;font-size:18px;background:${color}">${sanitize(initials)}</div>
+      <div><div style="font-size:15px;font-weight:700">${sanitize(name)}</div><div class="stars" style="font-size:14px">★★★★★</div><div style="font-size:12px;color:var(--text-light)">4.9 · 312 operaciones</div></div>
+    </div>
+    <div class="grid2" style="gap:8px;margin-bottom:14px">
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">96.2%</div><div style="font-size:10px;color:var(--text-light)">OTIF histórico</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--navy-mid)">22</div><div style="font-size:10px;color:var(--text-light)">Vehículos</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--cyan)">6.5h</div><div style="font-size:10px;color:var(--text-light)">Tiempo prom. GYE→UIO</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--amber)">$1,240</div><div style="font-size:10px;color:var(--text-light)">Tarifa prom.</div></div>
+    </div>
+    <div style="margin-bottom:14px;font-size:12px">
+      <div style="font-weight:600;margin-bottom:8px">Calificaciones</div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light)"><span style="color:var(--text-mid)">Puntualidad</span><span style="color:var(--green);font-weight:600">★ 4.9</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light)"><span style="color:var(--text-mid)">Cuidado de la carga</span><span style="color:var(--green);font-weight:600">★ 5.0</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text-mid)">Comunicación</span><span style="color:var(--green);font-weight:600">★ 4.8</span></div>
+    </div>`;
+  document.getElementById('provider-modal').classList.add('show');
+}
+
+// ============================================================
+// PEDIDOS FILTER & SEARCH
+// ============================================================
+let currentFilter='activos';
+function filterPedidos(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.tab-group .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyPedidosFilter();
+}
+function searchPedidos(v){applyPedidosFilter();}
+function applyPedidosFilter(){
+  const search=document.getElementById('pedido-search')?.value.toLowerCase()||'';
+  const estado=document.getElementById('pedido-estado-filter')?.value||'';
+  let count=0;
+  document.querySelectorAll('.pedido-row').forEach(row=>{
+    const matchStatus=currentFilter==='todos'||row.dataset.status===currentFilter;
+    const matchSearch=!search||row.textContent.toLowerCase().includes(search);
+    const matchEstado=!estado||row.dataset.estado===estado;
+    const show=matchStatus&&matchSearch&&matchEstado;
+    row.style.display=show?'':'none';
+    if(show)count++;
+  });
+  const el=document.getElementById('pedidos-count');
+  if(el)el.textContent=`Mostrando ${count} pedido(s)`;
+}
+
+// ============================================================
+// SORT TABLE
+// ============================================================
+let sortState={};
+function sortTable(tableId,col){
+  const table=document.getElementById(tableId);
+  if(!table)return;
+  const key=tableId+'-'+col;
+  sortState[key]= sortState[key]==='asc'?'desc':'asc';
+  const rows=Array.from(table.tBodies[0].rows);
+  rows.sort((a,b)=>{
+    const av=a.cells[col]?.textContent.trim()||'';
+    const bv=b.cells[col]?.textContent.trim()||'';
+    return sortState[key]==='asc'?av.localeCompare(bv,undefined,{numeric:true}):bv.localeCompare(av,undefined,{numeric:true});
+  });
+  rows.forEach(r=>table.tBodies[0].appendChild(r));
+  table.querySelectorAll('th').forEach((th,i)=>{th.className=i===col?'sort-'+sortState[key]:'';});
+}
+
+// ============================================================
+// USERS
+// ============================================================
+function openAddUserModal(){document.getElementById('add-user-modal').classList.add('show');}
+function createUser(){
+  const name=sanitize(document.getElementById('new-user-name').value.trim());
+  const email=sanitize(document.getElementById('new-user-email').value.trim());
+  const role=document.getElementById('new-user-role').value;
+  if(!name||!email){showToast('Nombre y email son requeridos','warning');return;}
+  if(!validateEmail(email)){showToast('Email inválido','warning');return;}
+  const roleLabels={admin:'Administrador',manager:'Gerente',viewer:'Visualizador',driver:'Conductor'};
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const colors=['#EF4444','#00B8E0','#10B981','#F59E0B','#7C3AED'];
+  const bg=colors[Math.floor(Math.random()*colors.length)];
+  const tbody=document.getElementById('users-table-body');
+  const tr=document.createElement('tr');tr.className='user-row';
+  tr.innerHTML=`<td><div class="user-avatar-sm" style="background:${bg}">${initials}</div>${name}</td><td>${email}</td><td><span class="role-pill ${role}" style="font-size:10px;padding:3px 8px">${roleLabels[role]}</span></td><td>Ahora</td><td><span style="color:var(--amber)">⚠️ Pendiente</span></td><td><span class="badge badge-approved">Activo</span></td><td><button class="btn btn-ghost btn-xs">Editar</button></td>`;
+  tbody.appendChild(tr);
+  closeModal('add-user-modal');
+  showToast(`Usuario ${name} creado. Email de bienvenida enviado.`,'success');
+  addSecLog('🔐',`Nuevo usuario creado — ${email} (${roleLabels[role]})`,SEC.currentUser?.email||'');
+}
+function editUser(id){showToast(`Abriendo editor de usuario ${id}...`,'info');}
+function deactivateUser(name){
+  if(confirm(`¿Seguro deseas suspender a ${name}?`)){
+    showToast(`Usuario ${name} suspendido. Acceso revocado.`,'warning');
+    addSecLog('🚫',`Usuario suspendido — ${name}`,SEC.currentUser?.email||'');
+  }
+}
+
+// ============================================================
+// FILTER & EXPORT
+// ============================================================
+function openFilterModal(){document.getElementById('filter-modal').classList.add('show');}
+function applyFilter(){closeModal('filter-modal');showToast('Filtros aplicados','success');}
+function exportTable(){showToast('Exportando tabla a CSV con marca de auditoría...','success');addSecLog('📤','Exportación de datos','Tabla de pedidos · '+SEC.currentUser?.email);}
+function openInviteProvider(){document.getElementById('invite-provider-modal').classList.add('show');}
+function sendInvite(){closeModal('invite-provider-modal');showToast('Invitación enviada al proveedor por email','success');}
+
+// ============================================================
+// TRACKING LINK
+// ============================================================
+function copyTrackingLink(id){
+  const link=`https://kallpapro.ec/track/${sanitize(id)}`;
+  navigator.clipboard?.writeText(link).catch(()=>{});
+  showToast(`Link de tracking para ${id} copiado al portapapeles`,'info');
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+function toggleNotifs(){document.getElementById('notif-panel').classList.toggle('show');}
+function markAllRead(){
+  document.querySelectorAll('.notif-unread').forEach(d=>{d.style.background='var(--border)';});
+  document.getElementById('notif-dot').style.display='none';
+  showToast('Todas las notificaciones marcadas como leídas','info');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#notif-panel')&&!e.target.closest('#notif-btn'))document.getElementById('notif-panel')?.classList.remove('show');
+});
+
+// ============================================================
+// SEARCH
+// ============================================================
+function openSearch(){document.getElementById('search-overlay').classList.add('show');setTimeout(()=>document.getElementById('search-input').focus(),80);}
+function closeSearch(){document.getElementById('search-overlay').classList.remove('show');document.getElementById('search-input').value='';document.getElementById('search-results').innerHTML='<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar...</div>';}
+const searchData=[
+  {icon:'📦',label:'KP-2051',sub:'Guayaquil → Cuenca · En tránsito',fn:()=>openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Seca','05 Abr 2026','$1,240','transit',62)},
+  {icon:'📦',label:'KP-2050',sub:'Quito → Guayaquil · En tránsito',fn:()=>openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit',35)},
+  {icon:'📦',label:'KP-2049',sub:'Manta → Quito · Sin asignar',fn:()=>navigate('pedidos',document.getElementById('nav-pedidos'))},
+  {icon:'📦',label:'KP-2048',sub:'Guayaquil → Quito · Entregado',fn:()=>openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15t · General','03 Abr 2026','$2,100','delivered',100)},
+  {icon:'🚛',label:'FlotaEcu Logística',sub:'4.9★ · 96.2% OTIF',fn:()=>showProviderProfile('FlotaEcu Logística','FA')},
+  {icon:'🚛',label:'Transportes Andinos',sub:'4.7★ · 94.8% OTIF',fn:()=>showProviderProfile('Transportes Andinos','TA','#059669')},
+  {icon:'📊',label:'Dashboard',sub:'Resumen ejecutivo',fn:()=>navigate('dashboard',document.getElementById('nav-dashboard'))},
+  {icon:'🗺️',label:'Rutas en Vivo',sub:'Seguimiento GPS',fn:()=>navigate('rutas',document.getElementById('nav-rutas'))},
+  {icon:'📈',label:'Reportes & POV',sub:'Proof of Value',fn:()=>navigate('reportes',document.getElementById('nav-reportes'))},
+  {icon:'🛡️',label:'Centro de Seguridad',sub:'Auditoría y acceso',fn:()=>navigate('seguridad',document.getElementById('nav-seguridad'))},
+];
+function doSearch(q){
+  const r=document.getElementById('search-results');
+  if(!q){r.innerHTML='<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar...</div>';return;}
+  const hits=searchData.filter(d=>d.label.toLowerCase().includes(q.toLowerCase())||d.sub.toLowerCase().includes(q.toLowerCase()));
+  if(!hits.length){r.innerHTML=`<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Sin resultados para "${sanitize(q)}"</div>`;return;}
+  r.innerHTML=hits.map((d,i)=>`<div class="search-result-item" onclick="hits[${i}]?.fn();closeSearch()"><div class="search-result-icon" style="background:var(--bg)">${d.icon}</div><div><div style="font-weight:600;font-size:13px">${sanitize(d.label)}</div><div style="font-size:11px;color:var(--text-light)">${sanitize(d.sub)}</div></div></div>`).join('');
+  // Rebind functions in scope
+  r.querySelectorAll('.search-result-item').forEach((el,i)=>{el.onclick=()=>{hits[i].fn();closeSearch();};});
+}
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openSearch();}if(e.key==='Escape'){closeSearch();}});
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'✅',error:'❌',info:'ℹ️',warning:'⚠️'};
+  t.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span style="flex:1">${sanitize(msg)}</span><span style="cursor:pointer;color:var(--text-light);font-size:18px;line-height:1" onclick="this.parentElement.remove()">×</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-8px)';t.style.transition='all .3s';setTimeout(()=>t.remove(),300);},4500);
+}
+
+// ============================================================
+// SECURITY LOG (runtime in-memory)
+// ============================================================
+function addSecLog(icon,title,sub){
+  const log=document.getElementById('sec-log');
+  if(!log)return;
+  const div=document.createElement('div');div.className='sec-log-item';
+  div.innerHTML=`<div class="sec-log-icon" style="background:var(--bg)">${icon}</div><div><div style="font-size:12px;font-weight:600">${sanitize(title)}</div><div style="font-size:11px;color:var(--text-light)">${sanitize(sub)}</div></div>`;
+  log.insertBefore(div,log.firstChild);
+}
+
+// ============================================================
+// AI PANEL
+// ============================================================
+let aiOpen=false;
+function toggleAI(){aiOpen?closeAIPanel():openAI();}
+function openAI(){aiOpen=true;document.getElementById('ai-panel').classList.remove('closed');}
+function closeAIPanel(){aiOpen=false;document.getElementById('ai-panel').classList.add('closed');}
+function sendChip(msg){document.getElementById('ai-input').value=msg;sendMessage();}
+function sendPrefilled(msg){document.getElementById('ai-input').value=msg;sendMessage();}
+
+const SYSTEM_PROMPT=`Eres el asistente IA integrado en KallpaPro, plataforma logística B2B para Ecuador. Tu nombre es "Asistente KallpaPro IA".
+
+DATOS ACTUALES (Abril 2026):
+- GMV: $68,400 | Pedidos activos: 47 | OTIF: 94.7% | Ahorro vs mercado: $9,240
+- En tránsito: KP-2051 (GYE→Cuenca, 62%, ⚠️ temperatura 6°C), KP-2050 (UIO→GYE, 35%)
+- Pendiente sin asignar: KP-2049 (Manta→Quito)
+- Proveedores top: FlotaEcu (4.9★, 96.2%), Andinos (4.7★, 94.8%), Expresos Norte (4.5★, 93.1%)
+- SEGURIDAD: 12 intentos fallidos en 24h, sin incidentes activos, TLS 1.3 activo
+- Usuario actual: ${SEC.currentUser?.name||'María Correa'} (${SEC.currentUser?.role||'admin'})
+
+Responde en español, conciso (max 120 palabras), usa emojis ocasionalmente. Para análisis de riesgos, sé específico. Cuando menciones pedidos o proveedores, usa los datos reales.`;
+
+let chatHistory=[];
+async function sendMessage(){
+  const input=document.getElementById('ai-input');
+  const msg=input.value.trim();
+  if(!msg)return;
+  // Sanitize input before sending
+  const cleanMsg=sanitize(msg).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/&#x2F;/g,'/');
+  input.value='';
+  document.getElementById('ai-send-btn').disabled=true;
+  appendAIMsg(cleanMsg,'user');
+  const typing=appendTyping();
+  try{
+    chatHistory.push({role:'user',content:cleanMsg});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM_PROMPT,messages:chatHistory.slice(-12)})
+    });
+    const data=await res.json();
+    typing.remove();
+    const reply=data.content?.map(b=>b.text||'').join('')||'Error al procesar. Intenta de nuevo.';
+    appendAIMsg(reply,'ai');
+    chatHistory.push({role:'assistant',content:reply});
+  }catch(e){
+    typing.remove();
+    appendAIMsg('Error de conexión. Verifica e intenta de nuevo.','ai');
+  }
+  document.getElementById('ai-send-btn').disabled=false;
+}
+
+function appendAIMsg(text,role){
+  const c=document.getElementById('ai-messages');
+  const d=document.createElement('div');d.className='ai-msg'+(role==='user'?' user-msg':'');
+  const av=role==='ai'?'<div class="ai-msg-avatar" style="background:linear-gradient(135deg,#7C3AED,#00B8E0);color:#fff">✦</div>':'<div class="ai-msg-avatar" style="background:var(--cyan);color:#fff;font-size:10px;font-weight:700">'+(SEC.currentUser?.initials||'U')+'</div>';
+  d.innerHTML=av+`<div class="ai-bubble">${sanitize(text).replace(/\n/g,'<br>')}</div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;return d;
+}
+
+function appendTyping(){
+  const c=document.getElementById('ai-messages');
+  const d=document.createElement('div');d.className='ai-msg';
+  d.innerHTML='<div class="ai-msg-avatar" style="background:linear-gradient(135deg,#7C3AED,#00B8E0);color:#fff">✦</div><div class="ai-typing"><span></span><span></span><span></span></div>';
+  c.appendChild(d);c.scrollTop=c.scrollHeight;return d;
+}
+
+function aiSuggestProvider(){openAI();setTimeout(()=>sendPrefilled('Analiza los 3 proveedores disponibles para esta ruta refrigerada y recomiéndame el mejor con justificación detallada.'),300);}
+function aiGenerateReport(){openAI();setTimeout(()=>sendPrefilled('Genera un análisis ejecutivo del Proof of Value de Abril 2026: KPIs, tendencias, riesgos y 3 recomendaciones estratégicas.'),300);}
+
+// ============================================================
+// CHART
+// ============================================================
+function buildChart(){
+  const data=[{m:'Nov',g:42,p:31},{m:'Dic',g:38,p:28},{m:'Ene',g:51,p:39},{m:'Feb',g:55,p:42},{m:'Mar',g:61,p:44},{m:'Abr',g:68,p:47}];
+  const chart=document.getElementById('bar-chart');if(!chart)return;
+  const max=Math.max(...data.map(d=>d.g));
+  chart.innerHTML=data.map(d=>{
+    const hg=Math.round((d.g/max)*100),hp=Math.round((d.p/max)*100);
+    return`<div style="flex:1;display:flex;align-items:flex-end;gap:3px;justify-content:center">
+      <div class="bar" style="flex:1;height:${hg}%;background:var(--navy-mid);border-radius:4px 4px 0 0;position:relative" title="$${d.g}K GMV"><div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:var(--text-mid);white-space:nowrap">$${d.g}K</div><div style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-light)">${d.m}</div></div>
+      <div class="bar" style="flex:1;height:${hp}%;background:var(--cyan);border-radius:4px 4px 0 0;opacity:.7" title="${d.p} pedidos"></div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// PROVIDER FILTER
+// ============================================================
+function filterProviders(q){
+  document.querySelectorAll('#providers-grid .provider-card:not([style*="dashed"])').forEach(card=>{
+    const name=card.querySelector('.prov-name')?.textContent.toLowerCase()||'';
+    const type=card.querySelector('.prov-type')?.textContent.toLowerCase()||'';
+    card.style.display=(!q||name.includes(q.toLowerCase())||type.includes(q.toLowerCase()))?'':'none';
+  });
+}
+function filterProvidersType(type){filterProviders(type);}
+
+// ============================================================
+// INIT
+// ============================================================
+// Add shake class to login card for error
+document.querySelector('.login-card').id='login-card-inner';
+applyPedidosFilter();
+// Session expiry indicator
+setInterval(()=>{
+  if(SEC.currentUser&&SEC.sessionStart){
+    const rem=Math.max(0,SEC.sessionDuration-(Date.now()-SEC.sessionStart));
+    const mins=Math.floor(rem/60000);
+    const el=document.getElementById('sec-status-indicator');
+    if(el&&mins<30)el.title=`Sesión expira en ${mins} min`;
+  }
+},30000);
+</script>
+</body>
+</html>

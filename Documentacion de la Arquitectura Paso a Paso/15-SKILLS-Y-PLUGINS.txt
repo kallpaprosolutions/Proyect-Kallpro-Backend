@@ -1,0 +1,313 @@
+===============================================================================
+SKILLS Y PLUGINS REUTILIZABLES — KALLPAPRO
+Definiciones de skills para Claude reutilizables en otros proyectos ERP/SaaS.
+Cada skill incluye: trigger, descripción, pasos, código base, dependencias.
+===============================================================================
+
+
+================================================================================
+SKILL: erp-backend-setup
+Trigger: "configura backend ERP" | "setup express prisma JWT"
+Descripción: Configura un backend Express+TypeScript+Prisma+JWT multi-tenant desde cero.
+================================================================================
+
+CUANDO USAR: Al inicio de cualquier proyecto ERP/SaaS que necesite backend Node.js.
+
+PASOS:
+1. npm init -y
+2. npm install express cors dotenv @prisma/client bcryptjs jsonwebtoken zod
+3. npm install --save-dev typescript ts-node nodemon @types/node @types/express @types/cors @types/bcryptjs @types/jsonwebtoken prisma
+4. Crear tsconfig.json (module: CommonJS, esModuleInterop: true, skipLibCheck: true)
+5. npx prisma init
+6. Crear src/index.ts con Express, CORS, JSON parsing
+7. Crear src/middleware/auth.middleware.ts
+8. Crear modelos Prisma base: Company, User con companyId
+
+ESTRUCTURA BASE:
+  src/
+    index.ts
+    types/index.ts       (AuthPayload interface)
+    middleware/
+      auth.middleware.ts (export: authMiddleware)
+    routes/
+    controllers/
+    services/
+
+PATRON MULTI-TENANCY:
+  Todas las queries: where: { companyId: req.user.companyId }
+  authMiddleware extrae companyId del JWT y lo pone en req.user
+
+CODIGO BASE auth.middleware.ts:
+  import jwt from 'jsonwebtoken';
+  export const authMiddleware = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+      req.user = jwt.verify(token, process.env.JWT_SECRET);
+      next();
+    } catch {
+      res.status(401).json({ error: 'Token inválido' });
+    }
+  };
+
+DEPENDENCIAS CLAVE:
+  express, cors, dotenv, @prisma/client, bcryptjs, jsonwebtoken, zod
+  typescript, ts-node, nodemon, prisma
+
+
+================================================================================
+SKILL: jwt-auth-module
+Trigger: "implementa autenticación JWT" | "auth con refresh token" | "login multi-tenant"
+Descripción: Módulo completo de autenticación JWT con access+refresh tokens, multi-tenant.
+================================================================================
+
+CUANDO USAR: Cualquier proyecto que necesite login con JWT y múltiples empresas/tenants.
+
+PATRON:
+  POST /register → crea Tenant + User (rol ADMIN)
+  POST /login → bcrypt.compare → JWT access (15min) + refresh (7d)
+  POST /refresh → renueva access token
+  GET /me → datos del usuario autenticado
+
+CODIGO BASE auth.service.ts:
+  registerUser(): bcrypt.hash(password, 12), crea Company, crea User con companyId
+  loginUser(): findUnique por email, bcrypt.compare, jwt.sign con { userId, companyId, email, role }
+  Tokens: accessToken expira '15m', refreshToken expira '7d'
+
+FRONTEND — Axios auto-refresh:
+  interceptors.response: si 401 y !_retry → POST /auth/refresh → retry request original
+  Tokens guardados en localStorage: 'accessToken', 'refreshToken'
+
+ZUSTAND AUTH STORE:
+  accessToken (init desde localStorage), setAuth(), logout(), isAuthenticated()
+
+IMPORTANTE:
+  - El middleware se llama authMiddleware (no authenticate, no verifyToken)
+  - Exportar con nombre exacto para evitar el error "requires a middleware function"
+
+
+================================================================================
+SKILL: inventory-module
+Trigger: "crea módulo de inventario" | "kardex promedio ponderado" | "control de stock"
+Descripción: Módulo completo de inventario con kardex y costo promedio ponderado.
+================================================================================
+
+CUANDO USAR: ERPs con control de inventario físico.
+
+MODELOS PRISMA NECESARIOS:
+  Warehouse: id, companyId, name, isDefault, isActive
+  Product: id, companyId, name, sku?, avgCost Decimal(12,4), minStock
+  ProductStock: productId+warehouseId UNIQUE, quantity Decimal(12,4)
+  InventoryMovement: productId, warehouseId, type, quantity, unitCost, totalCost, avgCostAfter, stockAfter
+
+MOTOR PROMEDIO PONDERADO (registerMovement):
+  Entradas (IN/ADJUSTMENT_IN):
+    totalValue = currentQty * currentAvgCost + qty * unitCost
+    newQty = currentQty + qty
+    newAvgCost = newQty > 0 ? totalValue / newQty : unitCost
+  Salidas (OUT/ADJUSTMENT_OUT):
+    if (currentQty < qty) throw INSUFFICIENT_STOCK
+    newQty = currentQty - qty
+    newAvgCost = currentAvgCost  // no cambia
+
+  SIEMPRE en prisma.$transaction() → atomicidad garantizada
+  Upsert ProductStock + Update Product.avgCost en la misma transacción
+
+KPIs: totalProducts, totalValue (sum qty*avgCost), lowStockCount, zeroStockCount
+
+ENDPOINTS BASE:
+  GET/POST /warehouses
+  GET/POST /categories
+  GET/POST/PATCH /products
+  POST /movements
+  GET /products/:id/kardex
+  GET /kpis
+
+
+================================================================================
+SKILL: purchases-module
+Trigger: "módulo de compras" | "órdenes de compra" | "proveedores y OC"
+Descripción: Módulo de compras con proveedores, OC y recepción automática en inventario.
+================================================================================
+
+CUANDO USAR: ERPs con ciclo de compras (Proveedor → OC → Recepción → Inventario).
+
+MODELOS PRISMA:
+  Supplier: id, companyId, name, ruc? (importante para facturas electrónicas), email, phone
+  PurchaseOrder: id, companyId, supplierId, poNumber UNIQUE, status, totalAmount
+  POItem: poId, productId?, quantity, unitPrice, lineTotal, receivedQuantity
+
+FLUJO DE ESTADOS OC:
+  DRAFT → SUBMITTED → APPROVED → SENT → PARTIAL/RECEIVED | CANCELLED
+
+AUTO-NUMERACION:
+  const count = await prisma.purchaseOrder.count({ where: { companyId } });
+  poNumber = `OC-${String(count+1).padStart(4,'0')}`
+
+RECEPCION AUTOMATICA (receivePurchaseOrder):
+  Para cada item: registerMovement(IN, quantity, unitPrice, ref=poNumber)
+  Actualizar receivedQuantity en POItem
+  Status OC → RECEIVED
+
+INTEGRACION CON FACTURAS ELECTRONICAS:
+  Supplier.ruc se usa para matching automático al importar facturas SRI
+  Asegurarse de registrar el RUC del proveedor al crearlo
+
+
+================================================================================
+SKILL: financial-module
+Trigger: "módulo financiero" | "facturas y cuentas por cobrar" | "KPIs financieros"
+Descripción: Módulo de facturas internas ERP con KPIs de CxC/CxP.
+================================================================================
+
+CUANDO USAR: ERPs que necesiten tracking de facturas, cuentas por cobrar y pagar.
+
+MODELOS PRISMA:
+  Invoice: id, companyId, number UNIQUE, type (SALES/PURCHASE), status, totalAmount, paidAmount
+  InvoiceItem: invoiceId, description, quantity, unitPrice, lineTotal
+
+TIPOS Y PREFIJOS:
+  SALES   → FAC-0001 (cuentas por cobrar)
+  PURCHASE → OCP-0001 (cuentas por pagar)
+
+ESTADOS: DRAFT → SENT → PAID | OVERDUE | CANCELLED
+
+KPIs FINANCIEROS:
+  accountsReceivable = totalSales - totalCollected
+  accountsPayable = totalPurchases - totalPaid
+  overdueReceivable = sum(invoices con dueDate < hoy y no PAID)
+  netCashFlow = totalCollected - totalPaid
+
+DIFERENCIA CON FACTURAS ELECTRONICAS:
+  Invoice = documento interno del ERP, sin validez tributaria
+  SriDocument = factura real del SRI Ecuador, con clave de acceso 49 dígitos
+
+
+================================================================================
+SKILL: sri-invoice-parser
+Trigger: "parsear factura SRI" | "procesar RIDE Ecuador" | "importar factura electrónica Ecuador"
+Descripción: Parser de facturas electrónicas SRI Ecuador (PDF RIDE + XML nativo).
+================================================================================
+
+CUANDO USAR: Cualquier sistema contable/ERP ecuatoriano que importe facturas del SRI.
+
+DEPENDENCIAS CRITICAS:
+  pdf-parse@1.1.1   ← OBLIGATORIO esta versión. v2.x incompatible.
+  xml2js            ← para XML nativo SRI
+
+PROBLEMA TWO-COLUMN PDF:
+  Los RIDE PDF tienen layout de dos columnas. pdf-parse extrae texto lineal,
+  separando etiquetas de valores. Regex tradicional falla.
+
+  SOLUCION — nextNumber(label, maxChars=80):
+    const idx = text.search(new RegExp(label, 'i'));
+    const slice = text.substring(idx + label.length, idx + label.length + maxChars);
+    return parseFloat(slice.match(/([\d,]+\.\d{2})/)?.[1].replace(/,/g,'') ?? '0');
+
+ESTRUCTURA CLAVE ACCESO (49 digitos):
+  [0-8]  = fecha ddmmaaaa
+  [8-10] = tipo (01=Factura, 04=NotaCredito, 05=NotaDebito, 07=Retencion)
+  [10-23]= RUC emisor (13 digitos)
+  [23]   = ambiente (1=Pruebas, 2=Produccion)
+  [24-27]= establecimiento
+  [27-30]= punto de emision
+  [30-39]= secuencial (9 digitos)
+  [39-47]= codigo numerico
+  [47]   = tipo emision
+  [48]   = digito verificador (Modulo 11)
+
+MAPEO CODIGOS IVA (XML):
+  codigoPorcentaje: 0→0%, 2→12%, 5→15%, 7→8%, 4→NO_OBJETO, 6→EXENTO
+
+NODOS RAIZ XML (variables por tipo):
+  factura, notaCredito, notaDebito, liquidacionCompra, comprobanteRetencion
+
+FLUJO COMPLETO:
+  1. multer memoryStorage (no guardar en disco)
+  2. parse PDF/XML → SriParsedDocument
+  3. check @@unique[companyId, claveAcceso] (prevenir duplicados)
+  4. buscar Supplier por rucEmisor
+  5. findMatchingPO() con confidence score
+  6. crear SriDocument + SriDocumentItem[]
+  7. usuario revisa → confirmar → registerMovement(IN) por ítem PRODUCTO
+
+
+================================================================================
+SKILL: docker-postgres-setup
+Trigger: "configura PostgreSQL Docker" | "base de datos Docker Windows" | "setup DB desarrollo"
+Descripción: Configura PostgreSQL 15 en Docker para desarrollo en Windows.
+================================================================================
+
+CUANDO USAR: Cualquier proyecto que use PostgreSQL en Windows con Docker.
+
+PROBLEMA COMUN: Windows instala PostgreSQL localmente y ocupa el puerto 5432.
+
+SOLUCION:
+  # Detener PostgreSQL local (ejecutar cada inicio si no desactivado)
+  Stop-Service -Name "postgresql*" -Force
+
+  # Desactivar inicio automatico (hacer UNA SOLA VEZ)
+  Set-Service -Name "postgresql*" -StartupType Disabled
+
+  # Crear contenedor (PRIMERA VEZ)
+  docker run --name nombre-proyecto-db \
+    -e POSTGRES_PASSWORD=postgres \
+    -e POSTGRES_DB=nombre_bd \
+    -p 5432:5432 \
+    -d postgres:15
+
+  # Iniciar contenedor existente
+  docker start nombre-proyecto-db
+
+  # Verificar
+  docker ps  # debe mostrar 0.0.0.0:5432->5432/tcp
+
+DESPUES DE CREAR CONTENEDOR:
+  npx prisma migrate dev --name init    (primera vez, crea tablas)
+  npx prisma migrate deploy             (en migraciones, no modifica historial)
+
+SI SE PIERDE EL CONTENEDOR (Docker reinstalado):
+  1. Recrear con docker run (mismo comando de arriba)
+  2. npx prisma migrate deploy (restaura schema, datos se pierden)
+  3. Re-ejecutar seeds
+
+STRING DE CONEXION:
+  postgresql://postgres:postgres@127.0.0.1:5432/nombre_bd
+  NOTA: usar 127.0.0.1 en lugar de localhost evita problemas de resolución IPv6
+
+
+================================================================================
+SKILL: vite-react-ts-setup
+Trigger: "configura frontend Vite React TypeScript" | "setup SPA dark mode"
+Descripción: Configura un frontend React+TypeScript+Vite+Tailwind con dark mode y Axios.
+================================================================================
+
+CUANDO USAR: Cualquier SPA que consuma una API REST con JWT.
+
+SETUP:
+  npm create vite@latest nombre-frontend -- --template react-ts
+  cd nombre-frontend && npm install
+  npm install react-router-dom zustand axios zod
+  npm install -D tailwindcss postcss autoprefixer
+  npx tailwindcss init -p
+
+VITE CONFIG (proxy API):
+  server: { port: 3000, proxy: { '/api': { target: 'http://localhost:5000', changeOrigin: true } } }
+
+CLIENTE AXIOS CON AUTO-REFRESH:
+  const client = axios.create({ baseURL: '/api' });
+  // REQUEST: agrega Bearer token desde localStorage
+  // RESPONSE: si 401 → refresh → retry, si falla → redirect /login
+
+ZUSTAND AUTH STORE:
+  accessToken (init desde localStorage.getItem('accessToken'))
+  setAuth(user, access, refresh), logout(), isAuthenticated()
+
+TEMA DARK MODE TAILWIND:
+  Fondo: gray-950, Cards: gray-900, Inputs: gray-800
+  Texto: white/gray-400, Acentos: cyan-400/600
+  Éxito: green-400, Error: red-400, Warning: yellow-400
+
+PROTECTED ROUTE PATTERN:
+  const isAuth = useAuthStore(s => s.isAuthenticated());
+  return isAuth ? <>{children}</> : <Navigate to="/login" replace />;

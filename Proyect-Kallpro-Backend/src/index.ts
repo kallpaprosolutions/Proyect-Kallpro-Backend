@@ -1,64 +1,34 @@
-import express, { Express, Request, Response } from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import { createServer } from 'http';
+import app from './app';
+import { crmWS } from './services/websocket/crmChannel';
+import { startCrmRouterWorker } from './jobs/crm-router.worker';
+import { startCrmWorkflowsWorker } from './jobs/crm-workflows.worker';
+import { startExpireQuotationsJob } from './jobs/expireQuotations';
+import { startDunningJob } from './jobs/dunning.job';
+import { initDocumentSequences } from './lib/init-sequences';
+import { logger } from './lib/logger';
 
-dotenv.config();
+const httpServer = createServer(app);
+const PORT = process.env.PORT || 5001;
 
-const app: Express = express();
-const PORT = process.env.PORT || 5000;
+// Start
+httpServer.listen(PORT, () => {
+  logger.info(`🚀 KallpaPro Backend running on port ${PORT}`);
+  logger.info(`📝 Health check: http://localhost:${PORT}/health`);
+  logger.info(`🔗 API: http://localhost:${PORT}/api`);
+  logger.info(`🔌 WebSocket CRM: ws://localhost:${PORT}/ws/crm`);
 
-// Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  // Initialize WebSocket
+  crmWS.initialize(httpServer);
 
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    service: 'KallpaPro Backend',
-    version: '0.1.0',
-  });
-});
+  // Start background workers
+  startCrmRouterWorker().catch((e) => logger.error('startCrmRouterWorker falló', { err: e }));
+  startCrmWorkflowsWorker().catch((e) => logger.error('startCrmWorkflowsWorker falló', { err: e }));
 
-// API Routes (to be implemented)
-app.get('/api', (_req: Request, res: Response) => {
-  res.json({
-    message: 'Welcome to KallpaPro API v1',
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      inventory: '/api/inventory',
-      purchases: '/api/purchases',
-      logistics: '/api/logistics',
-      financials: '/api/financials',
-      sales: '/api/sales',
-      subscriptions: '/api/subscriptions',
-    },
-  });
-});
+  // Auto-seed de correlativos si la tabla está vacía (no rompe el arranque si falla)
+  initDocumentSequences().catch((e) => logger.warn('[init-sequences] auto-seed falló (no-fatal)', { err: e }));
 
-// 404 handler
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: 'The requested resource was not found',
-  });
-});
-
-// Error handler (simple for now)
-app.use((err: any, _req: Request, res: Response) => {
-  console.error(err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
-  });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 KallpaPro Backend running on port ${PORT}`);
-  console.log(`📝 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 API: http://localhost:${PORT}/api`);
+  // Job: expiración diaria de cotizaciones de venta
+  startExpireQuotationsJob();
+  startDunningJob();
 });

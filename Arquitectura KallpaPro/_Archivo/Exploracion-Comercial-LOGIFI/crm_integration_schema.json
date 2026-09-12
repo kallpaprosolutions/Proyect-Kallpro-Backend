@@ -1,0 +1,744 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LOGIFI CRM Integration Schema",
+  "version": "1.0.0",
+  "description": "Esquema completo del módulo CRM + Agentes IA para LOGIFI ERP. Incluye tablas PostgreSQL, endpoints REST, WebSocket channels, webhooks de Unipile, configuración de agentes IA y permisos RBAC.",
+  "module": "crm",
+  "depends_on": ["core.users", "core.companies", "compras", "inventario"],
+
+  "database": {
+    "schema_name": "crm",
+    "tables": {
+
+      "contacts": {
+        "description": "Contactos individuales (personas) en empresas cliente o prospect",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "company_id":       { "type": "uuid", "fk": "crm.companies.id", "nullable": true },
+          "first_name":       { "type": "varchar(120)", "not_null": true },
+          "last_name":        { "type": "varchar(120)" },
+          "title":            { "type": "varchar(160)", "comment": "Cargo: Director Compras, CFO, etc." },
+          "email":            { "type": "varchar(255)" },
+          "phone_e164":       { "type": "varchar(20)", "comment": "Formato +593xxxxxxxxx" },
+          "whatsapp_id":      { "type": "varchar(64)", "comment": "WA ID retornado por Unipile" },
+          "telegram_id":      { "type": "varchar(64)" },
+          "linkedin_url":     { "type": "varchar(255)" },
+          "preferred_channel":{ "type": "varchar(20)", "check": "preferred_channel IN ('whatsapp','telegram','gmail','linkedin','any')" },
+          "language":         { "type": "varchar(8)", "default": "'es-EC'" },
+          "timezone":         { "type": "varchar(64)", "default": "'America/Guayaquil'" },
+          "lead_score":       { "type": "smallint", "default": 0, "check": "lead_score BETWEEN 0 AND 100" },
+          "lead_temperature": { "type": "varchar(10)", "check": "lead_temperature IN ('cold','warm','hot')" },
+          "owner_user_id":    { "type": "uuid", "fk": "core.users.id", "comment": "Vendedor humano asignado" },
+          "tags":             { "type": "text[]" },
+          "custom_fields":    { "type": "jsonb", "default": "'{}'" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_contacts_company", "columns": ["company_id"] },
+          { "name": "idx_contacts_email", "columns": ["email"] },
+          { "name": "idx_contacts_score", "columns": ["lead_score DESC"] },
+          { "name": "idx_contacts_owner", "columns": ["owner_user_id"] }
+        ]
+      },
+
+      "companies": {
+        "description": "Empresas (cuentas B2B). Pueden ser leads, prospects, clientes activos o churned.",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "ruc":              { "type": "varchar(13)", "unique": true, "comment": "RUC Ecuador 13 dígitos" },
+          "legal_name":       { "type": "varchar(255)", "not_null": true },
+          "trade_name":       { "type": "varchar(255)" },
+          "industry":         { "type": "varchar(80)", "comment": "Construcción, minería, agro, retail" },
+          "ciiu_code":        { "type": "varchar(10)", "comment": "Código CIIU Ecuador" },
+          "size":             { "type": "varchar(20)", "check": "size IN ('micro','small','medium','large','enterprise')" },
+          "employees_est":    { "type": "integer" },
+          "revenue_est_usd":  { "type": "numeric(14,2)", "comment": "Facturación anual estimada USD" },
+          "country":          { "type": "varchar(2)", "default": "'EC'" },
+          "city":             { "type": "varchar(120)" },
+          "address":          { "type": "text" },
+          "website":          { "type": "varchar(255)" },
+          "linkedin_url":     { "type": "varchar(255)" },
+          "lifecycle_stage":  { "type": "varchar(30)", "check": "lifecycle_stage IN ('lead','mql','sql','opportunity','customer','churned','disqualified')" },
+          "owner_user_id":    { "type": "uuid", "fk": "core.users.id" },
+          "enriched_at":      { "type": "timestamptz", "comment": "Última vez que Researcher actualizó datos" },
+          "enriched_data":    { "type": "jsonb", "comment": "Datos enriquecidos por Iván · Researcher" },
+          "buying_signals":   { "type": "jsonb", "default": "'[]'", "comment": "Array de signals detectados" },
+          "tags":             { "type": "text[]" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_companies_ruc", "columns": ["ruc"] },
+          { "name": "idx_companies_lifecycle", "columns": ["lifecycle_stage"] },
+          { "name": "idx_companies_industry", "columns": ["industry"] }
+        ]
+      },
+
+      "deals": {
+        "description": "Oportunidades de venta. Cada deal vive en una etapa del pipeline.",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "deal_number":      { "type": "varchar(20)", "unique": true, "comment": "DEAL-2026-00001" },
+          "company_id":       { "type": "uuid", "fk": "crm.companies.id", "not_null": true },
+          "primary_contact_id":{ "type": "uuid", "fk": "crm.contacts.id" },
+          "name":             { "type": "varchar(255)", "not_null": true },
+          "description":      { "type": "text" },
+          "stage":            { "type": "varchar(30)", "not_null": true, "check": "stage IN ('lead','qualified','meeting','proposal','negotiation','won','lost')" },
+          "amount_usd":       { "type": "numeric(14,2)" },
+          "probability":      { "type": "smallint", "default": 0, "check": "probability BETWEEN 0 AND 100" },
+          "weighted_amount":  { "type": "numeric(14,2)", "computed": "amount_usd * probability / 100" },
+          "expected_close_date":{ "type": "date" },
+          "actual_close_date":{ "type": "date" },
+          "products":         { "type": "jsonb", "comment": "Array de módulos LOGIFI cotizados" },
+          "loss_reason":      { "type": "varchar(80)", "comment": "Si stage=lost" },
+          "competitor":       { "type": "varchar(160)" },
+          "owner_user_id":    { "type": "uuid", "fk": "core.users.id" },
+          "ai_agent_assigned":{ "type": "varchar(40)", "comment": "router|sdr|researcher|copywriter|closer|success" },
+          "autonomy_mode":    { "type": "varchar(20)", "check": "autonomy_mode IN ('autopilot','setter_closer','semi_assisted','manual')" },
+          "ai_score":         { "type": "smallint", "comment": "Score IA del deal 0-100" },
+          "forecast_category":{ "type": "varchar(20)", "check": "forecast_category IN ('committed','likely','possible','long_shot','omitted')" },
+          "tags":             { "type": "text[]" },
+          "custom_fields":    { "type": "jsonb", "default": "'{}'" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_deals_stage", "columns": ["stage"] },
+          { "name": "idx_deals_company", "columns": ["company_id"] },
+          { "name": "idx_deals_owner", "columns": ["owner_user_id"] },
+          { "name": "idx_deals_close", "columns": ["expected_close_date"] }
+        ]
+      },
+
+      "deal_stage_history": {
+        "description": "Historial de cambios de etapa para análisis de velocity",
+        "primary_key": "id",
+        "columns": {
+          "id":             { "type": "uuid", "default": "gen_random_uuid()" },
+          "deal_id":        { "type": "uuid", "fk": "crm.deals.id", "on_delete": "CASCADE" },
+          "from_stage":     { "type": "varchar(30)" },
+          "to_stage":       { "type": "varchar(30)" },
+          "changed_by":     { "type": "uuid", "fk": "core.users.id", "comment": "NULL si fue agente IA" },
+          "ai_agent":       { "type": "varchar(40)" },
+          "reason":         { "type": "text" },
+          "duration_seconds":{ "type": "integer", "comment": "Tiempo en la etapa anterior" },
+          "changed_at":     { "type": "timestamptz", "default": "NOW()" }
+        }
+      },
+
+      "conversations": {
+        "description": "Hilos de conversación. Cada hilo agrupa mensajes de un mismo contacto en un canal.",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "unipile_chat_id":  { "type": "varchar(128)", "unique": true, "comment": "ID del chat retornado por Unipile" },
+          "channel":          { "type": "varchar(20)", "not_null": true, "check": "channel IN ('whatsapp','telegram','gmail','linkedin','sms','call')" },
+          "contact_id":       { "type": "uuid", "fk": "crm.contacts.id" },
+          "company_id":       { "type": "uuid", "fk": "crm.companies.id" },
+          "deal_id":          { "type": "uuid", "fk": "crm.deals.id", "nullable": true },
+          "subject":          { "type": "varchar(500)", "comment": "Subject email o tema WA" },
+          "status":           { "type": "varchar(20)", "default": "'open'", "check": "status IN ('open','snoozed','closed','spam')" },
+          "owner_user_id":    { "type": "uuid", "fk": "core.users.id", "comment": "Humano responsable" },
+          "ai_handling":      { "type": "boolean", "default": false, "comment": "True si IA está respondiendo en autopilot" },
+          "ai_agent_active":  { "type": "varchar(40)" },
+          "last_message_at":  { "type": "timestamptz" },
+          "last_inbound_at":  { "type": "timestamptz" },
+          "last_outbound_at": { "type": "timestamptz" },
+          "unread_count":     { "type": "integer", "default": 0 },
+          "service_window_expires_at":{ "type": "timestamptz", "comment": "Solo WA: cuando vence ventana 24h gratis" },
+          "sentiment_avg":    { "type": "numeric(3,2)", "check": "sentiment_avg BETWEEN -1 AND 1" },
+          "tags":             { "type": "text[]" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_conversations_contact", "columns": ["contact_id"] },
+          { "name": "idx_conversations_deal", "columns": ["deal_id"] },
+          { "name": "idx_conversations_unipile", "columns": ["unipile_chat_id"] },
+          { "name": "idx_conversations_status", "columns": ["status", "last_message_at DESC"] }
+        ]
+      },
+
+      "messages": {
+        "description": "Mensajes individuales dentro de conversaciones",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "conversation_id":  { "type": "uuid", "fk": "crm.conversations.id", "on_delete": "CASCADE" },
+          "unipile_message_id":{ "type": "varchar(128)", "unique": true },
+          "direction":        { "type": "varchar(10)", "not_null": true, "check": "direction IN ('inbound','outbound')" },
+          "sender_type":      { "type": "varchar(20)", "check": "sender_type IN ('contact','user','ai_agent','system')" },
+          "sender_id":        { "type": "uuid", "comment": "user_id o contact_id según sender_type" },
+          "ai_agent":         { "type": "varchar(40)", "comment": "router|sdr|researcher|...; NULL si humano" },
+          "body_text":        { "type": "text" },
+          "body_html":        { "type": "text" },
+          "attachments":      { "type": "jsonb", "default": "'[]'", "comment": "[{name,url,mime,size_bytes}]" },
+          "template_id":      { "type": "varchar(80)", "comment": "Si fue template WA aprobado" },
+          "template_params":  { "type": "jsonb" },
+          "status":           { "type": "varchar(20)", "check": "status IN ('queued','sent','delivered','read','failed','spam')" },
+          "delivery_error":   { "type": "text" },
+          "sentiment":        { "type": "numeric(3,2)", "check": "sentiment BETWEEN -1 AND 1" },
+          "intent":           { "type": "varchar(40)", "comment": "question|objection|interest|commitment|complaint|other" },
+          "tokens_used":      { "type": "integer", "comment": "Si fue generado por IA" },
+          "cost_usd":         { "type": "numeric(8,5)", "comment": "Costo del envío + IA" },
+          "sent_at":          { "type": "timestamptz" },
+          "delivered_at":     { "type": "timestamptz" },
+          "read_at":          { "type": "timestamptz" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_messages_conversation", "columns": ["conversation_id", "created_at DESC"] },
+          { "name": "idx_messages_unipile", "columns": ["unipile_message_id"] },
+          { "name": "idx_messages_direction", "columns": ["direction", "created_at DESC"] }
+        ]
+      },
+
+      "agents": {
+        "description": "Configuración de los 6 agentes IA del sistema multi-agente",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "code":             { "type": "varchar(40)", "unique": true, "not_null": true, "comment": "router|sdr|researcher|copywriter|closer|success" },
+          "name":             { "type": "varchar(120)", "not_null": true, "comment": "Sofía · SDR" },
+          "role_label":       { "type": "varchar(160)", "comment": "Cualificador · agenda meetings" },
+          "system_prompt":    { "type": "text", "not_null": true, "comment": "System prompt en español del agente" },
+          "model":            { "type": "varchar(60)", "default": "'claude-sonnet-4-20250514'" },
+          "max_tokens":       { "type": "integer", "default": 1500 },
+          "temperature":      { "type": "numeric(3,2)", "default": 0.4 },
+          "tools":            { "type": "jsonb", "comment": "Array de tool definitions (function calling)" },
+          "autonomy_default": { "type": "varchar(20)", "default": "'semi_assisted'" },
+          "active":           { "type": "boolean", "default": true },
+          "metrics":          { "type": "jsonb", "default": "'{}'", "comment": "Métricas agregadas: routes, conv_rate, etc." },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "seed_data": [
+          { "code": "router", "name": "Router", "role_label": "Orquestador maestro", "autonomy_default": "autopilot" },
+          { "code": "sdr", "name": "Sofía · SDR", "role_label": "Cualificador · agenda meetings", "autonomy_default": "autopilot" },
+          { "code": "researcher", "name": "Iván · Researcher", "role_label": "Inteligencia comercial", "autonomy_default": "autopilot" },
+          { "code": "copywriter", "name": "Camila · Copywriter", "role_label": "Propuestas + outbound", "autonomy_default": "semi_assisted" },
+          { "code": "closer", "name": "Andrés · Closer", "role_label": "Negociación · cierre", "autonomy_default": "setter_closer" },
+          { "code": "success", "name": "Lucía · Success", "role_label": "Post-venta · retención", "autonomy_default": "autopilot" }
+        ]
+      },
+
+      "agent_runs": {
+        "description": "Log de cada invocación de un agente IA. Crítico para auditoría y mejora continua.",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "agent_code":       { "type": "varchar(40)", "fk": "crm.agents.code" },
+          "trigger_type":     { "type": "varchar(40)", "comment": "inbound_message|workflow|manual|delegation" },
+          "trigger_id":       { "type": "uuid", "comment": "ID del mensaje, workflow run, etc." },
+          "conversation_id":  { "type": "uuid", "fk": "crm.conversations.id" },
+          "deal_id":          { "type": "uuid", "fk": "crm.deals.id" },
+          "input_context":    { "type": "jsonb", "comment": "Contexto pasado al agente" },
+          "output":           { "type": "jsonb", "comment": "Respuesta del agente (incluye tool calls)" },
+          "tools_called":     { "type": "text[]", "comment": "Lista de tools invocados" },
+          "tokens_input":     { "type": "integer" },
+          "tokens_output":    { "type": "integer" },
+          "cost_usd":         { "type": "numeric(8,5)" },
+          "latency_ms":       { "type": "integer" },
+          "status":           { "type": "varchar(20)", "check": "status IN ('success','failed','escalated','rejected_by_human')" },
+          "error":            { "type": "text" },
+          "approved_by":      { "type": "uuid", "fk": "core.users.id", "comment": "Si autonomy_mode=semi_assisted" },
+          "approved_at":      { "type": "timestamptz" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" }
+        },
+        "indexes": [
+          { "name": "idx_agent_runs_agent", "columns": ["agent_code", "created_at DESC"] },
+          { "name": "idx_agent_runs_conv", "columns": ["conversation_id"] },
+          { "name": "idx_agent_runs_deal", "columns": ["deal_id"] }
+        ]
+      },
+
+      "workflows": {
+        "description": "Definiciones de automatizaciones (visual workflows)",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "name":             { "type": "varchar(160)", "not_null": true },
+          "description":      { "type": "text" },
+          "trigger":          { "type": "jsonb", "not_null": true, "comment": "{type, conditions}" },
+          "steps":            { "type": "jsonb", "not_null": true, "comment": "Array ordenado de steps" },
+          "enabled":          { "type": "boolean", "default": true },
+          "created_by":       { "type": "uuid", "fk": "core.users.id" },
+          "stats":            { "type": "jsonb", "default": "'{}'", "comment": "{triggers, completions, conversion_rate}" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" },
+          "updated_at":       { "type": "timestamptz", "default": "NOW()" }
+        }
+      },
+
+      "workflow_runs": {
+        "description": "Ejecuciones individuales de workflows",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "workflow_id":      { "type": "uuid", "fk": "crm.workflows.id" },
+          "subject_type":     { "type": "varchar(40)", "comment": "deal|contact|company|conversation" },
+          "subject_id":       { "type": "uuid" },
+          "current_step":     { "type": "integer", "default": 0 },
+          "status":           { "type": "varchar(20)", "check": "status IN ('running','paused','completed','failed','cancelled')" },
+          "step_results":     { "type": "jsonb", "default": "'[]'" },
+          "next_run_at":      { "type": "timestamptz", "comment": "Para steps con delay" },
+          "started_at":       { "type": "timestamptz", "default": "NOW()" },
+          "completed_at":     { "type": "timestamptz" }
+        },
+        "indexes": [
+          { "name": "idx_wf_runs_next", "columns": ["next_run_at"], "where": "status = 'running'" }
+        ]
+      },
+
+      "calls_transcripts": {
+        "description": "Transcripciones de llamadas Zoom/Meet/WA con sentiment, objeciones y action items",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "deal_id":          { "type": "uuid", "fk": "crm.deals.id" },
+          "conversation_id":  { "type": "uuid", "fk": "crm.conversations.id" },
+          "source":           { "type": "varchar(40)", "comment": "zoom|google_meet|whatsapp_call|teams|other" },
+          "external_id":      { "type": "varchar(160)", "comment": "Meeting ID externo" },
+          "started_at":       { "type": "timestamptz" },
+          "duration_seconds": { "type": "integer" },
+          "participants":     { "type": "jsonb", "comment": "[{name, email, role}]" },
+          "audio_url":        { "type": "varchar(500)" },
+          "transcript_text":  { "type": "text", "comment": "Transcripción full" },
+          "transcript_segments":{ "type": "jsonb", "comment": "[{speaker, ts_start, ts_end, text, sentiment}]" },
+          "sentiment_avg":    { "type": "numeric(3,2)" },
+          "topics":           { "type": "jsonb", "comment": "[{topic, mentions, importance}]" },
+          "objections":       { "type": "jsonb", "comment": "[{ts, text, type, resolved}]" },
+          "commitments":      { "type": "jsonb", "comment": "[{ts, text, party, deadline}]" },
+          "action_items":     { "type": "jsonb", "comment": "[{text, owner, due_at, done}]" },
+          "summary":          { "type": "text", "comment": "Resumen ejecutivo IA" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" }
+        }
+      },
+
+      "lead_scores": {
+        "description": "Histórico de scores. Score actual está en contacts.lead_score",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "contact_id":       { "type": "uuid", "fk": "crm.contacts.id" },
+          "score":            { "type": "smallint", "check": "score BETWEEN 0 AND 100" },
+          "score_breakdown":  { "type": "jsonb", "comment": "{bant: 24, fit: 18, intent: 28, behavior: 22}" },
+          "calculated_by":    { "type": "varchar(40)", "comment": "router|analyst|manual" },
+          "calculated_at":    { "type": "timestamptz", "default": "NOW()" }
+        }
+      },
+
+      "forecasts": {
+        "description": "Snapshots de forecasting IA por período",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "period_start":     { "type": "date", "not_null": true },
+          "period_end":       { "type": "date", "not_null": true },
+          "snapshot_at":      { "type": "timestamptz", "default": "NOW()" },
+          "committed_usd":    { "type": "numeric(14,2)" },
+          "likely_usd":       { "type": "numeric(14,2)" },
+          "possible_usd":     { "type": "numeric(14,2)" },
+          "long_shot_usd":    { "type": "numeric(14,2)" },
+          "total_usd":        { "type": "numeric(14,2)" },
+          "confidence_pct":   { "type": "smallint" },
+          "model_version":    { "type": "varchar(40)" },
+          "deals_breakdown":  { "type": "jsonb", "comment": "Top deals que mueven el forecast" },
+          "risks":            { "type": "jsonb", "comment": "Riesgos detectados por IA" }
+        }
+      },
+
+      "templates": {
+        "description": "Plantillas de mensajes (WA aprobados, email, telegram)",
+        "primary_key": "id",
+        "columns": {
+          "id":               { "type": "uuid", "default": "gen_random_uuid()" },
+          "name":             { "type": "varchar(120)", "not_null": true },
+          "channel":          { "type": "varchar(20)", "not_null": true },
+          "category":         { "type": "varchar(40)", "comment": "marketing|utility|authentication|service" },
+          "language":         { "type": "varchar(8)", "default": "'es-EC'" },
+          "subject":          { "type": "varchar(255)" },
+          "body":             { "type": "text", "not_null": true },
+          "variables":        { "type": "jsonb", "comment": "[{name, required, default}]" },
+          "wa_template_id":   { "type": "varchar(80)", "comment": "ID retornado por Meta" },
+          "wa_status":        { "type": "varchar(20)", "comment": "pending|approved|rejected|paused" },
+          "usage_count":      { "type": "integer", "default": 0 },
+          "created_by":       { "type": "uuid", "fk": "core.users.id" },
+          "created_at":       { "type": "timestamptz", "default": "NOW()" }
+        }
+      }
+    },
+
+    "materialized_views": {
+      "mv_pipeline_summary": {
+        "description": "Resumen del pipeline por etapa, refresh cada 5 min",
+        "refresh_interval": "5 minutes",
+        "depends_on": ["crm.deals"]
+      },
+      "mv_agent_performance": {
+        "description": "Métricas agregadas por agente IA, refresh cada 15 min",
+        "refresh_interval": "15 minutes",
+        "depends_on": ["crm.agent_runs", "crm.deals"]
+      },
+      "mv_conversion_funnel": {
+        "description": "Funnel de conversión por mes y canal",
+        "refresh_interval": "1 hour",
+        "depends_on": ["crm.deal_stage_history", "crm.deals"]
+      }
+    }
+  },
+
+  "rest_api": {
+    "base_path": "/api/crm",
+    "authentication": "Bearer JWT (mismo middleware que ERP base)",
+    "endpoints": [
+
+      {
+        "method": "GET",
+        "path": "/dashboard",
+        "description": "KPIs principales del dashboard de ventas",
+        "query_params": ["period=current_month|last_30d|q2_2026", "owner_id?"],
+        "permissions": ["crm.dashboard.view"],
+        "response": "{ pipeline: {total, by_stage}, kpis: {pipeline, conversion, response_time, ai_autonomy}, alerts: [...] }"
+      },
+      {
+        "method": "GET",
+        "path": "/conversations",
+        "description": "Lista de conversaciones del inbox unificado",
+        "query_params": ["channel=all|whatsapp|telegram|gmail", "status=open|all", "owner_id?", "search?", "limit=50&offset=0"],
+        "permissions": ["crm.conversations.view"]
+      },
+      {
+        "method": "GET",
+        "path": "/conversations/:id",
+        "description": "Detalle de conversación + mensajes",
+        "query_params": ["messages_limit=100"],
+        "permissions": ["crm.conversations.view"]
+      },
+      {
+        "method": "POST",
+        "path": "/conversations/:id/messages",
+        "description": "Enviar mensaje (humano o IA aprobada por humano)",
+        "body": "{ body_text, attachments?, template_id?, channel? }",
+        "permissions": ["crm.messages.send"]
+      },
+      {
+        "method": "POST",
+        "path": "/conversations/:id/ai-suggest",
+        "description": "Pedir al agente IA actual sugerencias de respuesta",
+        "permissions": ["crm.ai.suggest"]
+      },
+      {
+        "method": "PATCH",
+        "path": "/conversations/:id",
+        "description": "Actualizar conversación (status, owner, ai_handling, etc.)",
+        "permissions": ["crm.conversations.edit"]
+      },
+
+      {
+        "method": "GET",
+        "path": "/deals",
+        "description": "Lista deals para vista pipeline o lista",
+        "query_params": ["stage=all|lead|qualified|...", "owner_id?", "min_amount?", "tags?"],
+        "permissions": ["crm.deals.view"]
+      },
+      {
+        "method": "POST",
+        "path": "/deals",
+        "description": "Crear nuevo deal",
+        "body": "{ name, company_id, amount_usd, stage, expected_close_date, products }",
+        "permissions": ["crm.deals.create"]
+      },
+      {
+        "method": "GET",
+        "path": "/deals/:id",
+        "description": "Detalle de deal incluye conversaciones, transcripts, agent_runs"
+      },
+      {
+        "method": "PATCH",
+        "path": "/deals/:id/stage",
+        "description": "Cambiar etapa del deal (drag·n·drop pipeline). Auto-registra en deal_stage_history.",
+        "body": "{ stage, reason? }",
+        "permissions": ["crm.deals.edit"]
+      },
+      {
+        "method": "POST",
+        "path": "/deals/:id/escalate",
+        "description": "Escalar deal a humano (saca de autopilot)",
+        "body": "{ reason, assign_to_user_id? }"
+      },
+
+      {
+        "method": "GET",
+        "path": "/contacts",
+        "description": "Lista de contactos con filtros"
+      },
+      {
+        "method": "POST",
+        "path": "/contacts",
+        "description": "Crear contacto"
+      },
+      {
+        "method": "GET",
+        "path": "/contacts/:id",
+        "description": "Perfil 360 del contacto: deals, conversaciones, score, signals"
+      },
+      {
+        "method": "POST",
+        "path": "/contacts/:id/enrich",
+        "description": "Trigger manual de Iván · Researcher para enriquecer datos"
+      },
+
+      {
+        "method": "GET",
+        "path": "/companies",
+        "description": "Lista de empresas (cuentas)"
+      },
+      {
+        "method": "POST",
+        "path": "/companies/validate-ruc",
+        "description": "Validar RUC contra SRI Ecuador",
+        "body": "{ ruc }"
+      },
+
+      {
+        "method": "GET",
+        "path": "/agents",
+        "description": "Lista de los 6 agentes con métricas y estado"
+      },
+      {
+        "method": "GET",
+        "path": "/agents/:code",
+        "description": "Detalle agente: prompt, tools, autonomía, métricas históricas"
+      },
+      {
+        "method": "PATCH",
+        "path": "/agents/:code",
+        "description": "Editar prompt, tools, autonomía",
+        "body": "{ system_prompt?, tools?, autonomy_default?, temperature? }",
+        "permissions": ["crm.agents.configure"]
+      },
+      {
+        "method": "GET",
+        "path": "/agents/:code/runs",
+        "description": "Logs de ejecuciones del agente (auditoría)",
+        "query_params": ["status?", "limit=50"]
+      },
+
+      {
+        "method": "GET",
+        "path": "/workflows",
+        "description": "Lista de workflows (automatizaciones)"
+      },
+      {
+        "method": "POST",
+        "path": "/workflows",
+        "description": "Crear workflow custom"
+      },
+      {
+        "method": "PATCH",
+        "path": "/workflows/:id/toggle",
+        "description": "Activar / desactivar workflow",
+        "body": "{ enabled: boolean }"
+      },
+      {
+        "method": "GET",
+        "path": "/workflows/:id/runs",
+        "description": "Histórico de ejecuciones de un workflow"
+      },
+
+      {
+        "method": "GET",
+        "path": "/forecast",
+        "description": "Forecast IA por período",
+        "query_params": ["period=q2_2026|next_90d|custom", "from?", "to?"]
+      },
+      {
+        "method": "POST",
+        "path": "/forecast/recalculate",
+        "description": "Forzar recálculo del forecast"
+      },
+
+      {
+        "method": "GET",
+        "path": "/intelligence/conversations/:id",
+        "description": "Conversation intelligence: sentiment, topics, objeciones"
+      },
+      {
+        "method": "GET",
+        "path": "/intelligence/calls/:id",
+        "description": "Transcript completo + análisis de una llamada"
+      },
+      {
+        "method": "POST",
+        "path": "/intelligence/calls/upload",
+        "description": "Subir audio de llamada para transcribir + analizar",
+        "content_type": "multipart/form-data"
+      },
+
+      {
+        "method": "POST",
+        "path": "/webhooks/unipile",
+        "description": "WEBHOOK PÚBLICO. Recibe TODOS los eventos de Unipile (mensajes inbound, status updates, etc.). Despacha al Router IA si autonomy_mode=autopilot.",
+        "auth": "Validación de firma HMAC-SHA256 con secret de Unipile",
+        "events_handled": [
+          "message.received",
+          "message.delivered",
+          "message.read",
+          "account.connected",
+          "account.disconnected",
+          "account.error"
+        ]
+      }
+    ]
+  },
+
+  "websocket_channels": {
+    "base": "ws://host/api/crm/ws",
+    "authentication": "JWT en query param ?token=...",
+    "channels": [
+      {
+        "name": "crm:inbox:user:{userId}",
+        "description": "Push de nuevos mensajes y updates de conversaciones para usuario logged",
+        "events": [
+          { "type": "message:new", "payload": "{ conversation_id, message }" },
+          { "type": "message:status_update", "payload": "{ message_id, status }" },
+          { "type": "conversation:assigned", "payload": "{ conversation_id, owner_id }" },
+          { "type": "conversation:ai_handling_changed", "payload": "{ conversation_id, ai_handling }" }
+        ]
+      },
+      {
+        "name": "crm:pipeline:tenant:{tenantId}",
+        "description": "Updates en tiempo real del pipeline (drag·n·drop por otros usuarios)",
+        "events": [
+          { "type": "deal:stage_changed", "payload": "{ deal_id, from_stage, to_stage, by_user_id }" },
+          { "type": "deal:created", "payload": "{ deal }" },
+          { "type": "deal:amount_changed", "payload": "{ deal_id, old_amount, new_amount }" }
+        ]
+      },
+      {
+        "name": "crm:agents:tenant:{tenantId}",
+        "description": "Stream de actividad de agentes IA",
+        "events": [
+          { "type": "agent:run_started", "payload": "{ agent_code, conversation_id }" },
+          { "type": "agent:run_completed", "payload": "{ agent_code, result }" },
+          { "type": "agent:approval_required", "payload": "{ run_id, suggested_action }" }
+        ]
+      },
+      {
+        "name": "crm:forecast:tenant:{tenantId}",
+        "description": "Updates del forecast (cuando IA detecta cambios significativos)",
+        "events": [
+          { "type": "forecast:risk_detected", "payload": "{ deal_id, risk, impact_usd }" },
+          { "type": "forecast:opportunity_detected", "payload": "{ deal_id, signal, suggested_action }" }
+        ]
+      }
+    ]
+  },
+
+  "unipile_integration": {
+    "base_url": "https://api{N}.unipile.com:13{NNN}/api/v1",
+    "documentation": "https://developer.unipile.com/docs",
+    "authentication": "X-API-KEY header con API key del workspace",
+    "webhook_signature": "HMAC-SHA256 en header X-Unipile-Signature",
+    "supported_channels": ["WHATSAPP", "TELEGRAM", "GOOGLE_OAUTH (Gmail)", "LINKEDIN"],
+    "authentication_flow": {
+      "whatsapp": "QR-code (Unipile genera QR, usuario escanea con su WhatsApp Business)",
+      "telegram": "QR-code o phone + code",
+      "gmail": "OAuth2 con scopes gmail.readonly + gmail.send + gmail.modify",
+      "linkedin": "QR-code"
+    },
+    "key_endpoints_used": [
+      { "method": "POST", "path": "/accounts", "use": "Conectar cuenta nueva" },
+      { "method": "GET", "path": "/accounts", "use": "Listar cuentas conectadas" },
+      { "method": "GET", "path": "/chats", "use": "Listar chats (paginado)" },
+      { "method": "GET", "path": "/chats/{id}/messages", "use": "Histórico de mensajes" },
+      { "method": "POST", "path": "/chats/{id}/messages", "use": "Enviar mensaje" },
+      { "method": "POST", "path": "/messaging/send", "use": "Enviar mensaje a contacto nuevo" },
+      { "method": "POST", "path": "/webhooks", "use": "Registrar webhook URL del backend" }
+    ],
+    "rate_limits": {
+      "whatsapp": "Definido por Meta tier (típico 80 msgs/seg start, escala con calidad)",
+      "telegram": "30 msgs/seg",
+      "gmail": "250 quota units/segundo · enviar = 100 quota units"
+    }
+  },
+
+  "claude_integration": {
+    "sdk": "@anthropic-ai/sdk >= 0.27",
+    "default_model": "claude-sonnet-4-20250514",
+    "alternative_models": {
+      "fast_path": "claude-haiku-4-5-20251001 (para Router por latencia)",
+      "deep_path": "claude-opus-4-7 (para forecasting + análisis estratégico)"
+    },
+    "function_calling": "Habilitado en TODOS los agentes. Cada agente tiene su set de tools definido en agents.tools",
+    "context_strategy": "Cada llamada al agente recibe: lead profile + company profile + conversation history (últimos 50 msgs) + deals activos + signals + tools disponibles.",
+    "cost_tracking": "Cada agent_run almacena tokens_input, tokens_output y cost_usd para reporting financiero."
+  },
+
+  "ecuador_specifics": {
+    "ruc_validation": {
+      "service": "SRI Ecuador",
+      "endpoint_internal": "/api/financiero/sri/validate-ruc",
+      "fields_returned": ["razon_social", "estado_contribuyente", "obligado_contabilidad", "fecha_inicio_actividades"]
+    },
+    "factura_electronica": {
+      "trigger": "Al cerrar deal (stage=won), crear cotización en módulo Compras y emitir factura SRI",
+      "form": "Form 101 retención IR",
+      "iva": "15% Ecuador 2026"
+    },
+    "ciiu_detection": "El Researcher detecta CIIU automáticamente del sector + descripción negocio"
+  },
+
+  "rbac": {
+    "permissions": [
+      "crm.dashboard.view",
+      "crm.conversations.view",
+      "crm.conversations.edit",
+      "crm.messages.send",
+      "crm.ai.suggest",
+      "crm.deals.view",
+      "crm.deals.create",
+      "crm.deals.edit",
+      "crm.deals.delete",
+      "crm.contacts.view",
+      "crm.contacts.create",
+      "crm.contacts.edit",
+      "crm.companies.view",
+      "crm.companies.edit",
+      "crm.agents.view",
+      "crm.agents.configure",
+      "crm.workflows.view",
+      "crm.workflows.create",
+      "crm.workflows.edit",
+      "crm.forecast.view",
+      "crm.intelligence.view",
+      "crm.admin"
+    ],
+    "default_roles": {
+      "sales_rep": ["crm.dashboard.view","crm.conversations.view","crm.conversations.edit","crm.messages.send","crm.ai.suggest","crm.deals.view","crm.deals.edit","crm.contacts.view","crm.contacts.edit","crm.intelligence.view"],
+      "sales_manager": ["sales_rep_perms", "crm.deals.create","crm.deals.delete","crm.forecast.view","crm.workflows.view","crm.agents.view"],
+      "vp_sales": ["sales_manager_perms", "crm.workflows.create","crm.workflows.edit","crm.agents.configure"],
+      "admin": ["crm.admin"]
+    }
+  },
+
+  "constants_2026": {
+    "iva_ecuador": 0.15,
+    "ir_corporate": 0.25,
+    "wa_marketing_template_latam_usd": 0.018,
+    "wa_utility_template_latam_usd": 0.010,
+    "wa_service_window_hours": 24,
+    "claude_sonnet_4_input_per_million": 3.00,
+    "claude_sonnet_4_output_per_million": 15.00,
+    "claude_haiku_45_input_per_million": 0.80,
+    "claude_haiku_45_output_per_million": 4.00,
+    "default_lead_score_threshold_hot": 75,
+    "default_lead_score_threshold_warm": 50,
+    "default_deal_escalation_threshold_usd": 30000,
+    "default_stalled_deal_days": 7
+  }
+}

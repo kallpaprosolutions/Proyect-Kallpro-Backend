@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KallpaPro — Plataforma Logística IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0D1F6E;--navy-mid:#1A3DB5;--cyan:#00B8E0;--cyan-dark:#0086a8;
+  --bg:#EEF2FF;--surface:#F8FAFF;--white:#FFFFFF;
+  --green:#10B981;--green-light:#ECFDF5;
+  --amber:#F59E0B;--amber-light:#FFFBEB;
+  --red:#EF4444;--red-light:#FEF2F2;
+  --blue-light:#EFF6FF;
+  --text:#0F172A;--text-mid:#475569;--text-light:#94A3B8;
+  --border:#E2E8F0;--border-light:#F1F5F9;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -1px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04);
+  --r:8px;--r-lg:12px;--r-xl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:14px}
+button{font-family:'Outfit',sans-serif;cursor:pointer}
+input,select,textarea{font-family:'Outfit',sans-serif}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--navy);display:flex;flex-direction:column;height:100vh;transition:width .2s;position:relative;z-index:10}
+.sidebar-logo{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:8px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy-mid),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;letter-spacing:-1px;flex-shrink:0}
+.logo-text{color:#fff}
+.logo-text h1{font-size:13px;font-weight:700;letter-spacing:.3px;line-height:1.2}
+.logo-text p{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+.nav-group{padding:0 8px;margin-bottom:4px}
+.nav-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;margin-bottom:1px;font-size:13px;font-weight:500;background:none;border:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.nav-item.active{background:var(--navy-mid);color:#fff;box-shadow:0 2px 8px rgba(26,61,181,.4)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:var(--cyan);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px}
+.nav-badge.ai{background:linear-gradient(135deg,#7C3AED,var(--cyan));animation:pulse 2s infinite}
+.sidebar-bottom{margin-top:auto;padding:12px 8px;border-top:1px solid rgba(255,255,255,.08)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s}
+.user-chip:hover{background:rgba(255,255,255,.08)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:#fff}
+.user-role{font-size:10px;color:rgba(255,255,255,.4)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:12px;color:var(--text-light);margin-left:4px;font-weight:400}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--border);background:none;display:flex;align-items:center;justify-content:center;color:var(--text-mid);transition:all .15s;position:relative}
+.icon-btn:hover{background:var(--bg);border-color:var(--text-light)}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
+.btn{padding:8px 16px;border-radius:var(--r);font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--navy-mid);color:#fff}
+.btn-primary:hover{background:var(--navy);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.btn-secondary{background:var(--bg);color:var(--text-mid);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border-light);color:var(--text)}
+.btn-cyan{background:var(--cyan);color:#fff}
+.btn-cyan:hover{background:var(--cyan-dark);transform:translateY(-1px)}
+.btn-ghost{background:none;color:var(--text-mid);border:1px solid transparent}
+.btn-ghost:hover{background:var(--bg);border-color:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ai{background:linear-gradient(135deg,#7C3AED,var(--cyan));color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.3)}
+.btn-ai:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,58,237,.4)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px}
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* KPI CARDS */
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.kpi-card.blue::before{background:var(--navy-mid)}
+.kpi-card.cyan::before{background:var(--cyan)}
+.kpi-card.green::before{background:var(--green)}
+.kpi-card.amber::before{background:var(--amber)}
+.kpi-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.kpi-card.blue .kpi-icon{background:var(--blue-light)}
+.kpi-card.cyan .kpi-icon{background:#E0F7FD}
+.kpi-card.green .kpi-icon{background:var(--green-light)}
+.kpi-card.amber .kpi-icon{background:var(--amber-light)}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text);line-height:1}
+.kpi-label{font-size:11px;color:var(--text-light);margin-top:4px;font-weight:500}
+.kpi-trend{font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px;margin-top:6px;padding:2px 7px;border-radius:10px}
+.kpi-trend.up{background:var(--green-light);color:#059669}
+.kpi-trend.down{background:var(--red-light);color:#DC2626}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge-active{background:#ECFDF5;color:#059669}.badge-active::before{background:#10B981}
+.badge-transit{background:#EFF6FF;color:#1D4ED8}.badge-transit::before{background:#3B82F6}
+.badge-pending{background:var(--amber-light);color:#92400E}.badge-pending::before{background:var(--amber)}
+.badge-delivered{background:#F0FFF4;color:#166534}.badge-delivered::before{background:#22C55E}
+.badge-cancelled{background:var(--red-light);color:#991B1B}.badge-cancelled::before{background:var(--red)}
+.badge-new{background:#F5F3FF;color:#5B21B6}.badge-new::before{background:#7C3AED}
+
+/* TABLES */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);background:var(--surface)}
+td{padding:12px;border-bottom:1px solid var(--border-light);font-size:13px;color:var(--text-mid)}
+td:first-child{color:var(--text);font-weight:500}
+tr:last-child td{border-bottom:none}
+tr.row-hover:hover td{background:var(--bg);cursor:pointer}
+.td-mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-light)}
+
+/* MAP */
+.map-container{background:linear-gradient(135deg,#0D1F6E 0%,#1A3DB5 50%,#0086a8 100%);border-radius:var(--r-lg);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.map-overlay{position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='.5' fill='rgba(255,255,255,.12)'/%3E%3C/svg%3E");opacity:.6}
+
+/* ACTIVITY */
+.activity-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-light);align-items:flex-start}
+.activity-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.act-text{font-size:12px;color:var(--text-mid);line-height:1.5}
+.act-text strong{color:var(--text);font-weight:600}
+.act-time{font-size:10px;color:var(--text-light);margin-top:2px}
+
+/* WIZARD */
+.wizard-steps{display:flex;align-items:center;gap:0;margin-bottom:24px}
+.wizard-step{display:flex;align-items:center;gap:8px;flex:1;position:relative}
+.wizard-step:not(:last-child)::after{content:'';flex:1;height:1px;background:var(--border);margin:0 8px}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .2s;border:2px solid var(--border);background:var(--white);color:var(--text-light)}
+.step-circle.done{background:var(--green);border-color:var(--green);color:#fff}
+.step-circle.current{background:var(--navy-mid);border-color:var(--navy-mid);color:#fff}
+.step-label{font-size:11px;font-weight:600;color:var(--text-light);white-space:nowrap}
+.step-label.current{color:var(--navy-mid)}
+.step-label.done{color:var(--green)}
+
+/* FORMS */
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:6px;display:block}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--white);transition:all .15s;outline:none}
+.form-input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,61,181,.1)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* PROVIDER CARDS */
+.provider-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;transition:all .2s;box-shadow:var(--shadow)}
+.provider-card:hover{border-color:var(--navy-mid);box-shadow:var(--shadow-md);transform:translateY(-2px);cursor:pointer}
+.provider-card.selected{border-color:var(--navy-mid);border-width:2px;background:var(--blue-light)}
+.prov-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.prov-avatar{width:38px;height:38px;border-radius:9px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.prov-name{font-size:13px;font-weight:600;color:var(--text)}
+.prov-type{font-size:11px;color:var(--text-light)}
+.stars{color:var(--amber);font-size:12px;letter-spacing:1px}
+.prov-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);padding:3px 0;border-bottom:1px solid var(--border-light)}
+.prov-stat:last-child{border:none}
+.prov-stat span{color:var(--text);font-weight:600}
+
+/* CHARTS */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:100%;padding:0 4px}
+.bar{border-radius:3px 3px 0 0;transition:all .3s;cursor:pointer;position:relative}
+.bar:hover{opacity:.8}
+.bar-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-light);white-space:nowrap}
+.bar-val{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:var(--text-mid);white-space:nowrap}
+
+/* CONDUCTOR VIEW */
+.conductor-phone{width:320px;min-height:560px;background:#fff;border-radius:24px;border:6px solid var(--navy);overflow:hidden;box-shadow:0 20px 40px rgba(13,31,110,.3);position:relative;margin:0 auto}
+.phone-status{background:var(--navy);color:#fff;font-size:10px;font-weight:600;padding:8px 20px;letter-spacing:.08em;text-align:center}
+.phone-header{background:var(--navy-mid);padding:14px 16px;color:#fff}
+.phone-header h2{font-size:15px;font-weight:700}
+.phone-header p{font-size:11px;opacity:.7;margin-top:2px}
+.phone-body{padding:16px;background:#F8FAFF;min-height:400px}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s}
+
+/* REPORT */
+.report-kpi{text-align:center;padding:16px;background:var(--bg);border-radius:var(--r)}
+.report-kpi .val{font-size:24px;font-weight:800;display:block}
+.report-kpi .lbl{font-size:10px;color:var(--text-light);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ANIMATIONS */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.animate-in{animation:slideIn .2s ease forwards}
+.pulse{animation:pulse 2s infinite}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative;display:inline-block}
+.live-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--green);animation:ping 1.5s infinite;opacity:.4}
+
+/* ===== AI CHAT PANEL ===== */
+.ai-panel{
+  width:380px;min-width:380px;background:var(--white);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;height:100vh;transition:transform .3s ease;
+  position:relative;z-index:5;
+}
+.ai-panel.hidden{transform:translateX(100%);width:0;min-width:0;border:none}
+.ai-header{
+  padding:16px 18px;border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(0,184,224,.06));
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.ai-avatar{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#7C3AED,var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.ai-title{font-size:13px;font-weight:700;color:var(--text)}
+.ai-sub{font-size:11px;color:var(--text-light);margin-top:1px}
+.ai-status{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);font-weight:600}
+
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:8px;animation:fadeUp .25s ease}
+.msg.user{flex-direction:row-reverse}
+.msg-bubble{
+  max-width:85%;padding:10px 13px;border-radius:12px;font-size:12px;line-height:1.6;
+}
+.msg.ai .msg-bubble{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px 12px 12px 12px}
+.msg.user .msg-bubble{background:var(--navy-mid);color:#fff;border-radius:12px 4px 12px 12px}
+.msg-avatar{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.msg.ai .msg-avatar{background:linear-gradient(135deg,#7C3AED,var(--cyan));color:#fff}
+.msg.user .msg-avatar{background:var(--cyan);color:#fff;font-size:10px;font-weight:700}
+
+.ai-typing{display:flex;gap:4px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:4px 12px 12px 12px;width:fit-content}
+.ai-typing span{width:6px;height:6px;background:var(--text-light);border-radius:50%;animation:pulse .9s infinite}
+.ai-typing span:nth-child(2){animation-delay:.15s}
+.ai-typing span:nth-child(3){animation-delay:.3s}
+
+.ai-input-area{padding:14px;border-top:1px solid var(--border);flex-shrink:0}
+.ai-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ai-chip{
+  padding:5px 10px;border-radius:20px;font-size:11px;font-weight:500;
+  border:1px solid var(--border);background:var(--surface);color:var(--text-mid);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.ai-chip:hover{border-color:var(--navy-mid);color:var(--navy-mid);background:var(--blue-light)}
+.ai-input-row{display:flex;gap:8px}
+.ai-input{
+  flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);
+  font-size:12px;outline:none;background:var(--surface);transition:all .15s;
+}
+.ai-input:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,61,181,.08);background:#fff}
+.ai-send{
+  padding:9px 14px;border-radius:var(--r);border:none;
+  background:linear-gradient(135deg,#7C3AED,var(--cyan));color:#fff;
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.ai-send:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.3)}
+.ai-send:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* AI TOGGLE BTN */
+.ai-toggle-fab{
+  position:fixed;bottom:24px;right:24px;
+  width:52px;height:52px;border-radius:16px;
+  background:linear-gradient(135deg,#7C3AED,var(--cyan));
+  border:none;color:#fff;font-size:22px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(124,58,237,.4);
+  transition:all .2s;z-index:100;
+  display:none;
+}
+.ai-toggle-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(124,58,237,.5)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:var(--r-xl);padding:24px;width:500px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.15);animation:fadeUp .25s ease}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-close{background:none;border:none;font-size:20px;color:var(--text-light);cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+
+/* TOAST */
+.toast-container{position:fixed;top:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:12px 16px;box-shadow:var(--shadow-lg);font-size:13px;
+  display:flex;align-items:center;gap:10px;min-width:280px;
+  animation:fadeUp .25s ease;
+}
+.toast.success{border-left:3px solid var(--green)}
+.toast.info{border-left:3px solid var(--navy-mid)}
+.toast.warning{border-left:3px solid var(--amber)}
+
+/* ROUTE MAP SVG */
+.route-map-svg{width:100%;border-radius:var(--r-lg);overflow:hidden}
+.route-node{cursor:pointer;transition:all .2s}
+.route-node:hover circle{filter:brightness(1.2)}
+
+/* TRACKING TIMELINE */
+.track-timeline{display:flex;flex-direction:column;gap:0}
+.track-step{display:flex;gap:14px;position:relative}
+.track-step:not(:last-child)::before{content:'';position:absolute;left:11px;top:28px;bottom:0;width:2px;background:var(--border-light)}
+.track-step.done::before{background:var(--green)}
+.track-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;position:relative;z-index:1;border:2px solid var(--border);background:var(--white)}
+.track-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.track-dot.active{background:var(--cyan);border-color:var(--cyan);color:#fff;box-shadow:0 0 0 4px rgba(0,184,224,.2)}
+.track-info{padding-bottom:20px}
+.track-title{font-size:13px;font-weight:600;color:var(--text)}
+.track-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+.track-time{font-size:10px;color:var(--text-light);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
+/* NOTIFICATION PANEL */
+.notif-panel{position:absolute;top:56px;right:60px;width:320px;background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:50;display:none}
+.notif-panel.show{display:block;animation:fadeUp .2s ease}
+.notif-item{padding:12px 14px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .15s}
+.notif-item:hover{background:var(--bg)}
+.notif-item:last-child{border-bottom:none}
+.notif-item-title{font-size:12px;font-weight:600;color:var(--text)}
+.notif-item-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+.notif-unread{width:7px;height:7px;background:var(--cyan);border-radius:50%;flex-shrink:0}
+
+/* SEARCH BOX */
+.search-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:flex-start;justify-content:center;padding-top:80px;backdrop-filter:blur(4px)}
+.search-overlay.show{display:flex}
+.search-box{background:var(--white);border-radius:var(--r-xl);width:560px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;animation:fadeUp .2s ease}
+.search-input-wrap{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.search-main{flex:1;font-size:15px;border:none;outline:none;color:var(--text);background:transparent}
+.search-results{max-height:340px;overflow-y:auto}
+.search-result-item{padding:12px 20px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:10px;font-size:13px}
+.search-result-item:hover{background:var(--bg)}
+.search-result-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+
+.tab-group{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:3px;gap:2px}
+.tab-btn{padding:6px 14px;font-size:12px;font-weight:600;border-radius:6px;border:none;color:var(--text-mid);background:none;cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--white);color:var(--text);box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">KP</div>
+    <div class="logo-text">
+      <h1>KallpaPro</h1>
+      <p>Plataforma Logística</p>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Principal</div>
+    <button class="nav-item active" onclick="navigate('dashboard',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="navigate('solicitud',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3l2 2"/></svg>
+      Nueva Solicitud
+    </button>
+    <button class="nav-item" onclick="navigate('pedidos',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M4.5 6h7M4.5 9h5"/></svg>
+      Mis Pedidos
+      <span class="nav-badge">7</span>
+    </button>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Gestión</div>
+    <button class="nav-item" onclick="navigate('proveedores',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.2-5 5-5"/><circle cx="12" cy="11" r="3"/></svg>
+      Proveedores
+    </button>
+    <button class="nav-item" onclick="navigate('rutas',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="M4 6v4a2 2 0 002 2h2"/></svg>
+      Rutas en Vivo
+      <span class="nav-badge">3</span>
+    </button>
+    <button class="nav-item" onclick="navigate('reportes',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V4l3 4 3-5 3 3 3-2"/></svg>
+      Reportes & POV
+    </button>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">IA</div>
+    <button class="nav-item" onclick="toggleAI()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 2a1 1 0 00-1 1v2a1 1 0 00.293.707l1.5 1.5a1 1 0 001.414-1.414L9 7.586V6a1 1 0 00-1-1z"/></svg>
+      Asistente IA
+      <span class="nav-badge ai">NEW</span>
+    </button>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-chip">
+      <div class="avatar">MC</div>
+      <div>
+        <div class="user-name">María Correa</div>
+        <div class="user-role">Gerente Logística</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <span class="topbar-title" id="page-title">Dashboard</span>
+      <span class="topbar-sub" id="page-sub">/ Resumen ejecutivo</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="openSearch()" title="Buscar">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6.5" cy="6.5" r="5"/><path d="M11 11l2.5 2.5"/></svg>
+      </button>
+      <button class="icon-btn" onclick="toggleNotifs()" id="notif-btn" title="Notificaciones">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7.5 2a4.5 4.5 0 00-4.5 4.5c0 3-1 4-1 4h11s-1-1-1-4A4.5 4.5 0 007.5 2z"/><path d="M6 12.5a1.5 1.5 0 003 0"/></svg>
+        <div class="notif-dot"></div>
+      </button>
+      <button class="btn btn-ai btn-sm" onclick="toggleAI()">✦ Asistente IA</button>
+    </div>
+
+    <!-- NOTIF PANEL -->
+    <div class="notif-panel" id="notif-panel">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600">Notificaciones</span>
+        <span style="font-size:11px;color:var(--cyan);cursor:pointer;font-weight:600">Marcar todo leído</span>
+      </div>
+      <div class="notif-item">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div class="notif-unread" style="margin-top:4px"></div>
+          <div><div class="notif-item-title">KP-2051 — Alerta de temperatura</div><div class="notif-item-sub">Temperatura subió a 6°C · Revisar cadena de frío · hace 5 min</div></div>
+        </div>
+      </div>
+      <div class="notif-item">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div class="notif-unread" style="margin-top:4px"></div>
+          <div><div class="notif-item-title">KP-2049 — Sin proveedor asignado</div><div class="notif-item-sub">Pendiente desde ayer · Fecha de recogida mañana · hace 1h</div></div>
+        </div>
+      </div>
+      <div class="notif-item">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:7px;height:7px;background:var(--border);border-radius:50%;margin-top:4px;flex-shrink:0"></div>
+          <div><div class="notif-item-title">Reporte mensual disponible</div><div class="notif-item-sub">Proof of Value — Abril 2026 · hace 3h</div></div>
+        </div>
+      </div>
+      <div class="notif-item">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:7px;height:7px;background:var(--border);border-radius:50%;margin-top:4px;flex-shrink:0"></div>
+          <div><div class="notif-item-title">Transportes Noreste aprobado</div><div class="notif-item-sub">Nuevo proveedor homologado · hace 45 min</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="page-dashboard" class="page active">
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="kpi-card blue">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1A3DB5" stroke-width="1.8"><rect x="1" y="5" width="16" height="10" rx="2"/><path d="M5 5V4a4 4 0 018 0v1"/><path d="M9 10v2"/></svg></div>
+          <div class="kpi-val">$68K</div>
+          <div class="kpi-label">GMV Abril</div>
+          <div class="kpi-trend up">↑ 11.4%</div>
+        </div>
+        <div class="kpi-card cyan">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#00B8E0" stroke-width="1.8"><rect x="1" y="3" width="16" height="12" rx="2"/><path d="M5 3v12M13 3v12M1 9h16"/></svg></div>
+          <div class="kpi-val">47</div>
+          <div class="kpi-label">Pedidos activos</div>
+          <div class="kpi-trend up">↑ 6.8%</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#10B981" stroke-width="1.8"><path d="M3 9l4 4 8-8"/></svg></div>
+          <div class="kpi-val">94.7%</div>
+          <div class="kpi-label">OTIF global</div>
+          <div class="kpi-trend up">↑ 1.3%</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F59E0B" stroke-width="1.8"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 3"/></svg></div>
+          <div class="kpi-val">4h 12m</div>
+          <div class="kpi-label">Tiempo prom. entrega</div>
+          <div class="kpi-trend up">↓ 8 min</div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:16px">
+        <!-- MAP -->
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Rutas activas en tiempo real</div><div class="card-sub">3 vehículos en movimiento · Ecuador</div></div>
+            <button class="btn btn-secondary btn-sm" onclick="navigate('rutas',document.querySelector('[onclick*=rutas]'))">Ver mapa completo</button>
+          </div>
+          <div class="map-container" style="height:220px">
+            <div class="map-overlay"></div>
+            <svg viewBox="0 0 300 220" style="position:absolute;inset:0;width:100%;height:100%">
+              <!-- Ecuador outline simplified -->
+              <path d="M80,40 L120,30 L180,35 L220,60 L230,100 L220,140 L200,170 L160,185 L120,180 L90,160 L70,130 L60,90 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+              <!-- Routes -->
+              <path d="M110,145 L150,100 L190,80" stroke="#00B8E0" stroke-width="2" stroke-dasharray="6,4" fill="none" opacity=".8"/>
+              <path d="M150,100 L110,145" stroke="#10B981" stroke-width="2" stroke-dasharray="6,4" fill="none" opacity=".7"/>
+              <path d="M130,160 L150,100" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6,4" fill="none" opacity=".7"/>
+              <!-- Cities -->
+              <g class="route-node" onclick="showCityInfo('Guayaquil')">
+                <circle cx="110" cy="145" r="8" fill="#00B8E0" opacity=".9"/>
+                <circle cx="110" cy="145" r="13" fill="#00B8E0" opacity=".2"/>
+                <text x="110" y="166" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Guayaquil</text>
+              </g>
+              <g class="route-node" onclick="showCityInfo('Quito')">
+                <circle cx="150" cy="100" r="8" fill="#1A3DB5" opacity=".9"/>
+                <circle cx="150" cy="100" r="13" fill="#1A3DB5" opacity=".2"/>
+                <text x="150" y="121" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Quito</text>
+              </g>
+              <g class="route-node" onclick="showCityInfo('Cuenca')">
+                <circle cx="190" cy="80" r="6" fill="#7C3AED" opacity=".9"/>
+                <text x="190" y="99" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Cuenca</text>
+              </g>
+              <g class="route-node" onclick="showCityInfo('Manta')">
+                <circle cx="130" cy="160" r="6" fill="#F59E0B" opacity=".9"/>
+                <text x="130" y="179" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Manta</text>
+              </g>
+              <!-- Moving truck -->
+              <circle cx="130" cy="122" r="5" fill="white" opacity=".95" id="truck1">
+                <animate attributeName="cx" values="110;145;190" dur="6s" repeatCount="indefinite"/>
+                <animate attributeName="cy" values="145;100;80" dur="6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="130" cy="130" r="4" fill="#10B981" opacity=".9" id="truck2">
+                <animate attributeName="cx" values="150;130;110" dur="8s" repeatCount="indefinite"/>
+                <animate attributeName="cy" values="100;153;145" dur="8s" repeatCount="indefinite"/>
+              </circle>
+              <!-- Stats overlay -->
+              <rect x="8" y="185" width="100" height="26" rx="5" fill="rgba(0,0,0,.35)"/>
+              <text x="14" y="197" fill="rgba(255,255,255,.6)" font-size="8" font-family="Outfit,sans-serif">Vehículos activos</text>
+              <text x="14" y="207" fill="white" font-size="11" font-family="Outfit,sans-serif" font-weight="700">3 / 22 flota</text>
+              <rect x="118" y="185" width="100" height="26" rx="5" fill="rgba(0,0,0,.35)"/>
+              <text x="124" y="197" fill="rgba(255,255,255,.6)" font-size="8" font-family="Outfit,sans-serif">Dist. total hoy</text>
+              <text x="124" y="207" fill="white" font-size="11" font-family="Outfit,sans-serif" font-weight="700">1,247 km</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- ACTIVITY -->
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Actividad Reciente</div><div class="card-sub">Últimas 2 horas</div></div>
+            <button class="btn btn-ghost btn-sm">Ver todo</button>
+          </div>
+          <div class="activity-item">
+            <div class="act-dot" style="background:#10B981"></div>
+            <div>
+              <div class="act-text"><strong>Entrega confirmada</strong> — Pedido KP-2048 en Quito (Bodega Norte). OTIF ✓</div>
+              <div class="act-time">hace 8 min · Transportes Andinos S.A.</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-dot" style="background:#3B82F6"></div>
+            <div>
+              <div class="act-text"><strong>En tránsito</strong> — KP-2051 salió de Guayaquil hacia Cuenca</div>
+              <div class="act-time">hace 22 min · FlotaEcu Logística</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-dot" style="background:var(--amber)"></div>
+            <div>
+              <div class="act-text"><strong>Nuevo proveedor</strong> — Transportes Noreste aprobado y homologado</div>
+              <div class="act-time">hace 45 min · Módulo procurement</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-dot" style="background:#7C3AED"></div>
+            <div>
+              <div class="act-text"><strong>Nueva solicitud</strong> — Pronaca: transporte refrigerado GYE → UIO. 8 toneladas</div>
+              <div class="act-time">hace 1h 10min · Requiere asignación</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-dot" style="background:var(--red)"></div>
+            <div>
+              <div class="act-text"><strong>Alerta de demora</strong> — KP-2046 con 38 min de retraso. Causa: tráfico</div>
+              <div class="act-time">hace 2h 05min · Resuelto</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT ORDERS TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Últimos Pedidos</div><div class="card-sub">Todos los estados · Abril 2026</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm">Filtrar</button>
+            <button class="btn btn-primary btn-sm" onclick="navigate('solicitud',document.querySelector('[onclick*=solicitud]'))">+ Nueva solicitud</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pedido</th><th>Ruta</th><th>Proveedor</th><th>Carga</th><th>Fecha</th><th>Costo</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <tr class="row-hover" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12 ton · Carga seca','05 Abr 2026','$1,240','transit')"><td class="td-mono">KP-2051</td><td>Guayaquil → Cuenca</td><td>FlotaEcu Logística</td><td>12 ton · Carga seca</td><td>05 Abr 2026</td><td style="font-weight:600">$1,240</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12 ton · Carga seca','05 Abr 2026','$1,240','transit')">Ver</button></td></tr>
+              <tr class="row-hover" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5 ton · Refrigerado','04 Abr 2026','$890','transit')"><td class="td-mono">KP-2050</td><td>Quito → Guayaquil</td><td>Transportes Andinos</td><td>5 ton · Refrigerado</td><td>04 Abr 2026</td><td style="font-weight:600">$890</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5 ton · Refrigerado','04 Abr 2026','$890','transit')">Ver</button></td></tr>
+              <tr class="row-hover" onclick="openOrderModal('KP-2049','Manta → Quito','Sin asignar','8 ton · Agroindustria','04 Abr 2026','$1,580','pending')"><td class="td-mono">KP-2049</td><td>Manta → Quito</td><td>Sin asignar</td><td>8 ton · Agroindustria</td><td>04 Abr 2026</td><td style="font-weight:600">$1,580</td><td><span class="badge badge-pending">Pendiente</span></td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">Ver</button></td></tr>
+              <tr class="row-hover" onclick="openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15 ton · Carga general','03 Abr 2026','$2,100','delivered')"><td class="td-mono">KP-2048</td><td>Guayaquil → Quito</td><td>Transportes Andinos</td><td>15 ton · Carga general</td><td>03 Abr 2026</td><td style="font-weight:600">$2,100</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">Ver</button></td></tr>
+              <tr class="row-hover"><td class="td-mono">KP-2047</td><td>Cuenca → Guayaquil</td><td>FlotaEcu Logística</td><td>6 ton · Manufactura</td><td>02 Abr 2026</td><td style="font-weight:600">$760</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-sm">Ver</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NUEVA SOLICITUD ===== -->
+    <div id="page-solicitud" class="page">
+      <div class="card" style="max-width:780px;margin:0 auto">
+        <h2 style="font-size:17px;font-weight:700;margin-bottom:6px">Nueva Solicitud de Transporte</h2>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">Complete los detalles. Los proveedores disponibles aparecerán en el paso 3.</p>
+
+        <div class="wizard-steps">
+          <div class="wizard-step"><div class="step-circle current" id="sc1">1</div><div class="step-label current" id="sl1">Origen y destino</div></div>
+          <div class="wizard-step"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">Tipo de carga</div></div>
+          <div class="wizard-step"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">Elegir proveedor</div></div>
+          <div class="wizard-step"><div class="step-circle" id="sc4">4</div><div class="step-label" id="sl4">Confirmar</div></div>
+        </div>
+
+        <div id="step1">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ciudad de origen *</label>
+              <select class="form-input form-select" id="s-origen">
+                <option>Seleccione ciudad...</option>
+                <option selected>Guayaquil</option><option>Quito</option><option>Cuenca</option><option>Manta</option><option>Ambato</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ciudad de destino *</label>
+              <select class="form-input form-select" id="s-destino">
+                <option>Seleccione ciudad...</option>
+                <option>Guayaquil</option><option selected>Quito</option><option>Cuenca</option><option>Manta</option><option>Ambato</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección de recogida *</label>
+            <input type="text" class="form-input" value="Av. Juan Tanca Marengo km 2.5, Zona Industrial Norte, Guayaquil">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección de entrega *</label>
+            <input type="text" class="form-input" value="Parque Industrial Turubamba, Av. Pedro Vicente Maldonado, Quito">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Fecha de recogida *</label>
+              <input type="date" class="form-input" value="2026-04-07">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ventana horaria</label>
+              <select class="form-input form-select">
+                <option>08:00 – 12:00</option><option>12:00 – 16:00</option><option selected>14:00 – 18:00</option><option>Flexible</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button class="btn btn-primary" onclick="nextStep(2)">Siguiente →</button>
+          </div>
+        </div>
+
+        <div id="step2" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tipo de carga *</label>
+              <select class="form-input form-select" id="s-carga">
+                <option>Carga seca / general</option><option selected>Carga refrigerada</option><option>Carga peligrosa</option><option>Granel sólido</option><option>Maquinaria pesada</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Peso estimado (toneladas) *</label>
+              <input type="number" class="form-input" id="s-peso" value="8" min="0.5" max="35">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tipo de vehículo requerido</label>
+              <select class="form-input form-select">
+                <option>Camión 5 ton</option><option>Camión 10 ton</option><option selected>Camión 20 ton (plataforma)</option><option>Furgón refrigerado</option><option>Volqueta</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Temperatura (si aplica)</label>
+              <input type="text" class="form-input" value="2°C – 8°C">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción de la mercancía</label>
+            <textarea class="form-input" rows="2">Camarones enteros congelados IQF. Contenedores herméticos. No apilar más de 3 cajas. Mantener cadena de frío en todo momento.</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor declarado (USD)</label>
+            <input type="number" class="form-input" value="85000">
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <button class="btn btn-secondary" onclick="nextStep(1)">← Anterior</button>
+            <button class="btn btn-primary" onclick="nextStep(3)">Ver proveedores →</button>
+          </div>
+        </div>
+
+        <div id="step3" style="display:none">
+          <div style="background:var(--blue-light);border:1px solid rgba(26,61,181,.15);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--navy-mid)">
+            <strong>Ruta:</strong> <span id="route-summary">Guayaquil → Quito</span> &nbsp;·&nbsp; <strong>Carga:</strong> <span id="cargo-summary">8 ton refrigerada</span> &nbsp;·&nbsp; <strong>Fecha:</strong> 07 Abr 2026
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <p style="font-size:12px;color:var(--text-light)">3 proveedores disponibles para su solicitud:</p>
+            <button class="btn btn-ai btn-sm" onclick="aiSuggestProvider()">✦ Sugerencia IA</button>
+          </div>
+          <div class="grid3" style="margin-bottom:16px" id="provider-grid">
+            <div class="provider-card selected" onclick="selectProvider(this)" data-name="FlotaEcu Logística" data-price="$1,280">
+              <div class="prov-header"><div class="prov-avatar">FA</div><div><div class="prov-name">FlotaEcu Logística</div><div class="prov-type">Operador 3PL · Guayaquil</div></div></div>
+              <div class="stars">★★★★★</div>
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">(4.9 · 312 operaciones)</div>
+              <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,280 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+              <div class="prov-stat">OTIF histórico<span>96.2%</span></div>
+              <div class="prov-stat">Tiempo estimado<span>6.5 horas</span></div>
+              <div class="prov-stat">Flota refrigerada<span>Sí</span></div>
+              <div style="margin-top:8px;font-size:10px;color:var(--green);font-weight:600">✓ Seleccionado</div>
+            </div>
+            <div class="provider-card" onclick="selectProvider(this)" data-name="Transportes Andinos" data-price="$1,150">
+              <div class="prov-header"><div class="prov-avatar" style="background:#059669">TA</div><div><div class="prov-name">Transportes Andinos</div><div class="prov-type">Transporte pesado · Quito</div></div></div>
+              <div class="stars">★★★★☆</div>
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">(4.7 · 189 operaciones)</div>
+              <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,150 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+              <div class="prov-stat">OTIF histórico<span>94.8%</span></div>
+              <div class="prov-stat">Tiempo estimado<span>7.2 horas</span></div>
+              <div class="prov-stat">Flota refrigerada<span>Sí</span></div>
+            </div>
+            <div class="provider-card" onclick="selectProvider(this)" data-name="Expresos del Norte" data-price="$1,080">
+              <div class="prov-header"><div class="prov-avatar" style="background:#7C3AED">EN</div><div><div class="prov-name">Expresos del Norte</div><div class="prov-type">Courier + carga · Manta</div></div></div>
+              <div class="stars">★★★★☆</div>
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">(4.5 · 92 operaciones)</div>
+              <div style="font-size:18px;font-weight:800;color:var(--navy-mid);margin-bottom:8px">$1,080 <span style="font-size:11px;font-weight:400;color:var(--text-light)">+ IVA</span></div>
+              <div class="prov-stat">OTIF histórico<span>93.1%</span></div>
+              <div class="prov-stat">Tiempo estimado<span>8.0 horas</span></div>
+              <div class="prov-stat">Flota refrigerada<span>Sí</span></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <button class="btn btn-secondary" onclick="nextStep(2)">← Anterior</button>
+            <button class="btn btn-primary" onclick="nextStep(4)">Continuar →</button>
+          </div>
+        </div>
+
+        <div id="step4" style="display:none">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;margin-bottom:20px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">Resumen del pedido</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="font-size:12px;color:var(--text-light)">Ruta</div><div style="font-size:12px;font-weight:600">Guayaquil → Quito</div>
+              <div style="font-size:12px;color:var(--text-light)">Proveedor</div><div style="font-size:12px;font-weight:600" id="confirm-prov">FlotaEcu Logística</div>
+              <div style="font-size:12px;color:var(--text-light)">Carga</div><div style="font-size:12px;font-weight:600">8 ton · Refrigerada</div>
+              <div style="font-size:12px;color:var(--text-light)">Fecha</div><div style="font-size:12px;font-weight:600">07 Abril 2026, 14:00–18:00</div>
+              <div style="font-size:12px;color:var(--text-light)">Costo estimado</div><div style="font-size:14px;font-weight:800;color:var(--navy-mid)" id="confirm-price">$1,280 + IVA</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Referencia interna (opcional)</label>
+            <input type="text" class="form-input" placeholder="Ej: OC-2026-0891, Proyecto Pronaca Fase 2...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Instrucciones adicionales</label>
+            <textarea class="form-input" rows="2" placeholder="Notas para el proveedor o conductor..."></textarea>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <button class="btn btn-secondary" onclick="nextStep(3)">← Anterior</button>
+            <button class="btn btn-primary" onclick="confirmOrder()">✓ Confirmar pedido</button>
+          </div>
+        </div>
+
+        <div id="step-success" style="display:none;text-align:center;padding:32px 0">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--green-light);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">✓</div>
+          <h3 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">¡Pedido confirmado!</h3>
+          <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">Tu solicitud <strong id="new-order-id" style="color:var(--navy-mid);font-family:'JetBrains Mono',monospace">KP-2053</strong> ha sido registrada y el proveedor notificado.</p>
+          <div style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-secondary" onclick="resetWizard()">+ Nuevo pedido</button>
+            <button class="btn btn-primary" onclick="navigate('pedidos',document.querySelector('[onclick*=pedidos]'))">Ver mis pedidos →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PEDIDOS ===== -->
+    <div id="page-pedidos" class="page">
+      <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+        <div class="tab-group" id="pedidos-tabs">
+          <button class="tab-btn active" onclick="filterPedidos('activos',this)">Activos (7)</button>
+          <button class="tab-btn" onclick="filterPedidos('completados',this)">Completados (38)</button>
+          <button class="tab-btn" onclick="filterPedidos('cancelados',this)">Cancelados (2)</button>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <input type="text" class="form-input" id="pedido-search" style="width:200px;padding:7px 12px" placeholder="Buscar pedido..." oninput="searchPedidos(this.value)">
+          <button class="btn btn-primary btn-sm" onclick="navigate('solicitud',document.querySelector('[onclick*=solicitud]'))">+ Nueva</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Ruta</th><th>Proveedor</th><th>Carga</th><th>Inicio</th><th>OTIF</th><th>Costo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="pedidos-body">
+              <tr class="row-hover pedido-row" data-status="activos"><td class="td-mono">KP-2052</td><td>Guayaquil → Quito</td><td>FlotaEcu Logística</td><td>8t · Refrigerado</td><td>07 Abr</td><td>—</td><td>$1,280</td><td><span class="badge badge-new">Nuevo</span></td><td><button class="btn btn-ghost btn-sm" onclick="openOrderModal('KP-2052','Guayaquil → Quito','FlotaEcu Logística','8t · Refrigerado','07 Abr 2026','$1,280','new')">Rastrear</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="activos"><td class="td-mono">KP-2051</td><td>Guayaquil → Cuenca</td><td>FlotaEcu Logística</td><td>12t · Seca</td><td>05 Abr</td><td><span style="color:var(--green);font-weight:600">96%</span></td><td>$1,240</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-cyan btn-sm" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Carga seca','05 Abr 2026','$1,240','transit')">Live</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="activos"><td class="td-mono">KP-2050</td><td>Quito → Guayaquil</td><td>Transp. Andinos</td><td>5t · Refrigerado</td><td>04 Abr</td><td><span style="color:var(--green);font-weight:600">94%</span></td><td>$890</td><td><span class="badge badge-transit">En tránsito</span></td><td><button class="btn btn-cyan btn-sm" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit')">Live</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="activos"><td class="td-mono">KP-2049</td><td>Manta → Quito</td><td>Sin asignar</td><td>8t · Agroindustria</td><td>04 Abr</td><td>—</td><td>$1,580</td><td><span class="badge badge-pending">Sin asignar</span></td><td><button class="btn btn-primary btn-sm" onclick="navigate('solicitud',document.querySelector('[onclick*=solicitud]'))">Asignar</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="completados"><td class="td-mono">KP-2048</td><td>Guayaquil → Quito</td><td>Transp. Andinos</td><td>15t · General</td><td>03 Abr</td><td><span style="color:var(--green);font-weight:600">98%</span></td><td>$2,100</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-sm">POD</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="completados"><td class="td-mono">KP-2047</td><td>Cuenca → Guayaquil</td><td>FlotaEcu Logística</td><td>6t · Manufactura</td><td>02 Abr</td><td><span style="color:var(--green);font-weight:600">100%</span></td><td>$760</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-sm">POD</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="completados"><td class="td-mono">KP-2046</td><td>Quito → Ibarra</td><td>Flota Norte Express</td><td>3t · Última milla</td><td>02 Abr</td><td><span style="color:var(--amber);font-weight:600">89%</span></td><td>$380</td><td><span class="badge badge-delivered">Entregado</span></td><td><button class="btn btn-ghost btn-sm">POD</button></td></tr>
+              <tr class="row-hover pedido-row" data-status="cancelados"><td class="td-mono">KP-2044</td><td>Guayaquil → Manta</td><td>Transp. Noreste</td><td>4t · Seca</td><td>28 Mar</td><td>—</td><td>$520</td><td><span class="badge badge-cancelled">Cancelado</span></td><td><button class="btn btn-ghost btn-sm">Ver</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PROVEEDORES ===== -->
+    <div id="page-proveedores" class="page">
+      <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+        <div style="font-size:13px;color:var(--text-mid)"><strong style="color:var(--text)">24 proveedores</strong> activos</div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <select class="form-input form-select" style="width:160px;padding:7px 12px">
+            <option>Todos los tipos</option><option>Transporte pesado</option><option>Refrigerado</option><option>Última milla</option><option>3PL</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="showToast('Enlace de invitación copiado al portapapeles','success')">+ Invitar proveedor</button>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="provider-card"><div class="prov-header"><div class="prov-avatar">FA</div><div><div class="prov-name">FlotaEcu Logística</div><div class="prov-type">Operador 3PL · Guayaquil</div></div></div><div class="stars">★★★★★</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.9 · 312 operaciones</div><div class="prov-stat">Flota<span>22 vehículos</span></div><div class="prov-stat">OTIF histórico<span style="color:var(--green)">96.2%</span></div><div class="prov-stat">Especialidad<span>Refrigerado, Pesada</span></div><div class="prov-stat">Cobertura<span>Nacional</span></div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="showProviderProfile('FlotaEcu Logística','FA')">Ver perfil</button></div>
+        <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#059669">TA</div><div><div class="prov-name">Transportes Andinos</div><div class="prov-type">Carga pesada · Quito</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.7 · 189 operaciones</div><div class="prov-stat">Flota<span>14 vehículos</span></div><div class="prov-stat">OTIF histórico<span style="color:var(--green)">94.8%</span></div><div class="prov-stat">Especialidad<span>Carga general, Granel</span></div><div class="prov-stat">Cobertura<span>Sierra y Costa</span></div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="showProviderProfile('Transportes Andinos','TA')">Ver perfil</button></div>
+        <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#7C3AED">EN</div><div><div class="prov-name">Expresos del Norte</div><div class="prov-type">Courier + Carga · Manta</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.5 · 92 operaciones</div><div class="prov-stat">Flota<span>8 vehículos</span></div><div class="prov-stat">OTIF histórico<span style="color:var(--amber)">93.1%</span></div><div class="prov-stat">Especialidad<span>Manabí, Costa Norte</span></div><div class="prov-stat">Cobertura<span>Costa Norte</span></div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="showProviderProfile('Expresos del Norte','EN')">Ver perfil</button></div>
+        <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#0891B2">FL</div><div><div class="prov-name">Flota Norte Express</div><div class="prov-type">Última milla · Ibarra</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.4 · 67 operaciones</div><div class="prov-stat">Flota<span>6 vehículos</span></div><div class="prov-stat">OTIF histórico<span style="color:var(--amber)">91.8%</span></div><div class="prov-stat">Especialidad<span>Distribución urbana</span></div><div class="prov-stat">Cobertura<span>Sierra Norte</span></div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="showProviderProfile('Flota Norte Express','FL')">Ver perfil</button></div>
+        <div class="provider-card"><div class="prov-header"><div class="prov-avatar" style="background:#DC2626">MC</div><div><div class="prov-name">Minera Cargo Cía.</div><div class="prov-type">Carga especial · Cuenca</div></div></div><div class="stars">★★★★☆</div><div style="font-size:11px;color:var(--text-light);margin-bottom:10px">4.3 · 44 operaciones</div><div class="prov-stat">Flota<span>5 vehículos</span></div><div class="prov-stat">OTIF histórico<span style="color:var(--amber)">92.4%</span></div><div class="prov-stat">Especialidad<span>Maquinaria, minería</span></div><div class="prov-stat">Cobertura<span>Sur del país</span></div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="showProviderProfile('Minera Cargo','MC')">Ver perfil</button></div>
+        <div class="provider-card" style="border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;min-height:200px" onclick="showToast('Funcionalidad de invitación próximamente disponible','info')">
+          <div style="font-size:28px;color:var(--text-light);margin-bottom:8px">+</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-mid)">Invitar proveedor</div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:4px">Expandir red de operadores</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RUTAS EN VIVO ===== -->
+    <div id="page-rutas" class="page">
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card" style="grid-column:span 1">
+          <div class="card-header">
+            <div><div class="card-title">Seguimiento en tiempo real</div><div class="card-sub">3 rutas activas · actualizado hace 2 min</div></div>
+            <span class="live-dot"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--cyan)" onclick="openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Carga seca','05 Abr 2026','$1,240','transit')">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2051</span>
+                <span class="badge badge-transit">En tránsito</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">Guayaquil → Cuenca · FlotaEcu · Juan Ramírez</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:62%;background:var(--cyan)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>62% completado</span><span>ETA 16:45h</span></div>
+            </div>
+            <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--green)" onclick="openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit')">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2050</span>
+                <span class="badge badge-transit">En tránsito</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">Quito → Guayaquil · Transp. Andinos · Carlos Méndez</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:35%;background:var(--green)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>35% completado</span><span>ETA 19:20h</span></div>
+            </div>
+            <div class="card" style="padding:14px;cursor:pointer;border-left:3px solid var(--amber)" onclick="openOrderModal('KP-2052','Guayaquil → Quito','FlotaEcu Logística','8t · Refrigerado','07 Abr 2026','$1,280','new')">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">KP-2052</span>
+                <span class="badge badge-new">Nuevo</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-mid);margin-bottom:6px">Guayaquil → Quito · FlotaEcu · Por asignar conductor</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:5%;background:var(--amber)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:4px"><span>Preparando salida</span><span>Salida 07 Abr 14:00h</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Mapa de rutas</div></div>
+          <div class="map-container" style="height:340px">
+            <div class="map-overlay"></div>
+            <svg viewBox="0 0 300 340" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="M80,60 L120,50 L180,55 L220,80 L230,130 L220,180 L200,220 L160,240 L120,235 L90,210 L70,170 L60,120 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
+              <path d="M110,195 Q130,150 150,130" stroke="#00B8E0" stroke-width="2.5" stroke-dasharray="8,5" fill="none"/>
+              <path d="M150,130 Q168,110 190,100" stroke="#00B8E0" stroke-width="2.5" stroke-dasharray="8,5" fill="none"/>
+              <path d="M150,130 Q130,165 110,195" stroke="#10B981" stroke-width="2" stroke-dasharray="6,4" fill="none" opacity=".7"/>
+              <path d="M110,210 Q130,170 150,130" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6,4" fill="none" opacity=".5"/>
+              <circle cx="110" cy="195" r="10" fill="#00B8E0" opacity=".9"/>
+              <circle cx="110" cy="195" r="16" fill="#00B8E0" opacity=".15"/>
+              <text x="110" y="218" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif" font-weight="600">Guayaquil</text>
+              <circle cx="150" cy="130" r="10" fill="#1A3DB5" opacity=".9"/>
+              <circle cx="150" cy="130" r="16" fill="#1A3DB5" opacity=".15"/>
+              <text x="150" y="153" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif" font-weight="600">Quito</text>
+              <circle cx="190" cy="100" r="7" fill="#7C3AED" opacity=".9"/>
+              <text x="190" y="120" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Cuenca</text>
+              <circle cx="110" cy="210" r="6" fill="#F59E0B" opacity=".9"/>
+              <text x="80" y="222" text-anchor="middle" fill="white" font-size="8" font-family="Outfit,sans-serif">Manta</text>
+              <circle cx="170" cy="80" r="5" fill="rgba(255,255,255,.5)"/>
+              <text x="170" y="72" text-anchor="middle" fill="rgba(255,255,255,.7)" font-size="7" font-family="Outfit,sans-serif">Ibarra</text>
+              <!-- Animated truck KP-2051 -->
+              <g>
+                <circle r="7" fill="white" opacity=".95">
+                  <animateMotion dur="8s" repeatCount="indefinite" path="M110,195 Q130,150 190,100"/>
+                </circle>
+                <text text-anchor="middle" fill="#1A3DB5" font-size="6" font-weight="700" dy="2">
+                  <animateMotion dur="8s" repeatCount="indefinite" path="M110,195 Q130,150 190,100"/>51
+                </text>
+              </g>
+              <!-- Animated truck KP-2050 -->
+              <g>
+                <circle r="6" fill="#10B981" opacity=".9">
+                  <animateMotion dur="12s" repeatCount="indefinite" path="M150,130 Q130,165 110,195"/>
+                </circle>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== REPORTES ===== -->
+    <div id="page-reportes" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text-mid)">Proof of Value — <strong>Abril 2026</strong></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm">Marzo 2026</button>
+          <button class="btn btn-ai btn-sm" onclick="aiGenerateReport()">✦ Análisis IA</button>
+          <button class="btn btn-primary btn-sm" onclick="showToast('Reporte exportado como PDF','success')">Exportar PDF</button>
+        </div>
+      </div>
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="report-kpi"><span class="val" style="color:var(--navy-mid)">$68,400</span><span class="lbl">GMV total</span></div>
+        <div class="report-kpi"><span class="val" style="color:var(--green)">94.7%</span><span class="lbl">OTIF global</span></div>
+        <div class="report-kpi"><span class="val" style="color:var(--cyan)">$9,240</span><span class="lbl">Ahorro vs mercado</span></div>
+        <div class="report-kpi"><span class="val" style="color:var(--amber)">47</span><span class="lbl">Pedidos gestionados</span></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">GMV Mensual</div></div>
+          <div style="height:160px;display:flex;align-items:flex-end;gap:6px;padding:20px 0 20px" id="bar-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Ahorro vs. tarifa de mercado</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Carga seca nacional</span><span style="color:var(--green);font-weight:600">−14.2%</span></div><div class="progress-bar"><div class="progress-fill" style="width:70%;background:var(--navy-mid)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Transporte refrigerado</span><span style="color:var(--green);font-weight:600">−18.7%</span></div><div class="progress-bar"><div class="progress-fill" style="width:82%;background:var(--cyan)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Última milla</span><span style="color:var(--green);font-weight:600">−11.4%</span></div><div class="progress-bar"><div class="progress-fill" style="width:60%;background:var(--navy-mid)"></div></div></div>
+          </div>
+          <div style="margin-top:14px;background:var(--green-light);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:#065F46;font-weight:600">Ahorro total Abril</span>
+            <span style="font-size:18px;font-weight:800;color:#059669">$9,240</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== AI PANEL ===== -->
+<div class="ai-panel hidden" id="ai-panel">
+  <div class="ai-header">
+    <div class="ai-avatar">✦</div>
+    <div>
+      <div class="ai-title">Asistente KallpaPro IA</div>
+      <div class="ai-sub">Logística inteligente · Powered by Claude</div>
+    </div>
+    <div class="ai-status">
+      <span class="live-dot" style="width:6px;height:6px"></span>
+      En línea
+    </div>
+  </div>
+
+  <div class="ai-messages" id="ai-messages">
+    <div class="msg ai">
+      <div class="msg-avatar">✦</div>
+      <div class="msg-bubble">
+        ¡Hola María! 👋 Soy tu asistente logístico IA. Puedo ayudarte a:<br><br>
+        • Analizar tus pedidos y operaciones<br>
+        • Comparar proveedores y recomendar el mejor para cada ruta<br>
+        • Generar insights del dashboard<br>
+        • Responder preguntas sobre KPIs y reportes<br><br>
+        ¿En qué te puedo ayudar hoy?
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-input-area">
+    <div class="ai-chips">
+      <div class="ai-chip" onclick="sendChip('¿Cuáles son mis KPIs más importantes este mes?')">📊 KPIs del mes</div>
+      <div class="ai-chip" onclick="sendChip('¿Qué proveedor me recomiendas para Guayaquil → Quito refrigerado?')">🚛 Recomendar proveedor</div>
+      <div class="ai-chip" onclick="sendChip('Resume el estado de mis pedidos activos')">📦 Estado de pedidos</div>
+      <div class="ai-chip" onclick="sendChip('¿Cómo puedo mejorar mi OTIF?')">📈 Mejorar OTIF</div>
+    </div>
+    <div class="ai-input-row">
+      <input type="text" class="ai-input" id="ai-input" placeholder="Escribe tu consulta logística..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="ai-send" id="ai-send-btn" onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal" onclick="if(event.target===this)closeModal('order-modal')">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-order-id">KP-2051</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:2px" id="modal-order-route">Guayaquil → Cuenca</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('order-modal')">×</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- PROVIDER MODAL -->
+<div class="modal-overlay" id="provider-modal" onclick="if(event.target===this)closeModal('provider-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="prov-modal-name">FlotaEcu Logística</div>
+      <button class="modal-close" onclick="closeModal('provider-modal')">×</button>
+    </div>
+    <div id="prov-modal-content"></div>
+  </div>
+</div>
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay" id="search-overlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M12 12l2.5 2.5"/></svg>
+      <input type="text" class="search-main" id="search-input" placeholder="Buscar pedidos, proveedores, rutas..." oninput="doSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()">
+      <span style="font-size:11px;color:var(--text-light);background:var(--bg);padding:2px 6px;border-radius:4px;cursor:pointer" onclick="closeSearch()">Esc</span>
+    </div>
+    <div class="search-results" id="search-results">
+      <div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar en KallpaPro...</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+const pages={dashboard:'Dashboard',solicitud:'Nueva Solicitud',pedidos:'Mis Pedidos',proveedores:'Proveedores',rutas:'Rutas en Vivo',reportes:'Reportes & POV'};
+const subs={dashboard:'/ Resumen ejecutivo',solicitud:'/ Crear pedido',pedidos:'/ Gestión de operaciones',proveedores:'/ Marketplace de operadores',rutas:'/ Seguimiento en tiempo real',reportes:'/ Proof of Value mensual'};
+
+function navigate(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  const page=document.getElementById('page-'+id);
+  if(page){page.classList.add('active');page.classList.add('animate-in');setTimeout(()=>page.classList.remove('animate-in'),300);}
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-title').textContent=pages[id]||id;
+  document.getElementById('page-sub').textContent=subs[id]||'';
+  if(id==='reportes')buildChart();
+}
+
+// WIZARD
+function nextStep(n){
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('step'+i);
+    if(el)el.style.display=i===n?'block':'none';
+  }
+  document.getElementById('step-success').style.display='none';
+  for(let i=1;i<=4;i++){
+    const c=document.getElementById('sc'+i);const l=document.getElementById('sl'+i);
+    if(c&&l){
+      c.className='step-circle'+(i<n?' done':i===n?' current':'');
+      l.className='step-label'+(i<n?' done':i===n?' current':'');
+      if(i<n)c.textContent='✓';else c.textContent=i;
+    }
+  }
+  if(n===3){
+    const origen=document.getElementById('s-origen')?.value||'Guayaquil';
+    const destino=document.getElementById('s-destino')?.value||'Quito';
+    const peso=document.getElementById('s-peso')?.value||'8';
+    const carga=document.getElementById('s-carga')?.value||'Carga refrigerada';
+    document.getElementById('route-summary').textContent=origen+' → '+destino;
+    document.getElementById('cargo-summary').textContent=peso+' ton '+carga.toLowerCase();
+  }
+  if(n===4){
+    const sel=document.querySelector('.provider-card.selected');
+    if(sel){
+      document.getElementById('confirm-prov').textContent=sel.dataset.name||'FlotaEcu Logística';
+      document.getElementById('confirm-price').textContent=(sel.dataset.price||'$1,280')+' + IVA';
+    }
+  }
+}
+
+function selectProvider(card){
+  document.querySelectorAll('.provider-card').forEach(c=>{
+    c.classList.remove('selected');
+    const tag=c.querySelector('.sel-tag');if(tag)tag.remove();
+  });
+  card.classList.add('selected');
+  const tag=document.createElement('div');
+  tag.className='sel-tag';
+  tag.style.cssText='margin-top:8px;font-size:10px;color:var(--green);font-weight:600';
+  tag.textContent='✓ Seleccionado';
+  card.appendChild(tag);
+}
+
+let orderCounter=2053;
+function confirmOrder(){
+  document.getElementById('step4').style.display='none';
+  document.getElementById('step-success').style.display='block';
+  document.getElementById('new-order-id').textContent='KP-'+orderCounter++;
+  showToast('Pedido confirmado exitosamente','success');
+}
+
+function resetWizard(){
+  document.getElementById('step-success').style.display='none';
+  nextStep(1);
+}
+
+// ORDER MODAL
+function openOrderModal(id,route,provider,cargo,date,cost,status){
+  document.getElementById('modal-order-id').textContent=id;
+  document.getElementById('modal-order-route').textContent=route+' · '+provider;
+  const isTransit=status==='transit';
+  const isDelivered=status==='delivered';
+  const progress=isTransit?62:isDelivered?100:5;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:3px">Carga</div><div style="font-size:13px;font-weight:600">${cargo}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:3px">Costo</div><div style="font-size:13px;font-weight:700;color:var(--navy-mid)">${cost}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:3px">Fecha inicio</div><div style="font-size:13px;font-weight:600">${date}</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:3px">Proveedor</div><div style="font-size:13px;font-weight:600">${provider}</div></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="font-weight:600">Progreso del envío</span><span style="color:var(--cyan);font-weight:700">${progress}% completado</span></div>
+      <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${progress}%;background:${isDelivered?'var(--green)':isTransit?'var(--cyan)':'var(--amber)'}"></div></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">Línea de tiempo</div>
+      <div class="track-timeline">
+        <div class="track-step done">
+          <div class="track-dot done">✓</div>
+          <div class="track-info"><div class="track-title">Pedido confirmado</div><div class="track-sub">Proveedor notificado y aceptó la carga</div><div class="track-time">${date} · 09:15h</div></div>
+        </div>
+        <div class="track-step ${progress>=20?'done':''}">
+          <div class="track-dot ${progress>=20?'done':''}">✓</div>
+          <div class="track-info"><div class="track-title">Conductor asignado</div><div class="track-sub">Juan Ramírez · Placa GYE-1842</div><div class="track-time">${date} · 11:30h</div></div>
+        </div>
+        <div class="track-step ${progress>=40?'done':''}">
+          <div class="track-dot ${progress>=40?'done active':'active'}">→</div>
+          <div class="track-info"><div class="track-title">En camino</div><div class="track-sub">Salió de ${route.split(' → ')[0]}, GPS activo</div><div class="track-time">Hoy · 14:05h</div></div>
+        </div>
+        <div class="track-step">
+          <div class="track-dot ${isDelivered?'done':''}">📍</div>
+          <div class="track-info"><div class="track-title">Entregado en destino</div><div class="track-sub">${isDelivered?'Confirmado · Firma recibida':'Estimado: hoy 18:45h'}</div><div class="track-time">${isDelivered?'Hoy · 17:20h':'ETA 18:45h'}</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('order-modal')">Cerrar</button>
+      <button class="btn btn-ai btn-sm" onclick="closeModal('order-modal');setTimeout(()=>{openAI();setTimeout(()=>sendPrefilled('Analiza el pedido ${id}: ${route}, ${cargo}, estado actual, ¿hay riesgos?'),400)},200)">✦ Analizar con IA</button>
+    </div>
+  `;
+  document.getElementById('order-modal').classList.add('show');
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+// PROVIDER PROFILE MODAL
+function showProviderProfile(name,initials){
+  document.getElementById('prov-modal-name').textContent=name;
+  document.getElementById('prov-modal-content').innerHTML=`
+    <div style="display:flex;gap:16px;margin-bottom:16px;align-items:center">
+      <div class="prov-avatar" style="width:52px;height:52px;font-size:18px">${initials}</div>
+      <div>
+        <div style="font-size:15px;font-weight:700">${name}</div>
+        <div class="stars" style="font-size:14px">★★★★★</div>
+        <div style="font-size:12px;color:var(--text-light)">4.9 · 312 operaciones completadas</div>
+      </div>
+    </div>
+    <div class="grid2" style="gap:8px;margin-bottom:16px">
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">96.2%</div><div style="font-size:10px;color:var(--text-light)">OTIF histórico</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--navy-mid)">22</div><div style="font-size:10px;color:var(--text-light)">Vehículos activos</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--cyan)">6.5h</div><div style="font-size:10px;color:var(--text-light)">Tiempo prom. GYE→UIO</div></div>
+      <div style="background:var(--surface);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--amber)">$1,240</div><div style="font-size:10px;color:var(--text-light)">Tarifa prom. nacional</div></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Calificaciones recientes</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-light)"><span style="color:var(--text-mid)">Puntualidad</span><span style="color:var(--green);font-weight:600">★ 4.9</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-light)"><span style="color:var(--text-mid)">Cuidado de la carga</span><span style="color:var(--green);font-weight:600">★ 5.0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0"><span style="color:var(--text-mid)">Comunicación</span><span style="color:var(--green);font-weight:600">★ 4.8</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('provider-modal')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="closeModal('provider-modal');navigate('solicitud',document.querySelector('[onclick*=solicitud]'))">Crear pedido con este proveedor</button>
+    </div>
+  `;
+  document.getElementById('provider-modal').classList.add('show');
+}
+
+// PEDIDOS FILTER & SEARCH
+let currentFilter='activos';
+function filterPedidos(filter,btn){
+  currentFilter=filter;
+  document.querySelectorAll('#pedidos-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyPedidosFilter();
+}
+function applyPedidosFilter(){
+  const searchVal=document.getElementById('pedido-search')?.value.toLowerCase()||'';
+  document.querySelectorAll('.pedido-row').forEach(row=>{
+    const matchStatus=row.dataset.status===currentFilter;
+    const matchSearch=searchVal===''||row.textContent.toLowerCase().includes(searchVal);
+    row.style.display=(matchStatus&&matchSearch)?'':'none';
+  });
+}
+function searchPedidos(val){applyPedidosFilter();}
+
+// NOTIFICATIONS
+function toggleNotifs(){
+  const p=document.getElementById('notif-panel');p.classList.toggle('show');
+}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notif-panel');
+  if(p.classList.contains('show')&&!p.contains(e.target)&&!e.target.closest('#notif-btn'))p.classList.remove('show');
+});
+
+// SEARCH
+function openSearch(){
+  document.getElementById('search-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('search-input').focus(),100);
+}
+function closeSearch(){
+  document.getElementById('search-overlay').classList.remove('show');
+  document.getElementById('search-input').value='';
+  document.getElementById('search-results').innerHTML='<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar en KallpaPro...</div>';
+}
+const searchData=[
+  {type:'Pedido',icon:'📦',label:'KP-2051',sub:'Guayaquil → Cuenca · En tránsito',action:()=>{closeSearch();openOrderModal('KP-2051','Guayaquil → Cuenca','FlotaEcu Logística','12t · Seca','05 Abr 2026','$1,240','transit')}},
+  {type:'Pedido',icon:'📦',label:'KP-2050',sub:'Quito → Guayaquil · En tránsito',action:()=>{closeSearch();openOrderModal('KP-2050','Quito → Guayaquil','Transportes Andinos','5t · Refrigerado','04 Abr 2026','$890','transit')}},
+  {type:'Pedido',icon:'📦',label:'KP-2049',sub:'Manta → Quito · Sin asignar',action:()=>{closeSearch();navigate('pedidos',document.querySelector('[onclick*=pedidos]'))}},
+  {type:'Pedido',icon:'📦',label:'KP-2048',sub:'Guayaquil → Quito · Entregado',action:()=>{closeSearch();openOrderModal('KP-2048','Guayaquil → Quito','Transportes Andinos','15t · General','03 Abr 2026','$2,100','delivered')}},
+  {type:'Proveedor',icon:'🚛',label:'FlotaEcu Logística',sub:'4.9★ · 96.2% OTIF · Nacional',action:()=>{closeSearch();showProviderProfile('FlotaEcu Logística','FA')}},
+  {type:'Proveedor',icon:'🚛',label:'Transportes Andinos',sub:'4.7★ · 94.8% OTIF · Sierra y Costa',action:()=>{closeSearch();showProviderProfile('Transportes Andinos','TA')}},
+  {type:'Página',icon:'📊',label:'Dashboard',sub:'Resumen ejecutivo',action:()=>{closeSearch();navigate('dashboard',document.querySelector('[onclick*=dashboard]'))}},
+  {type:'Página',icon:'🗺️',label:'Rutas en Vivo',sub:'Seguimiento en tiempo real',action:()=>{closeSearch();navigate('rutas',document.querySelector('[onclick*=rutas]'))}},
+];
+function doSearch(q){
+  const r=document.getElementById('search-results');
+  if(!q){r.innerHTML='<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Escribe para buscar en KallpaPro...</div>';return;}
+  const results=searchData.filter(d=>d.label.toLowerCase().includes(q.toLowerCase())||d.sub.toLowerCase().includes(q.toLowerCase()));
+  if(!results.length){r.innerHTML='<div style="padding:16px 20px;font-size:12px;color:var(--text-light);text-align:center">Sin resultados para "'+q+'"</div>';return;}
+  r.innerHTML=results.map((d,i)=>`<div class="search-result-item" onclick="searchData[${searchData.indexOf(d)}].action()"><div class="search-result-icon" style="background:var(--bg)">${d.icon}</div><div><div style="font-weight:600;font-size:13px">${d.label}</div><div style="font-size:11px;color:var(--text-light)">${d.type} · ${d.sub}</div></div></div>`).join('');
+}
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openSearch();}});
+
+// TOAST
+function showToast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'✅',info:'ℹ️',warning:'⚠️'};
+  t.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span style="flex:1;font-size:13px">${msg}</span><span style="cursor:pointer;color:var(--text-light);font-size:16px" onclick="this.parentElement.remove()">×</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-8px)';t.style.transition='all .3s';setTimeout(()=>t.remove(),300)},4000);
+}
+
+// CITY INFO
+function showCityInfo(city){
+  const info={Guayaquil:'Hub principal · 3 pedidos activos · 6 proveedores',Quito:'Hub Sierra · 2 pedidos recibidos · 4 proveedores',Cuenca:'Nodo Sur · 1 pedido en camino',Manta:'Costa Norte · 1 pedido pendiente'};
+  showToast(city+': '+info[city],'info');
+}
+
+// CHART
+function buildChart(){
+  const data=[{m:'Nov',gmv:42,p:31},{m:'Dic',gmv:38,p:28},{m:'Ene',gmv:51,p:39},{m:'Feb',gmv:55,p:42},{m:'Mar',gmv:61,p:44},{m:'Abr',gmv:68,p:47}];
+  const chart=document.getElementById('bar-chart');
+  if(!chart)return;
+  const maxGmv=Math.max(...data.map(d=>d.gmv));
+  chart.innerHTML=data.map(d=>{
+    const hGmv=Math.round((d.gmv/maxGmv)*100);
+    const hPed=Math.round((d.p/maxGmv)*100);
+    return`<div style="flex:1;display:flex;align-items:flex-end;gap:3px;flex-direction:row;justify-content:center">
+      <div class="bar" style="flex:1;height:${hGmv}%;background:var(--navy-mid);border-radius:4px 4px 0 0;position:relative" title="$${d.gmv}K GMV">
+        <div class="bar-val">$${d.gmv}K</div><div class="bar-label">${d.m}</div>
+      </div>
+      <div class="bar" style="flex:1;height:${hPed}%;background:var(--cyan);border-radius:4px 4px 0 0;opacity:.7" title="${d.p} pedidos"></div>
+    </div>`;
+  }).join('');
+}
+
+// AI PANEL
+let aiOpen=false;
+function toggleAI(){aiOpen?closeAIPanel():openAI();}
+function openAI(){aiOpen=true;document.getElementById('ai-panel').classList.remove('hidden');}
+function closeAIPanel(){aiOpen=false;document.getElementById('ai-panel').classList.add('hidden');}
+
+function sendChip(msg){
+  const input=document.getElementById('ai-input');
+  input.value=msg;
+  sendMessage();
+}
+function sendPrefilled(msg){
+  const input=document.getElementById('ai-input');
+  input.value=msg;
+  sendMessage();
+}
+
+const SYSTEM_PROMPT=`Eres el asistente de inteligencia artificial integrado en KallpaPro, una plataforma logística B2B para Ecuador. Tu nombre es "Asistente KallpaPro IA".
+
+Datos actuales de la plataforma (Abril 2026):
+- GMV del mes: $68,400
+- Pedidos activos: 47 (7 en el sistema actual)
+- OTIF global: 94.7%
+- Ahorro vs mercado: $9,240 (18.7% refrigerado, 14.2% seca, 11.4% última milla)
+- Tiempo promedio entrega: 4h 12m
+- Pedidos en tránsito: KP-2051 (GYE→Cuenca, 62% completado), KP-2050 (UIO→GYE, 35%), KP-2052 (GYE→UIO, nuevo)
+- Pedido pendiente sin asignar: KP-2049 (Manta→Quito)
+- Proveedores top: FlotaEcu Logística (4.9★, 96.2% OTIF), Transportes Andinos (4.7★, 94.8%), Expresos del Norte (4.5★, 93.1%)
+- Usuario: María Correa, Gerente Logística
+
+Responde en español, de forma concisa y útil. Usa emojis ocasionalmente. Cuando recomiendes proveedores, explica el porqué basado en OTIF, precio y especialidad. Si te preguntan sobre rutas específicas, da estimaciones realistas de tiempo y costo. Mantén respuestas bajo 150 palabras para ser ágil.`;
+
+async function sendMessage(){
+  const input=document.getElementById('ai-input');
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  document.getElementById('ai-send-btn').disabled=true;
+  appendMsg(msg,'user');
+  const typing=appendTyping();
+  try{
+    const history=getHistory();
+    history.push({role:'user',content:msg});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYSTEM_PROMPT,messages:history})
+    });
+    const data=await res.json();
+    typing.remove();
+    const reply=data.content?.map(b=>b.text||'').join('')||'Lo siento, no pude procesar tu consulta. Intenta de nuevo.';
+    appendMsg(reply,'ai');
+    addToHistory(msg,reply);
+  }catch(e){
+    typing.remove();
+    appendMsg('Error de conexión. Verifica tu conexión e intenta de nuevo.','ai');
+  }
+  document.getElementById('ai-send-btn').disabled=false;
+}
+
+let chatHistory=[];
+function getHistory(){return chatHistory.slice(-10).map(h=>h);}
+function addToHistory(user,ai){
+  chatHistory.push({role:'user',content:user});
+  chatHistory.push({role:'assistant',content:ai});
+}
+
+function appendMsg(text,role){
+  const msgs=document.getElementById('ai-messages');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  const avatarHTML=role==='ai'?'<div class="msg-avatar">✦</div>':'<div class="msg-avatar">MC</div>';
+  div.innerHTML=avatarHTML+`<div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function appendTyping(){
+  const msgs=document.getElementById('ai-messages');
+  const div=document.createElement('div');
+  div.className='msg ai';
+  div.innerHTML='<div class="msg-avatar">✦</div><div class="ai-typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+// AI SUGGEST PROVIDER
+function aiSuggestProvider(){
+  openAI();
+  setTimeout(()=>sendPrefilled('Analiza los 3 proveedores disponibles para esta ruta refrigerada y recomiéndame el mejor, explicando el porqué.'),300);
+}
+
+// AI GENERATE REPORT
+function aiGenerateReport(){
+  openAI();
+  setTimeout(()=>sendPrefilled('Genera un análisis ejecutivo del Proof of Value de Abril 2026 con los KPIs actuales y 3 recomendaciones de mejora.'),300);
+}
+
+// INIT
+buildChart();
+applyPedidosFilter();
+</script>
+</body>
+</html>

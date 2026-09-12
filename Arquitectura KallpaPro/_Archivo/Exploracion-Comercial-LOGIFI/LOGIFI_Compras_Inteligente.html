@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOGIFI™ · Módulo Compras Inteligentes — KallpaPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1B2B;          /* petróleo profundo */
+    --ink-2:#13283D;
+    --ink-3:#1B3551;
+    --paper:#F4EFE6;        /* papel andino */
+    --paper-2:#EAE3D4;
+    --gold:#C9A227;         /* oro andino */
+    --gold-2:#E0B84A;
+    --rust:#A6422E;         /* terracota */
+    --moss:#3F6B4F;         /* verde musgo */
+    --sky:#3B6E91;
+    --line:rgba(11,27,43,.12);
+    --line-strong:rgba(11,27,43,.28);
+    --shadow:0 1px 0 rgba(11,27,43,.06), 0 12px 40px -18px rgba(11,27,43,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    background-image:
+      radial-gradient(1200px 600px at 90% -10%, rgba(201,162,39,.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(63,107,79,.08), transparent 60%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><circle cx='1' cy='1' r='.4' fill='%230B1B2B' opacity='.05'/></svg>");
+  }
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:-.01em}
+  .serif{font-family:'Fraunces',serif;font-feature-settings:"ss01","ss02"}
+  
+  /* TOP BAR */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;border-bottom:1px solid var(--line);
+    background:rgba(244,239,230,.85);backdrop-filter:blur(10px);
+    position:sticky;top:0;z-index:50;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;
+    background:var(--ink);color:var(--paper);
+    display:grid;place-items:center;font-family:'Fraunces',serif;
+    font-weight:900;font-size:20px;font-style:italic;
+    box-shadow:inset 0 0 0 2px var(--gold);
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.05}
+  .brand-text b{font-family:'Fraunces',serif;font-weight:700;font-size:18px;letter-spacing:-.02em}
+  .brand-text small{font-size:10.5px;color:var(--ink-3);letter-spacing:.18em;text-transform:uppercase}
+  .crumbs{font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:8px}
+  .crumbs span{opacity:.5}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .topbar-right{display:flex;align-items:center;gap:18px}
+  .pill{
+    font-size:11px;padding:5px 10px;border-radius:999px;
+    background:var(--ink);color:var(--paper);letter-spacing:.06em;text-transform:uppercase;font-weight:600
+  }
+  .ai-badge{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    padding:5px 11px;border-radius:999px;
+    background:linear-gradient(90deg,var(--gold) 0%,var(--gold-2) 100%);
+    color:var(--ink);font-weight:600;
+  }
+  .ai-badge::before{
+    content:"";width:7px;height:7px;border-radius:50%;background:var(--ink);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+  .user-chip{display:flex;align-items:center;gap:10px;font-size:13px}
+  .user-chip .av{width:30px;height:30px;border-radius:50%;background:var(--ink-3);color:var(--paper);display:grid;place-items:center;font-weight:700;font-size:11px}
+  
+  /* LAYOUT */
+  .shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 67px)}
+  .sidebar{
+    border-right:1px solid var(--line);
+    padding:24px 18px;background:rgba(234,227,212,.4);
+  }
+  .side-label{
+    font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);
+    margin:18px 8px 8px;font-weight:600
+  }
+  .side-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 12px;border-radius:8px;font-size:13.5px;color:var(--ink-2);
+    cursor:pointer;transition:all .2s;font-weight:500
+  }
+  .side-item:hover{background:rgba(11,27,43,.06)}
+  .side-item.active{background:var(--ink);color:var(--paper)}
+  .side-item.active .ico{filter:invert(1)}
+  .ico{width:16px;height:16px;display:inline-block;opacity:.85}
+  .side-item .badge{font-size:10px;padding:2px 7px;border-radius:999px;background:var(--gold);color:var(--ink);font-weight:700}
+  
+  /* MAIN */
+  .main{padding:28px 38px 60px}
+  .hero{
+    display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:end;
+    padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:30px;
+  }
+  .hero h1{
+    font-family:'Fraunces',serif;font-weight:600;font-size:54px;line-height:.98;
+    letter-spacing:-.035em;color:var(--ink);
+  }
+  .hero h1 em{font-style:italic;color:var(--rust);font-weight:500}
+  .hero p{margin-top:14px;color:var(--ink-3);max-width:540px;font-size:14.5px;line-height:1.55}
+  .hero-meta{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .meta-row{display:flex;gap:18px;font-size:11px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+  .meta-row b{color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0;text-transform:none;font-weight:600}
+  
+  /* STEPPER */
+  .stepper{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+    margin-bottom:34px;border:1px solid var(--line);background:#fff;
+    border-radius:14px;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .step{
+    padding:18px 22px;display:flex;flex-direction:column;gap:6px;
+    border-right:1px solid var(--line);position:relative;cursor:pointer;
+    transition:background .25s;
+  }
+  .step:last-child{border-right:none}
+  .step:hover{background:var(--paper)}
+  .step.done{background:linear-gradient(180deg,#fff,rgba(63,107,79,.04))}
+  .step.active{background:var(--ink);color:var(--paper)}
+  .step.active .step-no{background:var(--gold);color:var(--ink)}
+  .step-no{
+    width:26px;height:26px;border-radius:50%;background:var(--paper-2);color:var(--ink);
+    display:grid;place-items:center;font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:12px
+  }
+  .step.done .step-no{background:var(--moss);color:#fff}
+  .step-title{font-size:13.5px;font-weight:600;letter-spacing:-.005em}
+  .step-sub{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;font-weight:600}
+  .step.active .step-sub{opacity:.7}
+  
+  /* PANELS */
+  .panel{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    margin-bottom:24px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .panel-head{
+    padding:18px 24px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);background:var(--paper);
+  }
+  .panel-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:22px;letter-spacing:-.02em}
+  .panel-head .sub{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .panel-body{padding:24px}
+  
+  /* STEP 1 — REQUERIMIENTO */
+  .req-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:24px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .field input,.field select,.field textarea{
+    border:1px solid var(--line-strong);background:#fff;padding:11px 13px;border-radius:8px;
+    font-family:inherit;font-size:14px;color:var(--ink);transition:all .2s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(11,27,43,.08)
+  }
+  .field.full{grid-column:1/-1}
+  
+  .ai-suggest{
+    margin-top:14px;padding:16px;border-radius:10px;
+    background:linear-gradient(135deg,rgba(201,162,39,.12),rgba(201,162,39,.04));
+    border:1px dashed var(--gold);position:relative;
+  }
+  .ai-suggest::before{
+    content:"IA";position:absolute;top:-10px;left:14px;
+    background:var(--gold);color:var(--ink);padding:2px 8px;border-radius:4px;
+    font-size:10px;font-weight:800;letter-spacing:.1em
+  }
+  .ai-suggest h4{font-size:13px;margin-bottom:6px;font-weight:600}
+  .ai-suggest p{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .ai-suggest .sample-items{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;
+  }
+  .sample-item{
+    font-size:11px;background:#fff;padding:4px 9px;border-radius:6px;
+    border:1px solid var(--line-strong);font-family:'JetBrains Mono',monospace;
+    cursor:pointer;transition:all .2s
+  }
+  .sample-item:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  
+  /* item table */
+  .items-tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  .items-tbl th{
+    text-align:left;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-3);padding:10px 8px;border-bottom:1px solid var(--line-strong);font-weight:600
+  }
+  .items-tbl td{padding:11px 8px;border-bottom:1px solid var(--line)}
+  .items-tbl tr:last-child td{border-bottom:none}
+  .qty{font-family:'JetBrains Mono',monospace;font-weight:600}
+  
+  .summary-card{
+    background:var(--ink);color:var(--paper);border-radius:12px;padding:22px;
+    position:relative;overflow:hidden
+  }
+  .summary-card::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(400px 200px at 100% 0%,rgba(201,162,39,.18),transparent);
+  }
+  .summary-card h3{font-family:'Fraunces',serif;font-weight:500;font-size:14px;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-bottom:18px;position:relative}
+  .sum-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(244,239,230,.1);font-size:13px;position:relative}
+  .sum-row:last-child{border-bottom:none}
+  .sum-row b{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .sum-total{font-family:'Fraunces',serif;font-size:32px!important;font-weight:600;color:var(--gold-2)!important}
+  
+  /* WEIGHTS PANEL */
+  .weights-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+  .weight-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    padding:16px;display:flex;flex-direction:column;gap:12px;
+  }
+  .weight-card h4{font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+  .weight-card h4 b{font-family:'Fraunces',serif;font-size:22px;color:var(--rust)}
+  .weight-card p{font-size:11px;color:var(--ink-3);line-height:1.4}
+  .slider{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:4px;background:var(--paper-2);border-radius:999px;outline:none
+  }
+  .slider::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:18px;height:18px;border-radius:50%;background:var(--ink);cursor:pointer;
+    box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--ink)
+  }
+  .slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--ink);cursor:pointer;border:none}
+  .weight-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+  .weights-foot{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:18px;padding-top:18px;border-top:1px dashed var(--line-strong);
+  }
+  .weights-foot .total{font-family:'JetBrains Mono',monospace;font-size:14px}
+  .weights-foot .total b{color:var(--moss);font-size:18px}
+  .preset-row{display:flex;gap:8px}
+  .preset{
+    font-size:11px;padding:6px 11px;border-radius:6px;
+    border:1px solid var(--line-strong);background:#fff;cursor:pointer;
+    font-weight:500;transition:all .2s
+  }
+  .preset:hover{border-color:var(--ink)}
+  .preset.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  
+  /* QUOTES — RFQ Mix */
+  .source-tabs{display:flex;gap:6px;margin-bottom:18px}
+  .src-tab{
+    padding:8px 14px;font-size:12px;border-radius:7px;background:var(--paper);
+    border:1px solid var(--line-strong);cursor:pointer;font-weight:500;display:flex;align-items:center;gap:7px
+  }
+  .src-tab.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .src-tab .dot{width:6px;height:6px;border-radius:50%;background:var(--moss)}
+  .src-tab.active .dot{background:var(--gold)}
+  
+  .quotes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .quote{
+    background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    position:relative;transition:transform .25s, box-shadow .25s;display:flex;flex-direction:column
+  }
+  .quote:hover{transform:translateY(-3px);box-shadow:0 18px 40px -20px rgba(11,27,43,.35)}
+  .quote.recommended{
+    border:2px solid var(--gold);box-shadow:0 0 0 4px rgba(201,162,39,.12)
+  }
+  .quote.recommended::before{
+    content:"★ Recomendación IA";position:absolute;top:14px;right:14px;
+    background:var(--gold);color:var(--ink);font-size:10px;font-weight:800;
+    padding:4px 10px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase;z-index:2
+  }
+  .quote-head{padding:18px 20px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .rank{
+    font-family:'Fraunces',serif;font-style:italic;font-size:48px;font-weight:600;
+    line-height:1;color:var(--rust);margin-bottom:6px
+  }
+  .quote-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:20px;letter-spacing:-.015em}
+  .quote-head .who{font-size:11px;color:var(--ink-3);margin-top:4px;display:flex;gap:10px}
+  .src-tag{
+    font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--paper)
+  }
+  .src-tag.cat{background:var(--moss)}
+  .src-tag.rfq{background:var(--sky)}
+  .src-tag.mkt{background:var(--rust)}
+  
+  .quote-body{padding:18px 20px;flex:1;display:flex;flex-direction:column;gap:14px}
+  .price{font-family:'Fraunces',serif;font-size:34px;font-weight:600;line-height:1;color:var(--ink)}
+  .price small{font-size:13px;color:var(--ink-3);font-family:'Inter Tight',sans-serif;font-weight:500;margin-left:4px}
+  .price-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3)}
+  .price-meta .delta{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .delta.up{color:var(--rust)}.delta.down{color:var(--moss)}
+  
+  /* score breakdown */
+  .score-block{background:var(--paper);border-radius:10px;padding:14px}
+  .score-total{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .score-total b{font-family:'Fraunces',serif;font-size:42px;font-weight:600;line-height:1}
+  .score-total span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .score-bars{display:flex;flex-direction:column;gap:7px}
+  .sb-row{display:grid;grid-template-columns:60px 1fr 38px;gap:8px;align-items:center;font-size:11px}
+  .sb-row label{color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-size:10px}
+  .sb-track{height:5px;background:var(--paper-2);border-radius:999px;overflow:hidden}
+  .sb-fill{height:100%;background:var(--ink);border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .quote.recommended .sb-fill{background:var(--gold)}
+  .sb-row b{font-family:'JetBrains Mono',monospace;text-align:right;font-weight:600;font-size:11px}
+  
+  .quote-foot{padding:14px 20px;border-top:1px solid var(--line);background:var(--paper)}
+  .terms{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;color:var(--ink-3)}
+  .terms div b{display:block;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;margin-top:2px}
+  
+  /* IA narrative */
+  .ai-narrative{
+    margin-top:24px;padding:22px 24px;border-radius:12px;
+    background:linear-gradient(135deg,var(--ink) 0%,var(--ink-2) 100%);
+    color:var(--paper);position:relative;overflow:hidden
+  }
+  .ai-narrative::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(500px 250px at 90% 100%,rgba(201,162,39,.18),transparent);
+  }
+  .ai-narrative .ai-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative}
+  .ai-narrative h4{font-family:'Fraunces',serif;font-weight:600;font-size:18px}
+  .ai-narrative p{font-size:13.5px;line-height:1.65;color:rgba(244,239,230,.85);position:relative;max-width:780px}
+  .ai-narrative p b{color:var(--gold-2);font-weight:600}
+  
+  /* APPROVAL FLOW */
+  .approval-flow{display:grid;grid-template-columns:1fr;gap:14px}
+  .flow-step{
+    display:grid;grid-template-columns:auto 1fr auto;gap:18px;
+    padding:16px 20px;border:1px solid var(--line);border-radius:10px;
+    background:#fff;align-items:center;
+  }
+  .flow-step.current{border-color:var(--gold);background:linear-gradient(90deg,rgba(201,162,39,.06),transparent)}
+  .flow-step.done{background:rgba(63,107,79,.05);border-color:rgba(63,107,79,.3)}
+  .fs-icon{
+    width:42px;height:42px;border-radius:10px;background:var(--paper-2);
+    display:grid;place-items:center;font-family:'JetBrains Mono',monospace;
+    font-weight:700;color:var(--ink-3)
+  }
+  .flow-step.done .fs-icon{background:var(--moss);color:#fff}
+  .flow-step.current .fs-icon{background:var(--gold);color:var(--ink)}
+  .fs-info h4{font-size:14px;font-weight:600;margin-bottom:3px}
+  .fs-info p{font-size:12px;color:var(--ink-3)}
+  .fs-info p .who{font-weight:600;color:var(--ink)}
+  .fs-status{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:6px}
+  .st-pending{background:var(--paper-2);color:var(--ink-3)}
+  .st-current{background:var(--gold);color:var(--ink)}
+  .st-done{background:var(--moss);color:#fff}
+  
+  /* PO PREVIEW */
+  .po-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:24px}
+  .po-doc{
+    background:#fff;border:1px solid var(--line-strong);border-radius:10px;
+    padding:32px;font-family:'Fraunces',serif;position:relative;overflow:hidden
+  }
+  .po-doc::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:6px;
+    background:linear-gradient(90deg,var(--ink),var(--gold),var(--rust))
+  }
+  .po-watermark{
+    position:absolute;right:-30px;top:50%;transform:translateY(-50%) rotate(-8deg);
+    font-family:'Fraunces',serif;font-style:italic;font-weight:900;font-size:140px;
+    color:rgba(201,162,39,.06);letter-spacing:-.05em;pointer-events:none;line-height:.8
+  }
+  .po-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;position:relative}
+  .po-head .num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-3);letter-spacing:.05em}
+  .po-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:32px;letter-spacing:-.02em;margin-top:6px}
+  .po-head h2 em{font-style:italic;color:var(--rust)}
+  .po-head .right{text-align:right;font-family:'Inter Tight',sans-serif;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+  .po-head .right b{display:block;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink);margin-top:3px;font-weight:600;letter-spacing:0;text-transform:none}
+  
+  .po-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;font-family:'Inter Tight',sans-serif}
+  .po-parties .pp{background:var(--paper);padding:14px 16px;border-radius:8px;border-left:3px solid var(--ink)}
+  .po-parties .pp.sup{border-left-color:var(--gold)}
+  .po-parties .pp h5{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;font-weight:600}
+  .po-parties .pp b{font-family:'Fraunces',serif;font-size:16px;font-weight:600;display:block;margin-bottom:3px}
+  .po-parties .pp p{font-size:11.5px;color:var(--ink-3);line-height:1.5}
+  
+  .po-table{width:100%;border-collapse:collapse;font-family:'Inter Tight',sans-serif;margin-bottom:18px}
+  .po-table th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 8px;border-bottom:2px solid var(--ink);font-weight:600}
+  .po-table th.r,.po-table td.r{text-align:right}
+  .po-table td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:13px}
+  .po-table td.mono{font-family:'JetBrains Mono',monospace;font-weight:500}
+  
+  .po-totals{margin-left:auto;width:280px;font-family:'Inter Tight',sans-serif;font-size:13px}
+  .po-totals .row{display:flex;justify-content:space-between;padding:6px 0}
+  .po-totals .row.tot{border-top:2px solid var(--ink);margin-top:6px;padding-top:10px;font-family:'Fraunces',serif;font-size:22px;font-weight:600}
+  .po-totals .row b{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .po-totals .row.tot b{font-family:'Fraunces',serif;color:var(--rust)}
+  
+  .po-signs{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:30px;font-family:'Inter Tight',sans-serif}
+  .po-sign{border-top:1px solid var(--ink);padding-top:8px;text-align:center;font-size:11px;color:var(--ink-3)}
+  .po-sign b{display:block;color:var(--ink);font-size:12px;font-weight:600;margin-bottom:2px}
+  
+  /* SIDE PO PANEL */
+  .po-side{display:flex;flex-direction:column;gap:18px}
+  .po-checklist{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
+  .po-checklist h4{font-size:13px;font-weight:600;margin-bottom:12px;letter-spacing:-.01em}
+  .check-item{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12.5px;color:var(--ink-3)}
+  .check-item .ck{width:18px;height:18px;border-radius:5px;background:var(--moss);color:#fff;display:grid;place-items:center;font-size:11px;flex-shrink:0;font-weight:700}
+  .check-item.warn .ck{background:var(--gold);color:var(--ink)}
+  
+  .send-card{
+    background:linear-gradient(135deg,var(--rust) 0%,#822f1f 100%);
+    color:var(--paper);border-radius:12px;padding:20px;
+  }
+  .send-card h4{font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin-bottom:6px}
+  .send-card p{font-size:12px;opacity:.85;line-height:1.5;margin-bottom:14px}
+  .send-options{display:flex;flex-direction:column;gap:8px}
+  .send-opt{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+    background:rgba(244,239,230,.12);font-size:12.5px;cursor:pointer;transition:background .2s
+  }
+  .send-opt:hover{background:rgba(244,239,230,.22)}
+  .send-opt input{accent-color:var(--gold)}
+  
+  /* CTA */
+  .cta-row{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:22px}
+  .btn{
+    padding:13px 22px;font-size:13.5px;font-weight:600;letter-spacing:-.005em;
+    border-radius:9px;cursor:pointer;border:none;font-family:inherit;transition:all .2s;
+    display:inline-flex;align-items:center;gap:9px
+  }
+  .btn-primary{background:var(--ink);color:var(--paper)}
+  .btn-primary:hover{background:var(--ink-2);transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(11,27,43,.4)}
+  .btn-gold{background:var(--gold);color:var(--ink)}
+  .btn-gold:hover{background:var(--gold-2);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
+  .btn-ghost:hover{background:var(--paper-2)}
+  .btn-rust{background:var(--rust);color:var(--paper)}
+  .btn-rust:hover{background:#822f1f}
+  
+  /* HIDDEN steps logic */
+  .step-content{display:none;animation:fadeIn .35s ease}
+  .step-content.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  
+  .footer-note{
+    margin-top:50px;text-align:center;font-size:11px;color:var(--ink-3);
+    letter-spacing:.1em;text-transform:uppercase;font-weight:600
+  }
+  .footer-note span{color:var(--rust)}
+  
+  /* responsive */
+  @media (max-width:1100px){
+    .shell{grid-template-columns:1fr}.sidebar{display:none}
+    .req-grid,.po-grid{grid-template-columns:1fr}
+    .quotes-grid{grid-template-columns:1fr}
+    .weights-grid{grid-template-columns:repeat(2,1fr)}
+    .hero{grid-template-columns:1fr}.hero-meta{align-items:flex-start}
+    .hero h1{font-size:38px}
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">L</div>
+    <div class="brand-text">
+      <b>LOGIFI<span style="color:var(--gold)">™</span></b>
+      <small>Compras · KallpaPro</small>
+    </div>
+    <div class="crumbs" style="margin-left:24px">
+      <span>Módulos</span> / <span>Compras</span> / <b>Nuevo Requerimiento</b>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="ai-badge">IA · Claude assistant activo</span>
+    <span class="pill">Plan Pro · B2B</span>
+    <div class="user-chip">
+      <div class="av">CM</div>
+      <div>
+        <div style="font-weight:600">Cristhan M.</div>
+        <div style="font-size:11px;color:var(--ink-3)">Comprador · Mining Co.</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="side-label">Operación</div>
+    <div class="side-item"><span>Dashboard</span></div>
+    <div class="side-item"><span>Inventario</span></div>
+    <div class="side-item active"><span>Compras</span><span class="badge">14</span></div>
+    <div class="side-item"><span>Ventas</span></div>
+    <div class="side-item"><span>Logística · TMS</span></div>
+    <div class="side-item"><span>Financiero</span></div>
+    
+    <div class="side-label" style="margin-top:28px">Compras</div>
+    <div class="side-item active" style="background:var(--paper-2);color:var(--ink)"><span>Requerimientos</span></div>
+    <div class="side-item"><span>RFQ activos</span></div>
+    <div class="side-item"><span>Órdenes de compra</span></div>
+    <div class="side-item"><span>Recepciones</span></div>
+    <div class="side-item"><span>Proveedores</span></div>
+    <div class="side-item"><span>Catálogo</span></div>
+    
+    <div class="side-label" style="margin-top:28px">Configuración</div>
+    <div class="side-item"><span>Pesos &amp; Reglas</span></div>
+    <div class="side-item"><span>Aprobaciones</span></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <h1>Compras <em>inteligentes</em><br/>de extremo a extremo.</h1>
+        <p>Desde el requerimiento hasta la orden aprobada al proveedor. La IA evalúa catálogo + RFQ en tiempo real, aplica los pesos definidos por tu empresa y deja la decisión final en manos humanas.</p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-row"><span>Folio</span><b>REQ-2026-00432</b></div>
+        <div class="meta-row"><span>Solicitante</span><b>Cristhan M.</b></div>
+        <div class="meta-row"><span>Centro de costo</span><b>MIN-Quevedo · 03</b></div>
+        <div class="meta-row"><span>Creado</span><b>01·may·2026 · 14:22</b></div>
+      </div>
+    </section>
+
+    <!-- STEPPER -->
+    <nav class="stepper" id="stepper">
+      <div class="step active" data-step="1">
+        <div class="step-no">01</div>
+        <div class="step-title">Requerimiento</div>
+        <div class="step-sub">Origen · ítems</div>
+      </div>
+      <div class="step" data-step="2">
+        <div class="step-no">02</div>
+        <div class="step-title">Pesos &amp; criterios</div>
+        <div class="step-sub">Configuración</div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step-no">03</div>
+        <div class="step-title">Top 3 cotizaciones</div>
+        <div class="step-sub">Catálogo + RFQ</div>
+      </div>
+      <div class="step" data-step="4">
+        <div class="step-no">04</div>
+        <div class="step-title">Recomendación IA</div>
+        <div class="step-sub">Aprobación humana</div>
+      </div>
+      <div class="step" data-step="5">
+        <div class="step-no">05</div>
+        <div class="step-title">OC al proveedor</div>
+        <div class="step-sub">Envío &amp; firma</div>
+      </div>
+    </nav>
+
+    <!-- ============ STEP 1: REQUERIMIENTO ============ -->
+    <div class="step-content active" data-content="1">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Crear requerimiento</h2>
+            <div class="sub">La IA detectará repuestos críticos, sugerirá ítems del catálogo y validará stock en tiempo real.</div>
+          </div>
+          <span class="ai-badge">IA · Sugerencias activas</span>
+        </div>
+        <div class="panel-body">
+          <div class="req-grid">
+            <div>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Tipo de requerimiento</label>
+                  <select>
+                    <option>Operativo · Mantenimiento</option>
+                    <option>Inventario · Reposición</option>
+                    <option>Proyecto · CAPEX</option>
+                    <option>Emergencia</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Prioridad</label>
+                  <select>
+                    <option>Normal · 7 días</option>
+                    <option>Alta · 48 h</option>
+                    <option>Urgente · 24 h</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Centro de costo</label>
+                  <input value="MIN-Quevedo · 03" />
+                </div>
+                <div class="field">
+                  <label>Fecha requerida</label>
+                  <input type="date" value="2026-05-12" />
+                </div>
+                <div class="field full">
+                  <label>Descripción / contexto operativo</label>
+                  <textarea rows="2">Reposición de repuestos para banda transportadora línea 03. Mantenimiento preventivo programado.</textarea>
+                </div>
+              </div>
+
+              <div class="ai-suggest">
+                <h4>La IA detectó tu contexto: <em>Mantenimiento · Banda transportadora</em></h4>
+                <p>Basado en el historial de tu centro de costo y el patrón de fallas registradas, estos son los ítems más probables que necesitas. Haz clic para añadirlos al requerimiento:</p>
+                <div class="sample-items">
+                  <span class="sample-item">+ Rodillo Ø108×550 acero</span>
+                  <span class="sample-item">+ Polín de carga 3"×450</span>
+                  <span class="sample-item">+ Banda EP500/3 5+2 mm</span>
+                  <span class="sample-item">+ Empalme mecánico K-27</span>
+                  <span class="sample-item">+ Grasa lítica EP-2</span>
+                </div>
+              </div>
+
+              <h4 style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-top:26px;margin-bottom:8px">Ítems del requerimiento</h4>
+              <table class="items-tbl">
+                <thead>
+                  <tr><th>Código</th><th>Descripción</th><th>UM</th><th>Cant.</th><th>Stock actual</th><th>Última compra</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="qty">RD-108-550</td>
+                    <td>Rodillo Ø108×550 mm acero galvanizado</td>
+                    <td>UN</td><td class="qty">24</td>
+                    <td class="qty" style="color:var(--rust)">2</td>
+                    <td>USD 38.20</td>
+                  </tr>
+                  <tr>
+                    <td class="qty">PL-3-450</td>
+                    <td>Polín de carga 3"×450 con soporte</td>
+                    <td>UN</td><td class="qty">12</td>
+                    <td class="qty" style="color:var(--rust)">0</td>
+                    <td>USD 22.00</td>
+                  </tr>
+                  <tr>
+                    <td class="qty">EM-K27</td>
+                    <td>Empalme mecánico Flexco K-27 (set)</td>
+                    <td>SET</td><td class="qty">2</td>
+                    <td class="qty">1</td>
+                    <td>USD 145.00</td>
+                  </tr>
+                  <tr>
+                    <td class="qty">GR-LIT-2</td>
+                    <td>Grasa lítica EP-2 cartucho 400 g</td>
+                    <td>UN</td><td class="qty">36</td>
+                    <td class="qty">8</td>
+                    <td>USD 4.80</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="summary-card">
+                <h3>Resumen del requerimiento</h3>
+                <div class="sum-row"><span>Ítems</span><b>4 referencias</b></div>
+                <div class="sum-row"><span>Cantidad total</span><b>74 unidades</b></div>
+                <div class="sum-row"><span>Estimado base catálogo</span><b>USD 1 470.40</b></div>
+                <div class="sum-row"><span>Margen IA ±</span><b>±8.4%</b></div>
+                <div class="sum-row" style="margin-top:14px;align-items:flex-end">
+                  <span style="opacity:.7">Estimado total</span>
+                  <b class="sum-total">$1 596</b>
+                </div>
+              </div>
+
+              <div style="margin-top:18px;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:12px">
+                <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:8px">Validaciones IA · OK</div>
+                <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+                  <div style="display:flex;gap:8px"><span style="color:var(--moss);font-weight:700">✓</span><span>Presupuesto disponible CC: <b>USD 24 800</b></span></div>
+                  <div style="display:flex;gap:8px"><span style="color:var(--moss);font-weight:700">✓</span><span>Sin requerimiento duplicado en últimos 30 días</span></div>
+                  <div style="display:flex;gap:8px"><span style="color:var(--moss);font-weight:700">✓</span><span>3 ítems con rotura de stock detectada</span></div>
+                  <div style="display:flex;gap:8px"><span style="color:var(--gold);font-weight:700">!</span><span>Item RD-108-550: precio sube 12% YoY</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn btn-ghost">Guardar borrador</button>
+            <button class="btn btn-primary" onclick="goStep(2)">Definir pesos &amp; criterios →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STEP 2: WEIGHTS ============ -->
+    <div class="step-content" data-content="2">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Pesos &amp; criterios de evaluación</h2>
+            <div class="sub">Cada empresa cliente define cómo el algoritmo prioriza proveedores. Los pesos suman 100%.</div>
+          </div>
+          <div class="preset-row">
+            <button class="preset" onclick="applyPreset('cost')">Optimizar costo</button>
+            <button class="preset active" onclick="applyPreset('balanced')">Balanceado</button>
+            <button class="preset" onclick="applyPreset('quality')">Priorizar calidad</button>
+            <button class="preset" onclick="applyPreset('speed')">Urgencia</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="weights-grid" id="weightsGrid">
+            <div class="weight-card">
+              <h4>Precio <b id="vPrecio">30</b></h4>
+              <input type="range" min="0" max="100" value="30" class="slider" data-w="precio" oninput="updWeight(this)" />
+              <p>Costo unitario y total puesto en planta. Incluye condición CIF / FOB.</p>
+              <div class="weight-meta"><span>Bajo impacto</span><span>Alto</span></div>
+            </div>
+            <div class="weight-card">
+              <h4>Calidad <b id="vCalidad">25</b></h4>
+              <input type="range" min="0" max="100" value="25" class="slider" data-w="calidad" oninput="updWeight(this)" />
+              <p>Certificaciones, devoluciones históricas, fichas técnicas validadas.</p>
+              <div class="weight-meta"><span>Bajo</span><span>Alto</span></div>
+            </div>
+            <div class="weight-card">
+              <h4>Tiempo entrega <b id="vTiempo">20</b></h4>
+              <input type="range" min="0" max="100" value="20" class="slider" data-w="tiempo" oninput="updWeight(this)" />
+              <p>Lead time prometido vs requerido. Penaliza atrasos históricos.</p>
+              <div class="weight-meta"><span>Bajo</span><span>Alto</span></div>
+            </div>
+            <div class="weight-card">
+              <h4>Cumplimiento <b id="vCumpl">15</b></h4>
+              <input type="range" min="0" max="100" value="15" class="slider" data-w="cumpl" oninput="updWeight(this)" />
+              <p>OTIF score, cantidad correcta, calidad recibida (12 meses).</p>
+              <div class="weight-meta"><span>Bajo</span><span>Alto</span></div>
+            </div>
+            <div class="weight-card">
+              <h4>Cond. de pago <b id="vPago">10</b></h4>
+              <input type="range" min="0" max="100" value="10" class="slider" data-w="pago" oninput="updWeight(this)" />
+              <p>Crédito ofrecido, anticipos, descuentos por pronto pago.</p>
+              <div class="weight-meta"><span>Bajo</span><span>Alto</span></div>
+            </div>
+          </div>
+
+          <div class="weights-foot">
+            <div class="total">Suma de pesos: <b id="totalW">100</b><span style="color:var(--ink-3)">%</span> <span style="margin-left:14px;font-family:'Inter Tight',sans-serif;font-size:12px;color:var(--ink-3)" id="msgW">✓ configuración válida</span></div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-ghost">Guardar como preset</button>
+              <button class="btn btn-primary" onclick="goStep(3)">Buscar cotizaciones →</button>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;padding:18px;background:var(--paper);border-radius:10px;border-left:3px solid var(--gold)">
+            <div style="font-family:'Fraunces',serif;font-size:15px;font-weight:600;margin-bottom:6px">¿Sabías?</div>
+            <p style="font-size:12.5px;color:var(--ink-3);line-height:1.6">LOGIFI permite definir <b style="color:var(--ink)">presets de pesos por categoría de compra</b>: para repuestos críticos suele priorizarse calidad y cumplimiento; para insumos commodity, el precio. La IA aprende de tus aprobaciones pasadas y sugiere ajustes cada trimestre.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Volver</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Buscar cotizaciones →</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3: QUOTES ============ -->
+    <div class="step-content" data-content="3">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Top 3 cotizaciones · ranking ponderado</h2>
+            <div class="sub">Mix catálogo + RFQ en tiempo real. La IA consultó 12 proveedores en 38 segundos.</div>
+          </div>
+          <div class="source-tabs">
+            <div class="src-tab active"><span class="dot"></span>Todas (12)</div>
+            <div class="src-tab"><span class="dot"></span>Catálogo (5)</div>
+            <div class="src-tab"><span class="dot"></span>RFQ enviados (7)</div>
+            <div class="src-tab"><span class="dot"></span>Marketplace LOGIFI</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="quotes-grid">
+            <!-- Quote 1 — RECOMENDADO -->
+            <div class="quote recommended">
+              <div class="quote-head">
+                <div class="rank">01</div>
+                <h3>Industrial Andina S.A.</h3>
+                <div class="who">
+                  <span>RUC 0992145678001</span>
+                  <span class="src-tag rfq">RFQ</span>
+                </div>
+              </div>
+              <div class="quote-body">
+                <div>
+                  <div class="price">$1 412<small>USD</small></div>
+                  <div class="price-meta">
+                    <span>vs. estimado</span>
+                    <span class="delta down">▼ 11.5%</span>
+                  </div>
+                </div>
+
+                <div class="score-block">
+                  <div class="score-total">
+                    <b>92</b><span>/ 100 score</span>
+                  </div>
+                  <div class="score-bars">
+                    <div class="sb-row"><label>Precio</label><div class="sb-track"><div class="sb-fill" style="width:88%"></div></div><b>26.4</b></div>
+                    <div class="sb-row"><label>Calidad</label><div class="sb-track"><div class="sb-fill" style="width:96%"></div></div><b>24.0</b></div>
+                    <div class="sb-row"><label>Tiempo</label><div class="sb-track"><div class="sb-fill" style="width:90%"></div></div><b>18.0</b></div>
+                    <div class="sb-row"><label>Cumpl.</label><div class="sb-track"><div class="sb-fill" style="width:94%"></div></div><b>14.1</b></div>
+                    <div class="sb-row"><label>Pago</label><div class="sb-track"><div class="sb-fill" style="width:95%"></div></div><b>9.5</b></div>
+                  </div>
+                </div>
+              </div>
+              <div class="quote-foot">
+                <div class="terms">
+                  <div>Lead time<b>4 días</b></div>
+                  <div>Pago<b>30 días</b></div>
+                  <div>Origen<b>Guayaquil</b></div>
+                  <div>OTIF 12m<b>96.4%</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quote 2 -->
+            <div class="quote">
+              <div class="quote-head">
+                <div class="rank">02</div>
+                <h3>FerroSur Cía. Ltda.</h3>
+                <div class="who">
+                  <span>RUC 0993014522001</span>
+                  <span class="src-tag cat">Catálogo</span>
+                </div>
+              </div>
+              <div class="quote-body">
+                <div>
+                  <div class="price">$1 358<small>USD</small></div>
+                  <div class="price-meta">
+                    <span>vs. estimado</span>
+                    <span class="delta down">▼ 14.9%</span>
+                  </div>
+                </div>
+
+                <div class="score-block">
+                  <div class="score-total">
+                    <b>84</b><span>/ 100 score</span>
+                  </div>
+                  <div class="score-bars">
+                    <div class="sb-row"><label>Precio</label><div class="sb-track"><div class="sb-fill" style="width:95%"></div></div><b>28.5</b></div>
+                    <div class="sb-row"><label>Calidad</label><div class="sb-track"><div class="sb-fill" style="width:80%"></div></div><b>20.0</b></div>
+                    <div class="sb-row"><label>Tiempo</label><div class="sb-track"><div class="sb-fill" style="width:75%"></div></div><b>15.0</b></div>
+                    <div class="sb-row"><label>Cumpl.</label><div class="sb-track"><div class="sb-fill" style="width:82%"></div></div><b>12.3</b></div>
+                    <div class="sb-row"><label>Pago</label><div class="sb-track"><div class="sb-fill" style="width:80%"></div></div><b>8.0</b></div>
+                  </div>
+                </div>
+              </div>
+              <div class="quote-foot">
+                <div class="terms">
+                  <div>Lead time<b>7 días</b></div>
+                  <div>Pago<b>15 días</b></div>
+                  <div>Origen<b>Quito</b></div>
+                  <div>OTIF 12m<b>87.1%</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quote 3 -->
+            <div class="quote">
+              <div class="quote-head">
+                <div class="rank">03</div>
+                <h3>Repuestos Pacífico</h3>
+                <div class="who">
+                  <span>RUC 0991887423001</span>
+                  <span class="src-tag mkt">Marketplace</span>
+                </div>
+              </div>
+              <div class="quote-body">
+                <div>
+                  <div class="price">$1 489<small>USD</small></div>
+                  <div class="price-meta">
+                    <span>vs. estimado</span>
+                    <span class="delta down">▼ 6.7%</span>
+                  </div>
+                </div>
+
+                <div class="score-block">
+                  <div class="score-total">
+                    <b>78</b><span>/ 100 score</span>
+                  </div>
+                  <div class="score-bars">
+                    <div class="sb-row"><label>Precio</label><div class="sb-track"><div class="sb-fill" style="width:78%"></div></div><b>23.4</b></div>
+                    <div class="sb-row"><label>Calidad</label><div class="sb-track"><div class="sb-fill" style="width:88%"></div></div><b>22.0</b></div>
+                    <div class="sb-row"><label>Tiempo</label><div class="sb-track"><div class="sb-fill" style="width:60%"></div></div><b>12.0</b></div>
+                    <div class="sb-row"><label>Cumpl.</label><div class="sb-track"><div class="sb-fill" style="width:78%"></div></div><b>11.7</b></div>
+                    <div class="sb-row"><label>Pago</label><div class="sb-track"><div class="sb-fill" style="width:88%"></div></div><b>8.8</b></div>
+                  </div>
+                </div>
+              </div>
+              <div class="quote-foot">
+                <div class="terms">
+                  <div>Lead time<b>10 días</b></div>
+                  <div>Pago<b>45 días</b></div>
+                  <div>Origen<b>Manta</b></div>
+                  <div>OTIF 12m<b>81.5%</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-narrative">
+            <div class="ai-head">
+              <span class="ai-badge">IA</span>
+              <h4>Recomendación de Claude</h4>
+            </div>
+            <p>De las 12 cotizaciones evaluadas con tus pesos actuales, recomiendo <b>Industrial Andina S.A.</b> Aunque no es la oferta más barata (FerroSur lo es por <b>USD 54</b>), su <b>OTIF de 96.4%</b> y la calidad certificada de los rodillos justifican el sobrecosto: en los últimos 6 meses, retrasos de FerroSur generaron <b>USD 2 100</b> en paradas de banda en este mismo centro de costo. La diferencia se recupera en una sola entrega puntual.</p>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn btn-ghost" onclick="goStep(2)">← Ajustar pesos</button>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-ghost">Pedir cotización adicional</button>
+              <button class="btn btn-primary" onclick="goStep(4)">Aprobar recomendación →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STEP 4: APPROVAL ============ -->
+    <div class="step-content" data-content="4">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Flujo de aprobación · IA + humano</h2>
+            <div class="sub">La IA recomienda. El humano decide. Trazabilidad completa para auditoría NIIF / SRI.</div>
+          </div>
+          <span class="ai-badge">Workflow configurable</span>
+        </div>
+        <div class="panel-body">
+          <div class="approval-flow">
+            <div class="flow-step done">
+              <div class="fs-icon">01</div>
+              <div class="fs-info">
+                <h4>Recomendación generada por IA</h4>
+                <p><span class="who">Claude (LOGIFI core)</span> · score 92/100 · 38 seg de análisis</p>
+              </div>
+              <span class="fs-status st-done">Completado</span>
+            </div>
+
+            <div class="flow-step done">
+              <div class="fs-icon">02</div>
+              <div class="fs-info">
+                <h4>Solicitante valida ítems &amp; cantidades</h4>
+                <p><span class="who">Cristhan Matamoros</span> · 01·may·2026 · 14:24</p>
+              </div>
+              <span class="fs-status st-done">Validado</span>
+            </div>
+
+            <div class="flow-step current">
+              <div class="fs-icon">03</div>
+              <div class="fs-info">
+                <h4>Aprobación supervisor de planta</h4>
+                <p><span class="who">Steven Sánchez · CFO</span> · monto USD 1 412 dentro de su rango (USD 5 000)</p>
+              </div>
+              <span class="fs-status st-current">Pendiente</span>
+            </div>
+
+            <div class="flow-step">
+              <div class="fs-icon">04</div>
+              <div class="fs-info">
+                <h4>Verificación de presupuesto &amp; partida</h4>
+                <p><span class="who">Sistema · automático</span> · valida saldo CC y partida contable</p>
+              </div>
+              <span class="fs-status st-pending">En espera</span>
+            </div>
+
+            <div class="flow-step">
+              <div class="fs-icon">05</div>
+              <div class="fs-info">
+                <h4>Generación de OC &amp; envío a proveedor</h4>
+                <p><span class="who">Sistema · firmado digitalmente</span> · envío por email + portal</p>
+              </div>
+              <span class="fs-status st-pending">En espera</span>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;padding:20px;background:var(--paper);border-radius:12px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center">
+            <div>
+              <h4 style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:4px">Nota del aprobador (opcional)</h4>
+              <p style="font-size:12px;color:var(--ink-3);margin-bottom:10px">Puedes aprobar, devolver con observaciones o rechazar.</p>
+              <textarea rows="2" style="width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:11px;font-family:inherit;font-size:13px" placeholder="Ej: aprobado con condición de recepción técnica antes del pago"></textarea>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-rust">Rechazar</button>
+              <button class="btn btn-ghost">Devolver</button>
+              <button class="btn btn-gold" onclick="goStep(5)">Aprobar &amp; generar OC ✓</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Volver a cotizaciones</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 5: PURCHASE ORDER ============ -->
+    <div class="step-content" data-content="5">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Orden de compra OC-2026-00891</h2>
+            <div class="sub">Lista para enviar a Industrial Andina S.A. · firma digital aplicada</div>
+          </div>
+          <span class="pill" style="background:var(--moss)">✓ Aprobada</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="po-grid">
+            <!-- PO Document -->
+            <div class="po-doc">
+              <div class="po-watermark">LOGIFI</div>
+              <div class="po-head">
+                <div>
+                  <div class="num">OC-2026-00891 · v.1</div>
+                  <h2>Orden <em>de compra</em></h2>
+                </div>
+                <div class="right">
+                  <div>Emitida</div><b>01·may·2026</b>
+                  <div style="margin-top:8px">Vence</div><b>08·may·2026</b>
+                </div>
+              </div>
+
+              <div class="po-parties">
+                <div class="pp">
+                  <h5>Comprador</h5>
+                  <b>Mining Co. del Pacífico S.A.</b>
+                  <p>RUC 0992001200001<br/>Av. Quito km 4.5, Quevedo · EC<br/>compras@miningpacifico.ec</p>
+                </div>
+                <div class="pp sup">
+                  <h5>Proveedor</h5>
+                  <b>Industrial Andina S.A.</b>
+                  <p>RUC 0992145678001<br/>Vía Daule km 8, Guayaquil · EC<br/>ventas@industrialandina.com.ec</p>
+                </div>
+              </div>
+
+              <table class="po-table">
+                <thead>
+                  <tr>
+                    <th>Cód.</th><th>Descripción</th>
+                    <th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="mono">RD-108-550</td><td>Rodillo Ø108×550 acero galv.</td><td class="r mono">24</td><td class="r mono">35.20</td><td class="r mono">844.80</td></tr>
+                  <tr><td class="mono">PL-3-450</td><td>Polín de carga 3"×450 c/soporte</td><td class="r mono">12</td><td class="r mono">19.80</td><td class="r mono">237.60</td></tr>
+                  <tr><td class="mono">EM-K27</td><td>Empalme mecánico Flexco K-27</td><td class="r mono">2</td><td class="r mono">132.00</td><td class="r mono">264.00</td></tr>
+                  <tr><td class="mono">GR-LIT-2</td><td>Grasa lítica EP-2 cartucho 400 g</td><td class="r mono">36</td><td class="r mono">4.32</td><td class="r mono">155.52</td></tr>
+                </tbody>
+              </table>
+
+              <div class="po-totals">
+                <div class="row"><span>Subtotal</span><b>$ 1 501.92</b></div>
+                <div class="row"><span>Descuento (-6%)</span><b>−$ 90.12</b></div>
+                <div class="row"><span>IVA 15%</span><b>$ 211.77</b></div>
+                <div class="row tot"><span>Total</span><b>$ 1 623.57</b></div>
+              </div>
+
+              <div class="po-signs">
+                <div class="po-sign"><b>Cristhan Matamoros</b>Solicitante</div>
+                <div class="po-sign"><b>Steven Sánchez C.</b>CFO · Aprobador</div>
+              </div>
+            </div>
+
+            <!-- Side panel -->
+            <div class="po-side">
+              <div class="po-checklist">
+                <h4>Checklist pre-envío</h4>
+                <div class="check-item"><span class="ck">✓</span><span>Recomendación IA registrada</span></div>
+                <div class="check-item"><span class="ck">✓</span><span>Aprobación supervisor (USD 1 412)</span></div>
+                <div class="check-item"><span class="ck">✓</span><span>Saldo de partida verificado</span></div>
+                <div class="check-item"><span class="ck">✓</span><span>RUC proveedor activo en SRI</span></div>
+                <div class="check-item"><span class="ck">✓</span><span>Firma digital aplicada</span></div>
+                <div class="check-item warn"><span class="ck">!</span><span>Revisar cláusula de penalización por atraso</span></div>
+              </div>
+
+              <div class="send-card">
+                <h4>Enviar al proveedor</h4>
+                <p>Selecciona los canales de envío. La OC viaja firmada y con código QR de validación pública.</p>
+                <div class="send-options">
+                  <label class="send-opt"><input type="checkbox" checked /> Email · ventas@industrialandina.com.ec</label>
+                  <label class="send-opt"><input type="checkbox" checked /> Portal proveedor LOGIFI</label>
+                  <label class="send-opt"><input type="checkbox" /> WhatsApp Business al asesor</label>
+                  <label class="send-opt"><input type="checkbox" /> Copia al área de logística (TMS)</label>
+                </div>
+                <button class="btn btn-gold" style="width:100%;margin-top:14px;justify-content:center">Enviar OC ahora →</button>
+              </div>
+
+              <div style="background:var(--paper);border-radius:12px;padding:16px;border:1px solid var(--line)">
+                <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:8px">Próximos pasos automáticos</div>
+                <ol style="font-size:12.5px;line-height:1.7;color:var(--ink-2);padding-left:18px">
+                  <li>Proveedor confirma OC en portal (SLA 24 h)</li>
+                  <li>Logística TMS programa retiro / despacho</li>
+                  <li>Recepción técnica en bodega + acta</li>
+                  <li>Tres-way matching: OC ↔ Recepción ↔ Factura</li>
+                  <li>Pago programado según condición (30 días)</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row" style="margin-top:24px">
+            <button class="btn btn-ghost" onclick="goStep(4)">← Volver al flujo</button>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-ghost">Descargar PDF</button>
+              <button class="btn btn-primary">Cerrar y volver al dashboard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Prototipo · LOGIFI<span>™</span> · KallpaPro Soluciones Integrales · Guayaquil · EC
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // STEPPER navigation
+  function goStep(n){
+    document.querySelectorAll('.step-content').forEach(c=>c.classList.remove('active'));
+    document.querySelector(`[data-content="${n}"]`).classList.add('active');
+    document.querySelectorAll('#stepper .step').forEach(s=>{
+      const i = parseInt(s.dataset.step);
+      s.classList.remove('active','done');
+      if(i < n) s.classList.add('done');
+      if(i === n) s.classList.add('active');
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.querySelectorAll('#stepper .step').forEach(s=>{
+    s.addEventListener('click',()=>goStep(parseInt(s.dataset.step)));
+  });
+
+  // WEIGHTS
+  const W = {precio:30,calidad:25,tiempo:20,cumpl:15,pago:10};
+  const labels = {precio:'vPrecio',calidad:'vCalidad',tiempo:'vTiempo',cumpl:'vCumpl',pago:'vPago'};
+  function updWeight(el){
+    const k = el.dataset.w;
+    W[k] = parseInt(el.value);
+    document.getElementById(labels[k]).textContent = W[k];
+    const tot = Object.values(W).reduce((a,b)=>a+b,0);
+    const $tot = document.getElementById('totalW');
+    const $msg = document.getElementById('msgW');
+    $tot.textContent = tot;
+    if(tot === 100){ $tot.style.color = 'var(--moss)'; $msg.textContent='✓ configuración válida'; $msg.style.color='var(--moss)'; }
+    else if(tot < 100){ $tot.style.color = 'var(--gold)'; $msg.textContent=`Faltan ${100-tot} pts`; $msg.style.color='var(--gold)'; }
+    else { $tot.style.color = 'var(--rust)'; $msg.textContent=`Excede en ${tot-100} pts`; $msg.style.color='var(--rust)'; }
+  }
+  function applyPreset(p){
+    document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    const presets = {
+      cost:    {precio:50, calidad:15, tiempo:15, cumpl:10, pago:10},
+      balanced:{precio:30, calidad:25, tiempo:20, cumpl:15, pago:10},
+      quality: {precio:15, calidad:40, tiempo:15, cumpl:25, pago:5},
+      speed:   {precio:20, calidad:15, tiempo:45, cumpl:15, pago:5},
+    };
+    const v = presets[p];
+    Object.keys(v).forEach(k=>{
+      const slider = document.querySelector(`[data-w="${k}"]`);
+      slider.value = v[k];
+      W[k] = v[k];
+      document.getElementById(labels[k]).textContent = v[k];
+    });
+    document.getElementById('totalW').textContent = 100;
+    document.getElementById('totalW').style.color = 'var(--moss)';
+    document.getElementById('msgW').textContent = '✓ configuración válida';
+    document.getElementById('msgW').style.color = 'var(--moss)';
+  }
+
+  // Source tabs
+  document.querySelectorAll('.src-tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.src-tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

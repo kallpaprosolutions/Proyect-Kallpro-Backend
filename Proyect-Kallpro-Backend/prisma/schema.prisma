@@ -12,157 +12,995 @@ datasource db {
 // ============================================================
 
 model Company {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   email     String?
   phone     String?
   industry  String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  users          User[]
-  products       Product[]
-  purchaseOrders PurchaseOrder[]
-  invoices       Invoice[]
-  subscriptions  Subscription[]
+  users                     User[]
+  categories                Category[]
+  warehouses                Warehouse[]
+  products                  Product[]
+  movements                 InventoryMovement[]
+  purchaseOrders            PurchaseOrder[]
+  invoices                  Invoice[]
+  creditNotes               CreditNote[]
+  debitNotes                DebitNote[]
+  deliveryGuides            DeliveryGuide[]
+  subscriptions             Subscription[]
+  sriDocuments              SriDocument[]
+  departments               Department[]
+  requisitions              Requisition[]
+  budgets                   BudgetControl[]
+  quotations                SupplierQuotation[]
+  batches                   InventoryBatch[]
+  physicalCounts            PhysicalCount[]
+  inventoryAdjustments      InventoryAdjustment[]
+  customers                 Customer[]
+  salesQuotations           SalesQuotation[]
+  salesOrders               SalesOrder[]
+  priceLists                PriceList[]
+  supplierPerformance       SupplierPerformanceRecord[]
+  supplierScores            SupplierScore[]
+  attachments               Attachment[]
+  journalEntries            JournalEntry[]
+  fiscalPeriods             FiscalPeriod[]
+  billsOfMaterials          BillOfMaterials[]
+  productionOrders          ProductionOrder[]
+  replenishmentSnoozes      ReplenishmentSnooze[]
+  recurringInvoiceTemplates RecurringInvoiceTemplate[]
+  fixedAssets               FixedAsset[]
+  fiscalConfig              CompanyFiscalConfig?
+  sriTransmissions          SriTransmission[]
+
+  // ── Finance Module ──
+  financeChartOfAccounts FinanceChartOfAccounts[]
+  financeDCFModels       FinanceDCFModel[]
+  financeScenarios       FinanceScenario[]
+  financeSavingsLog      FinanceSavingsLog[]
+  financeAIInsights      FinanceAIInsight[]
+  financialStatements    FinancialStatement[]
+  financialStatementNotes FinancialStatementNote[]
+  accountMappings        AccountMapping[]
+
+  // ── CRM Module ──
+  crmContacts      CrmContact[]
+  crmCompanies     CrmCompany[]
+  crmDeals         CrmDeal[]
+  crmConversations CrmConversation[]
+  crmAgents        CrmAgent[]
+  crmAgentRuns     CrmAgentRun[]
+  crmWorkflows     CrmWorkflow[]
+  crmForecasts     CrmForecast[]
+  crmTemplates     CrmTemplate[]
+
+  // ── CRM Pro (Sprint 13): captura, scoring configurable y pronóstico ──
+  crmLeads           CrmLead[]
+  crmCaptureForms    CrmCaptureForm[]
+  crmScoringRules    CrmScoringRule[]
+  crmScoringConfig   CrmScoringConfig[]
+  crmPipelineStages  CrmPipelineStage[]
+  crmAssignmentRules CrmAssignmentRule[]
+
+  // ── Logística ──
+  shipments Shipment[]
+
+  // ── Approval ──
+  approvalMatrix ApprovalMatrix[]
+
+  // ── Storage layout ──
+  storageLocations StorageLocation[]
+
+  // ── Tesorería / numeración ──
+  payments          Payment[]
+  paymentSchedules  PaymentSchedule[]
+  documentSequences DocumentSequence[]
+
+  // ── Nómina (RRHH) ──
+  employees         Employee[]
+  payrollPeriods    PayrollPeriod[]
+  payrollNovelties  PayrollNovelty[]
+  attendanceRecords AttendanceRecord[]
+  shiftTemplates    ShiftTemplate[]
+  shiftAssignments  ShiftAssignment[]
+  leaveRequests     LeaveRequest[]
+
+  // ── Tesorería ──
+  bankAccounts       BankAccount[]
+  bankTransactions   BankTransaction[]
+  bankStatementLines BankStatementLine[]
+
+  // ── Chatter (A2 / A2.2) ──
+  documentMessages  DocumentMessage[]
+  documentFollowers DocumentFollower[]
+
+  // ── Actividades programadas (A3) ──
+  activities Activity[]
+
+  // ── Cobranza (CxC) ──
+  collectionActivities CollectionActivity[]
+
+  // ── Calidad (ISO 9001 · ARCSA) ──
+  qualityParameters  QualityParameter[]
+  qualityInspections QualityInspection[]
+  nonConformities    NonConformity[]
+
+  // ── Entity settings ──
+  isPublicEntity Boolean @default(false)
+  // Interruptor maestro de IA (Ollama). Si es false, el ERP no intenta conectar
+  // con Ollama (evita timeouts/cuelgues); se activa/desactiva desde Configuración.
+  aiEnabled      Boolean @default(true)
+  // Configuración general del ERP (JSON flexible): compras, documentos, inventario,
+  // regional, perfil extendido. Se administra desde Configuración → Empresa.
+  settings       Json?
 
   @@map("companies")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  email     String   @unique
+  id           String    @id @default(uuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email        String    @unique
   passwordHash String
-  firstName String?
-  lastName  String?
-  role      String   @default("USER") // ADMIN, MANAGER, USER, VIEWER
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  firstName    String?
+  lastName     String?
+  role         String    @default("USER")
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  @@map("users")
+  // ─── 2FA (TOTP) ───────────────────────────────────────────────
+  twoFactorEnabled       Boolean @default(false)
+  twoFactorSecret        String? // secreto TOTP base32 ya confirmado (null si no enrolado)
+  pendingTwoFactorSecret String? // secreto en proceso de enrolamiento, aún sin confirmar
+  // jti del challengeToken vigente en un login 2FA en curso. El token es de un solo uso:
+  // al verificarlo con éxito se limpia, evitando replay del challenge tras autenticarse.
+  pendingChallengeJti    String?
+
+  sessions           UserSession[]
+  documentMessages   DocumentMessage[]
+  documentFollows    DocumentFollower[]
+  activitiesAssigned Activity[]         @relation("ActivityAssignee")
+  activitiesCreated  Activity[]         @relation("ActivityCreator")
+
   @@index([companyId])
   @@index([email])
+  @@map("users")
+}
+
+// ============================================================
+// CHATTER LIGERO (mejora A2 — patrón Odoo; A2.2 amplía con log y notas)
+// ============================================================
+// Hilo de mensajes sobre un documento (OC, factura, pedido, requisición).
+// Un registro por mensaje; el hilo se arma por (entityType, entityId).
+// `kind` distingue tres cosas que Odoo separa visualmente en el mismo hilo:
+//  - MESSAGE: mensaje del usuario (comportamiento original de A2).
+//  - NOTE: nota interna del usuario (misma mecánica, distinta insignia visual).
+//  - LOG: entrada automática de cambio de campo (A2.2) — `body` va vacío,
+//    el cambio real vive en logField/logFrom/logTo (el frontend lo traduce
+//    a etiquetas en español con el mapa de estados propio de cada documento).
+model DocumentMessage {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entityType String // PURCHASE_ORDER | SALES_ORDER | INVOICE | REQUISITION
+  entityId   String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  body       String
+  kind       String   @default("MESSAGE") // MESSAGE | NOTE | LOG
+  logField   String? // ej. "STATUS" — qué campo cambió (solo kind=LOG)
+  logFrom    String? // valor anterior (código crudo, sin traducir)
+  logTo      String? // valor nuevo (código crudo, sin traducir)
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, entityType, entityId, createdAt])
+  @@map("document_messages")
+}
+
+// Seguidores de un documento (A2.2): quién quiere estar al tanto, sin necesidad de
+// comentar. Sin canal de notificación push/email todavía — hoy es visibilidad (quién
+// sigue el documento), no una bandeja de avisos.
+model DocumentFollower {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entityType String
+  entityId   String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([entityType, entityId, userId])
+  @@index([companyId, entityType, entityId])
+  @@map("document_followers")
+}
+
+// ============================================================
+// ACTIVIDADES PROGRAMADAS (mejora A3 — patrón Odoo)
+// ============================================================
+// To-do agendado sobre un documento (llamar, revisar, pagar…), con vencimiento y
+// responsable. Mismos entityType que el Chatter — se muestran juntos en el detalle.
+model Activity {
+  id           String    @id @default(uuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entityType   String // PURCHASE_ORDER | SALES_ORDER | INVOICE | REQUISITION
+  entityId     String
+  type         String // LLAMAR | REUNION | REVISAR | PAGAR | EMAIL | OTRO
+  note         String?
+  dueDate      DateTime
+  assignedToId String
+  assignedTo   User      @relation("ActivityAssignee", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User      @relation("ActivityCreator", fields: [createdById], references: [id])
+  doneAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([companyId, assignedToId, doneAt])
+  @@index([companyId, entityType, entityId])
+  @@map("activities")
+}
+
+// Sesiones activas por usuario. El JWT lleva el `sessionId` (jti); el middleware valida
+// ESTA sesión concreta → permite revocar una sola (web/móvil) y timeout por inactividad.
+model UserSession {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip             String?
+  userAgent      String?
+  lastActivityAt DateTime  @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_sessions")
 }
 
 // ============================================================
 // INVENTORY
 // ============================================================
 
-model Product {
-  id        String   @id @default(uuid())
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sku       String?  @unique
-  name      String
+model Category {
+  id          String     @id @default(uuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
   description String?
-  price     Decimal  @db.Decimal(12, 2)
-  cost      Decimal? @db.Decimal(12, 2)
-  categoryId String?
-  isActive  Boolean  @default(true)
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  createdAt   DateTime   @default(now())
+
+  @@index([companyId])
+  @@map("categories")
+}
+
+model Warehouse {
+  id                String      @id @default(uuid())
+  companyId         String
+  company           Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name              String
+  code              String?
+  address           String?
+  isDefault         Boolean     @default(false)
+  isActive          Boolean     @default(true)
+  // Jerarquía padre → hija
+  parentWarehouseId String?
+  parentWarehouse   Warehouse?  @relation("WarehouseHierarchy", fields: [parentWarehouseId], references: [id])
+  children          Warehouse[] @relation("WarehouseHierarchy")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  stocks               ProductStock[]
+  movements            InventoryMovement[]
+  movementsFrom        InventoryMovement[]   @relation("MovementFromWarehouse")
+  movementsTo          InventoryMovement[]   @relation("MovementToWarehouse")
+  batches              InventoryBatch[]
+  physicalCounts       PhysicalCount[]
+  salesOrderItems      SalesOrderItem[]
+  productionOrders     ProductionOrder[]
+  storageLocations     StorageLocation[]
+  inventoryAdjustments InventoryAdjustment[]
+
+  @@index([companyId])
+  @@map("warehouses")
+}
+
+// Ubicación física dentro de una bodega (zona / percha / piso) para ruteo de mercadería
+model StorageLocation {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  code        String // identificador compuesto, ej "ZA-PB-P5"
+  zone        String? // Zona A
+  rack        String? // Percha B
+  level       String? // Piso 5
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@map("storage_locations")
+}
+
+model Product {
+  id                       String           @id @default(uuid())
+  companyId                String
+  company                  Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sku                      String?
+  barcode                  String?
+  name                     String
+  description              String?
+  categoryId               String?
+  category                 Category?        @relation(fields: [categoryId], references: [id])
+  unit                     String           @default("UNIDAD") // unidad de STOCK/venta (kardex, ProductStock, ventas)
+  // Unidad de compra ≠ venta (brecha doc21, C3): se compra por CAJA/PAQUETE/PALETA pero el
+  // stock y las ventas siguen en `unit`. null = sin distinción (comportamiento previo intacto).
+  purchaseUnit             String?
+  purchaseConversionFactor Decimal          @default(1) @db.Decimal(12, 4) // cuántas `unit` hay en 1 `purchaseUnit`
+  salePrice                Decimal          @default(0) @db.Decimal(12, 2)
+  avgCost                  Decimal          @default(0) @db.Decimal(12, 4)
+  standardCost             Decimal          @default(0) @db.Decimal(12, 4)
+  valuationMethod          String           @default("AVG") // AVG | FIFO | STANDARD_COST
+  minStock                 Decimal          @default(0) @db.Decimal(12, 4)
+  maxStock                 Decimal?         @db.Decimal(12, 4)
+  reorderPoint             Decimal          @default(0) @db.Decimal(12, 4) // punto de reorden calculado/manual
+  // C3: por defecto el stock NUNCA baja de cero (venta/salida se bloquea con INSUFFICIENT_STOCK).
+  // Activarlo permite vender/despachar sin existencia física — venta contra pedido a proveedor,
+  // insumo de producción que se repone el mismo día, etc. (brecha doc21). El costo de la porción
+  // que queda en negativo se valora al costo promedio vigente (planBatchConsumption.uncovered).
+  allowNegativeStock       Boolean          @default(false)
+  isActive                 Boolean          @default(true)
+  type                     String           @default("PRODUCT")
+  imageUrl                 String? // imagen principal del producto (ruta servida en /uploads)
+  images                   Json? // imágenes adicionales [{url, caption}]
+  lastMovementAt           DateTime?
+  // Ubicación física preferida de almacenaje (zona/percha/piso)
+  defaultLocationId        String?
+  defaultLocation          StorageLocation? @relation(fields: [defaultLocationId], references: [id])
+
+  // ─── Regulatorio sanitario (ARCSA Ecuador) y calidad (ISO 9001) ───
+  // Registro Sanitario / Notificación Sanitaria Obligatoria emitido por ARCSA.
+  // Producir con el registro vencido dispara una alerta (no bloquea: puede estar en trámite).
+  sanitaryRegistry       String?
+  sanitaryRegistryExpiry DateTime?
+  // Vida útil en días: al producir un lote, expiryDate = fecha de elaboración + shelfLifeDays.
+  shelfLifeDays          Int?
+  // Exige inspección de calidad APROBADA antes de liberar el lote a la venta (ISO 9001 §8.6).
+  requiresQualityControl Boolean   @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  inventory InventoryEntry?
+  stocks               ProductStock[]
+  movements            InventoryMovement[]
+  poItems              POItem[]
+  sriDocumentItems     SriDocumentItem[]
+  requisitionItems     RequisitionItem[]
+  batches              InventoryBatch[]
+  physicalCountItems   PhysicalCountItem[]
+  salesQuotationItems  SalesQuotationItem[]
+  salesOrderItems      SalesOrderItem[]
+  priceListItems       PriceListItem[]
+  portalQuotationItems PortalQuotationItem[]
+  billsOfMaterials     BillOfMaterials[]
+  bomComponents        BOMItem[]               @relation("BOMComponent")
+  productionOrders     ProductionOrder[]       @relation("ProductionOrderProduct")
+  productionComponents ProductionOrderItem[]   @relation("ProductionComponent")
+  inventoryAdjustments InventoryAdjustment[]
+  qualityParameters    QualityParameter[]
+  qualityInspections   QualityInspection[]     @relation("QualityInspectionProduct")
+  productionConsumed   ProductionConsumption[] @relation("ProductionConsumptionComponent")
+  crmDealItems         CrmDealItem[]
 
-  @@map("products")
   @@index([companyId])
   @@index([sku])
+  @@index([barcode])
+  @@map("products")
 }
 
-model InventoryEntry {
-  id        String   @id @default(uuid())
-  productId String   @unique
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantityOnHand Int @default(0)
-  quantityReserved Int @default(0)
-  reorderPoint Int?
-  reorderQuantity Int?
-  warehouseLocation String?
-  lastUpdated DateTime @default(now()) @updatedAt
+model ProductStock {
+  id          String    @id @default(uuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  quantity    Decimal   @default(0) @db.Decimal(12, 4)
+  reserved    Decimal   @default(0) @db.Decimal(12, 4)
+  // Mín/máx POR bodega (C1 — reglas de reabastecimiento entre bodegas). Si son null, el
+  // motor de reposición usa el mín/máx global del producto (Product.minStock/maxStock)
+  // como valor por defecto — no todas las bodegas necesitan un override.
+  minStock    Decimal?  @db.Decimal(12, 4)
+  maxStock    Decimal?  @db.Decimal(12, 4)
+  updatedAt   DateTime  @updatedAt
 
-  @@map("inventory")
+  @@unique([productId, warehouseId])
   @@index([productId])
+  @@index([warehouseId])
+  @@map("product_stock")
+}
+
+// Pospone temporalmente una sugerencia de reabastecimiento (C1) para que no vuelva a
+// aparecer en el panel hasta `snoozedUntil` — el motor sigue siendo puro, esto es solo un
+// filtro sobre su salida (regla transversal 6: el cálculo no toca BD, la posposición sí).
+model ReplenishmentSnooze {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId    String
+  warehouseId  String
+  snoozedUntil DateTime
+  snoozedBy    String
+  createdAt    DateTime @default(now())
+
+  @@unique([companyId, productId, warehouseId])
+  @@map("replenishment_snoozes")
 }
 
 model InventoryMovement {
-  id        String   @id @default(uuid())
-  companyId String
-  productId String
-  type      String   // IN, OUT, ADJUSTMENT, RETURN
-  quantity  Int
-  reference String?  // PO number, order number
-  notes     String?
-  createdAt DateTime @default(now())
+  id              String     @id @default(uuid())
+  companyId       String
+  company         Company    @relation(fields: [companyId], references: [id])
+  productId       String
+  product         Product    @relation(fields: [productId], references: [id])
+  warehouseId     String
+  warehouse       Warehouse  @relation(fields: [warehouseId], references: [id])
+  type            String // IN, OUT, ADJUSTMENT_IN, ADJUSTMENT_OUT, TRANSFER_IN, TRANSFER_OUT
+  quantity        Decimal    @db.Decimal(12, 4)
+  unitCost        Decimal    @default(0) @db.Decimal(12, 4)
+  totalCost       Decimal    @default(0) @db.Decimal(12, 4)
+  avgCostAfter    Decimal    @default(0) @db.Decimal(12, 4)
+  stockAfter      Decimal    @default(0) @db.Decimal(12, 4)
+  reference       String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime   @default(now())
+  // Trazabilidad de transferencias: bodega origen → destino
+  fromWarehouseId String?
+  fromWarehouse   Warehouse? @relation("MovementFromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouseId   String?
+  toWarehouse     Warehouse? @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id])
+  // Trazabilidad de lote (InventoryBatch)
+  batchId         String?
 
-  @@map("inventory_movements")
   @@index([companyId])
   @@index([productId])
+  @@index([warehouseId])
   @@index([createdAt])
+  @@index([batchId])
+  @@map("inventory_movements")
+}
+
+// Ajuste de inventario con doble autorización:
+// el bodeguero SOLICITA (PENDING) y un responsable de finanzas/gerencia APRUEBA,
+// momento en el que recién se mueve el stock (status APPROVED_APPLIED) y se contabiliza.
+model InventoryAdjustment {
+  id              String    @id @default(uuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  adjNumber       String // AJU-0001
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id])
+  warehouseId     String
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+  type            String // ADJUSTMENT_IN | ADJUSTMENT_OUT
+  quantity        Decimal   @db.Decimal(12, 4)
+  unitCost        Decimal   @default(0) @db.Decimal(12, 4)
+  reason          String // motivo del ajuste (obligatorio)
+  notes           String?
+  status          String    @default("PENDING") // PENDING | APPROVED_APPLIED | REJECTED
+  requestedBy     String // userId del bodeguero que solicita
+  requestedAt     DateTime  @default(now())
+  approvedBy      String? // userId de finanzas/gerencia que aprueba
+  approvedAt      DateTime?
+  rejectionReason String?
+  movementId      String? // InventoryMovement generado al aplicar
+  journalEntryId  String? // JournalEntry generado al aplicar (asiento contable de ajuste/merma)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([productId])
+  @@map("inventory_adjustments")
+}
+
+// Lotes FIFO — rastrea capas de costo para método FIFO
+model InventoryBatch {
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId   String
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  receivedAt    DateTime  @default(now())
+  reference     String?
+  lotNumber     String?
+  expiryDate    DateTime?
+  daysLife      Int? // vida útil total en días (0 = sin caducidad)
+  supplierBatch String? // número de lote del proveedor
+  initialQty    Decimal   @db.Decimal(12, 4)
+  remainingQty  Decimal   @db.Decimal(12, 4)
+  unitCost      Decimal   @db.Decimal(12, 4)
+  isExhausted   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  // ─── Estado de calidad del lote (ISO 9001 §8.6 liberación · ARCSA) ───
+  // RELEASED por defecto (compras normales). Los lotes producidos internamente para
+  // productos con requiresQualityControl nacen en QUARANTINE y solo pasan a RELEASED
+  // tras una inspección aprobada. Un lote no liberado no puede venderse/despacharse.
+  qualityStatus     String  @default("RELEASED") // QUARANTINE | RELEASED | REJECTED
+  productionOrderId String? // lote originado en una orden de producción
+
+  @@index([companyId])
+  @@index([productId, warehouseId, isExhausted])
+  @@index([receivedAt])
+  @@index([qualityStatus])
+  @@map("inventory_batches")
 }
 
 // ============================================================
 // PURCHASES
 // ============================================================
 
-model Supplier {
-  id        String   @id @default(uuid())
-  companyId String
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  city      String?
-  country   String?
-  paymentTerms String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  // Relations
-  purchaseOrders PurchaseOrder[]
-
-  @@map("suppliers")
-  @@index([companyId])
-}
-
-model PurchaseOrder {
+model Department {
   id        String   @id @default(uuid())
   companyId String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  supplierId String
-  supplier  Supplier @relation(fields: [supplierId], references: [id])
-  poNumber  String   @unique
-  status    String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, RECEIVED, CANCELLED
-  totalAmount Decimal @db.Decimal(12, 2)
-  deliveryDate DateTime?
-  notes     String?
+  name      String
+  code      String?
+  managerId String? // userId del jefe del departamento
+  createdAt DateTime @default(now())
+
+  budgets      BudgetControl[]
+  requisitions Requisition[]
+  employees    Employee[]
+
+  @@index([companyId])
+  @@map("departments")
+}
+
+model Supplier {
+  id           String   @id @default(uuid())
+  companyId    String
+  name         String
+  ruc          String?
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  country      String?
+  paymentTerms String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // ─── UAFE Compliance ─────────────────────────────────────────
+  // personType: 'NATURAL' | 'JURIDICA'
+  personType      String?
+  // documentType: 'RUC' | 'CEDULA' | 'PASAPORTE'
+  documentType    String?
+  razonSocial     String?
+  nombreComercial String?
+  ciiuCode        String? // CIIU 4 dígitos
+  ciiuDescription String?
+
+  // Persona Natural
+  birthDate      DateTime?
+  nationality    String?
+  // maritalStatus: 'SOLTERO' | 'CASADO' | 'DIVORCIADO' | 'VIUDO' | 'UNION_LIBRE'
+  maritalStatus  String?
+  spouseName     String?
+  spouseDocument String?
+  occupation     String?
+  employerName   String?
+  workplace      String?
+
+  // Persona Jurídica
+  legalRepName     String?
+  legalRepDocument String?
+  beneficialOwners Json? // [{ name, document, percentage }]
+
+  // Financiero KYC
+  annualIncome       Decimal? @db.Decimal(14, 2)
+  estimatedPatrimony Decimal? @db.Decimal(14, 2)
+
+  // Declaración PEP
+  isPEP           Boolean @default(false)
+  pepPosition     String?
+  pepRelationship String?
+
+  // Régimen tributario SRI
+  contribuyenteEspecial Boolean @default(false)
+  obligadoContabilidad  Boolean @default(false)
+
+  // Configuración tributaria por defecto (sincronización contable)
+  taxRegime                 String? // GENERAL | RIMPE_EMPRENDEDOR | RIMPE_NEGOCIO_POPULAR
+  defaultIvaCode            String? // código IvaTariff (0, 8, 15, ...)
+  defaultRetentionCodeRenta String? // código RetentionCatalog tipo RENTA
+  defaultRetentionCodeIva   String? // código RetentionCatalog tipo IVA
+
+  // Audit KYC
+  kycCompletedAt    DateTime?
+  kycCompletedBy    String?
+  kycLastReviewedAt DateTime?
+
+  // SERCOP / RUP (solo aplica cuando company.isPublicEntity = true)
+  rupNumber      String?
+  rupStatus      String? // HABILITADO | SUSPENDIDO | NO_REGISTRADO
+  uafeCertExpiry DateTime?
+
+  // Portal de Proveedores
+  portalEnabled   Boolean   @default(false)
+  portalPassword  String?
+  portalToken     String?
+  lastPortalLogin DateTime?
+
+  purchaseOrders            PurchaseOrder[]
+  sriDocuments              SriDocument[]
+  quotations                SupplierQuotation[]
+  performanceRecords        SupplierPerformanceRecord[]
+  score                     SupplierScore?
+  portalResponses           PortalQuotationResponse[]
+  recurringInvoiceTemplates RecurringInvoiceTemplate[]
+  fixedAssets               FixedAsset[]
+
+  @@index([companyId])
+  @@index([ruc])
+  @@index([portalToken])
+  @@index([isPEP])
+  @@map("suppliers")
+}
+
+// Plantilla de factura de compra recurrente (arriendos, servicios básicos, suscripciones):
+// B3 del plan de mejoras. NO contabiliza nada por sí sola — cada período vencido genera un
+// SriDocument normal vía createManualSriDocument (mismo motor que el ingreso manual), que cae
+// en PENDING_REVIEW como cualquier otro documento (regla 5: alguien confirma antes de que se
+// contabilice). Así se reusa TODO el flujo existente (duplicados, matching de OC, revisión,
+// asiento) sin duplicar lógica contable.
+model RecurringInvoiceTemplate {
+  id                  String    @id @default(uuid())
+  companyId           String
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplierId          String
+  supplier            Supplier  @relation(fields: [supplierId], references: [id])
+  description         String // "Arriendo local Quito", "Internet fibra óptica"
+  amount              Decimal   @db.Decimal(12, 2) // base imponible, sin IVA
+  taxCode             String    @default("15") // código IvaTariff (0, 8, 12, 15, NO_OBJETO, EXENTO)
+  taxRate             Decimal   @default(15) @db.Decimal(5, 2)
+  // Día del mes en que se genera el documento (1-28, evita el problema de meses cortos).
+  dayOfMonth          Int       @default(1)
+  startDate           DateTime
+  endDate             DateTime? // null = indefinida (arriendo sin plazo fijo)
+  // Último período generado, formato "AAAA-MM" — evita generar dos veces el mismo mes aunque
+  // el job/endpoint se dispare varias veces (idempotencia, igual que getNextDocumentNumber).
+  lastGeneratedPeriod String?
+  isActive            Boolean   @default(true)
+  createdBy           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  generatedDocuments SriDocument[]
+
+  @@index([companyId])
+  @@index([isActive])
+  @@map("recurring_invoice_templates")
+}
+
+model PurchaseOrder {
+  id            String       @id @default(uuid())
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplierId    String
+  supplier      Supplier     @relation(fields: [supplierId], references: [id])
+  poNumber      String // OC-0001 — único POR EMPRESA (ver @@unique abajo), no global
+  status        String       @default("DRAFT")
+  totalAmount   Decimal      @db.Decimal(12, 2)
+  deliveryDate  DateTime?
+  notes         String?
+  requisitionId String?
+  requisition   Requisition? @relation(fields: [requisitionId], references: [id])
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  approvedById  String?
+
+  // Multi-level approval (guided by ApprovalMatrix)
+  currentLevel    Int       @default(0)
+  requiredLevels  Int       @default(1)
+  l1ApproverId    String?
+  l1ApprovedAt    DateTime?
+  l1Notes         String?
+  l2ApproverId    String?
+  l2ApprovedAt    DateTime?
+  l2Notes         String?
+  l3ApproverId    String?
+  l3ApprovedAt    DateTime?
+  l3Notes         String?
+  l4ApproverId    String?
+  l4ApprovedAt    DateTime?
+  l4Notes         String?
+  l5ApproverId    String?
+  l5ApprovedAt    DateTime?
+  l5Notes         String?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  // Anticipo % + saldo contra entrega
+  advancePercent Float     @default(0) // % de anticipo
+  advanceAmount  Decimal?  @db.Decimal(12, 2)
+  advanceStatus  String    @default("NONE") // NONE | PENDING | PAID
+  advancePaidAt  DateTime?
+  balanceStatus  String    @default("PENDING") // PENDING | PAID
+  balancePaidAt  DateTime?
+
+  // Ubicación de entrega (ruteo a bodega/percha)
+  deliveryLocationId String?
+  deliveryLocation   StorageLocation? @relation(fields: [deliveryLocationId], references: [id])
+
+  // Conformidad de recepción (buen estado / a tiempo)
+  receivedOnTime    Boolean?
+  qualityConformity Boolean?
+  conformityBy      String?
+  conformityAt      DateTime?
+  conformityNotes   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  items POItem[]
+  items              POItem[]
+  sriDocuments       SriDocument[]
+  performanceRecords SupplierPerformanceRecord[]
 
-  @@map("purchase_orders")
+  @@unique([companyId, poNumber]) // numeración por empresa (evita colisión multi-tenant)
   @@index([companyId])
   @@index([status])
+  @@map("purchase_orders")
+}
+
+// ============================================================
+// REQUISICIONES & COTIZACIONES
+// ============================================================
+
+// ESTADOS: DRAFT → PENDING_L1 → PENDING_L2 → APPROVED → QUOTED → PO_CREATED | REJECTED
+//          Si budgetExceeded: PENDING_L2 → PENDING_L3 → APPROVED
+model Requisition {
+  id             String      @id @default(uuid())
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reqNumber      String // REQ-0001 — único POR EMPRESA (ver @@unique abajo), no global
+  title          String
+  notes          String?
+  status         String      @default("DRAFT")
+  priority       String      @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  totalEstimated Decimal     @default(0) @db.Decimal(12, 2)
+  budgetExceeded Boolean     @default(false)
+  // Fecha para la cual se necesita el material (deadline operativo, no de aprobación).
+  // Ausente por defecto; permite priorizar y avisar si vence sin haberse convertido en OC.
+  neededBy       DateTime?
+
+  // Criterios de evaluación ponderada (pesos). Formato:
+  // [{ key, label, weight, direction: lower_better|higher_better|manual }]
+  scoringCriteria Json?
+
+  // Cadena de aprobación
+  requestedBy     String // userId
+  l1ApproverId    String?
+  l1ApprovedAt    DateTime?
+  l1Notes         String?
+  l2ApproverId    String?
+  l2ApprovedAt    DateTime?
+  l2Notes         String?
+  l3ApproverId    String?
+  l3ApprovedAt    DateTime?
+  l3Notes         String?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items           RequisitionItem[]
+  quotations      SupplierQuotation[]
+  purchaseOrders  PurchaseOrder[]
+  portalResponses PortalQuotationResponse[]
+
+  @@unique([companyId, reqNumber]) // numeración por empresa (evita colisión multi-tenant)
+  @@index([companyId])
+  @@index([status])
+  @@map("requisitions")
+}
+
+model RequisitionItem {
+  id            String      @id @default(uuid())
+  requisitionId String
+  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  productId     String?
+  product       Product?    @relation(fields: [productId], references: [id])
+  description   String
+  quantity      Decimal     @db.Decimal(12, 4)
+  unit          String      @default("UNIDAD")
+  estimatedCost Decimal     @default(0) @db.Decimal(12, 2)
+  notes         String?
+
+  quotationItems QuotationItem[]
+
+  @@index([requisitionId])
+  @@map("requisition_items")
+}
+
+model SupplierQuotation {
+  id            String      @id @default(uuid())
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requisitionId String
+  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  supplierId    String
+  supplier      Supplier    @relation(fields: [supplierId], references: [id])
+  quoteNumber   String?
+  validUntil    DateTime?
+  deliveryDays  Int?
+  paymentTerms  String?
+  notes         String?
+  totalAmount   Decimal     @default(0) @db.Decimal(12, 2)
+  isWinner      Boolean     @default(false)
+
+  // Evaluación ponderada (pesos)
+  manualScores       Json? // { "QUALITY": 85, "CUSTOM_1": 70 }
+  advanceRequiredPct Float? // anticipo % que exige el proveedor (criterio cashflow)
+  weightedScore      Float? // puntaje ponderado total computado
+  scoreBreakdown     Json? // { "PRICE": { raw, score, weight }, ... }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items QuotationItem[]
+
+  @@index([requisitionId])
+  @@index([companyId])
+  @@map("supplier_quotations")
+}
+
+model QuotationItem {
+  id                String            @id @default(uuid())
+  quotationId       String
+  quotation         SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  requisitionItemId String
+  requisitionItem   RequisitionItem   @relation(fields: [requisitionItemId], references: [id])
+  description       String
+  quantity          Decimal           @db.Decimal(12, 4)
+  unitPrice         Decimal           @db.Decimal(12, 4)
+  lineTotal         Decimal           @db.Decimal(12, 2)
+  brand             String?
+  notes             String?
+
+  @@index([quotationId])
+  @@map("quotation_items")
+}
+
+// ============================================================
+// PRESUPUESTO MENSUAL
+// ============================================================
+
+model BudgetControl {
+  id           String      @id @default(uuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  year         Int
+  month        Int // 1-12
+  budgetAmount Decimal     @db.Decimal(12, 2)
+  consumed     Decimal     @default(0) @db.Decimal(12, 2)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([companyId, departmentId, year, month])
+  @@index([companyId])
+  @@map("budget_controls")
+}
+
+// ============================================================
+// MATRIZ DE APROBACIÓN POR CUANTÍA
+// ============================================================
+
+// Configura cuántos niveles necesita una OC según el monto total.
+// Nivel 1=hasta $500, 2=hasta $5k, 3=hasta $50k, 4=hasta $200k, 5=sin límite
+model ApprovalMatrix {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  level        Int // 1-5
+  label        String // "Jefe de Área", "Jefe de Compras", etc.
+  minAmount    Float
+  maxAmount    Float? // null = sin límite superior
+  approverRole String   @default("APPROVER") // rol requerido en ese nivel
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([companyId, level])
+  @@index([companyId])
+  @@map("approval_matrix")
+}
+
+// Conteo físico de inventario (conciliación sistema vs físico)
+model PhysicalCount {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  countDate   DateTime  @default(now())
+  status      String    @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED | CANCELLED
+  notes       String?
+  countedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items PhysicalCountItem[]
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@map("physical_counts")
+}
+
+model PhysicalCountItem {
+  id            String        @id @default(uuid())
+  countId       String
+  count         PhysicalCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product       @relation(fields: [productId], references: [id])
+  systemQty     Decimal       @db.Decimal(12, 4) // cantidad según sistema
+  physicalQty   Decimal       @db.Decimal(12, 4) // cantidad contada físicamente
+  variance      Decimal       @default(0) @db.Decimal(12, 4) // diferencia (físico - sistema)
+  unitCost      Decimal       @default(0) @db.Decimal(12, 4)
+  varianceValue Decimal       @default(0) @db.Decimal(12, 2) // varianza × costo
+  notes         String?
+
+  @@index([countId])
+  @@index([productId])
+  @@map("physical_count_items")
 }
 
 model POItem {
-  id        String   @id @default(uuid())
-  poId      String
-  po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
-  productId String?
-  quantity  Int
-  unitPrice Decimal @db.Decimal(12, 2)
-  lineTotal Decimal @db.Decimal(12, 2)
-  receivedQuantity Int @default(0)
+  id                String        @id @default(uuid())
+  poId              String
+  po                PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  productId         String?
+  product           Product?      @relation(fields: [productId], references: [id])
+  quantity          Int // SIEMPRE en unidad de STOCK (Product.unit) — el resto del flujo (recepción, kardex) no cambia
+  unitPrice         Decimal       @db.Decimal(12, 2) // precio por unidad de STOCK (ya convertido si se ingresó por unidad de compra)
+  lineTotal         Decimal       @db.Decimal(12, 2)
+  receivedQuantity  Int           @default(0)
+  // Snapshot informativo (regla 4, trazabilidad): cómo se ingresó realmente la línea, para
+  // mostrarlo en la OC ("3 CAJA = 72 UNIDAD") sin depender de que el producto no cambie de
+  // configuración después. null = se ingresó directo en unidad de stock (caso de siempre).
+  purchaseQuantity  Decimal?      @db.Decimal(12, 4)
+  purchaseUnitLabel String?
 
-  @@map("po_items")
   @@index([poId])
+  @@map("po_items")
 }
 
 // ============================================================
@@ -170,101 +1008,792 @@ model POItem {
 // ============================================================
 
 model SubscriptionPlan {
-  id        String   @id @default(uuid())
-  name      String   @unique // STARTER, PROFESSIONAL, ENTERPRISE
+  id           String  @id @default(uuid())
+  name         String  @unique
   priceMonthly Decimal @db.Decimal(10, 2)
-  description String?
-  features  String   // JSON stringified
-  maxUsers  Int?
-  maxProducts Int?
-  isActive  Boolean  @default(true)
+  description  String?
+  features     String
+  maxUsers     Int?
+  maxProducts  Int?
+  isActive     Boolean @default(true)
 
-  // Relations
   subscriptions Subscription[]
 
   @@map("subscription_plans")
 }
 
 model Subscription {
-  id        String   @id @default(uuid())
-  companyId String   @unique
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  planId    String
-  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
-  status    String   @default("TRIAL") // TRIAL, ACTIVE, PAUSED, CANCELLED
+  id           String           @id @default(uuid())
+  companyId    String           @unique
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  planId       String
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+  status       String           @default("TRIAL")
   billingEmail String?
-  startDate DateTime @default(now())
-  renewalDate DateTime?
-  trialEndsAt DateTime?
-  cancelledAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  startDate    DateTime         @default(now())
+  renewalDate  DateTime?
+  trialEndsAt  DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  // Relations
   billingHistory BillingHistory[]
 
-  @@map("subscriptions")
   @@index([companyId])
   @@index([status])
+  @@map("subscriptions")
 }
 
 model BillingHistory {
-  id        String   @id @default(uuid())
-  companyId String
-  subscriptionId String
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  amount    Decimal  @db.Decimal(10, 2)
-  status    String   // PENDING, PAID, FAILED
-  paymentProvider String? // UNO, KUSKI
-  transactionId String?
-  invoiceDate DateTime
-  dueDate   DateTime?
-  paidDate  DateTime?
-  createdAt DateTime @default(now())
+  id              String       @id @default(uuid())
+  companyId       String
+  subscriptionId  String
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount          Decimal      @db.Decimal(10, 2)
+  status          String
+  paymentProvider String?
+  transactionId   String?
+  invoiceDate     DateTime
+  dueDate         DateTime?
+  paidDate        DateTime?
+  createdAt       DateTime     @default(now())
 
-  @@map("billing_history")
   @@index([companyId])
   @@index([status])
+  @@map("billing_history")
 }
 
 // ============================================================
-// FINANCIALS
+// FINANCIALS (facturas internas ERP)
 // ============================================================
 
 model Invoice {
+  id           String    @id @default(uuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  number       String // único POR EMPRESA (ver @@unique abajo), no global
+  type         String
+  status       String    @default("DRAFT")
+  totalAmount  Decimal   @db.Decimal(12, 2)
+  paidAmount   Decimal   @default(0) @db.Decimal(12, 2)
+  issueDate    DateTime  @default(now())
+  dueDate      DateTime?
+  notes        String?
+  salesOrderId String? // pedido de venta facturado (1 pedido → N facturas con despachos parciales)
+  shipmentId   String? // envío específico que esta factura cobra (null si manual)
+  // TODO (Sprint 3): Soportar Notas de Crédito vinculadas a invoiceId para devoluciones
+  // parciales (anular parte de la factura de un envío y ajustar el COGS de ese Shipment).
+  // Hasta entonces, el frontend deshabilita "Anular" en facturas con salesOrderId.
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // ── Facturación electrónica SRI (Etapa 3 del plan SRI) ──
+  // `number` (FAC-V-####) sigue siendo el identificador interno/contable; estos campos son el
+  // estado TRIBUTARIO del comprobante ante el SRI. NO_ENVIADA → ENVIADA → RECIBIDA → AUTORIZADA,
+  // o DEVUELTA (recepción rechazada) / RECHAZADA (autorización negada) — ambas re-emitibles con
+  // un secuencial nuevo, que es la práctica normal ante el SRI.
+  sriEstado          String         @default("NO_ENVIADA")
+  sriAmbiente        String? // PRUEBAS | PRODUCCION — se congela al emitir
+  establishmentId    String?
+  establishment      Establishment? @relation(fields: [establishmentId], references: [id])
+  emissionPointId    String?
+  emissionPoint      EmissionPoint? @relation(fields: [emissionPointId], references: [id])
+  sriSecuencial      String? // 9 dígitos consumidos del contador SRI_FACTURA_<estab>_<ptoEmi>
+  claveAcceso        String? // 49 dígitos; llave universal para conciliar con ATS y con el RIDE
+  numeroAutorizacion String?
+  fechaAutorizacion  DateTime?
+  xmlFirmado         String?        @db.Text // se conserva para reenviar/consultar/reimprimir
+  xmlAutorizado      String?        @db.Text // comprobante tal como lo devolvió el SRI al autorizar
+  sriMensajes        Json? // últimos mensajes del SRI [{identificador, mensaje, informacionAdicional, tipo}]
+  sriUltimoIntento   DateTime?
+
+  items                InvoiceItem[]
+  salesOrder           SalesOrder?          @relation(fields: [salesOrderId], references: [id])
+  paymentApplications  PaymentApplication[]
+  withholdings         InvoiceWithholding[]
+  creditNotes          CreditNote[]
+  debitNotes           DebitNote[]
+  collectionActivities CollectionActivity[]
+  sriTransmissions     SriTransmission[]
+
+  @@unique([companyId, number]) // numeración por empresa (evita colisión multi-tenant)
+  @@unique([companyId, claveAcceso])
+  @@index([companyId])
+  @@index([status])
+  @@index([salesOrderId])
+  @@index([companyId, sriEstado])
+  @@map("invoices")
+}
+
+// Bitácora de cada ida y vuelta con el web service del SRI (regla 4, trazabilidad/auditoría):
+// qué se envió, qué respondió y cuándo. Nunca se edita ni se borra desde la aplicación.
+// Bitácora de cada ida y vuelta con el SRI (regla 4). `invoiceId`/`creditNoteId` son ambos
+// nullable — exactamente uno debe venir seteado según el tipo de comprobante (validado en el
+// servicio, no en la BD, para no acoplar el schema a la lista de tipos de comprobante que
+// crecerá en próximas etapas: ND, guía de remisión).
+model SriTransmission {
+  id              String         @id @default(uuid())
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId       String?
+  invoice         Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  creditNoteId    String?
+  creditNote      CreditNote?    @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  debitNoteId     String?
+  debitNote       DebitNote?     @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+  deliveryGuideId String?
+  deliveryGuide   DeliveryGuide? @relation(fields: [deliveryGuideId], references: [id], onDelete: Cascade)
+  operacion       String // RECEPCION | AUTORIZACION
+  claveAcceso     String
+  resultado       String // RECIBIDA | DEVUELTA | AUTORIZADO | NO AUTORIZADO | EN PROCESO | SIN_RESPUESTA | ERROR_RED
+  mensajes        Json?
+  rawResponse     String?        @db.Text
+  createdAt       DateTime       @default(now())
+
+  @@index([companyId, invoiceId])
+  @@index([companyId, creditNoteId])
+  @@index([companyId, debitNoteId])
+  @@index([companyId, deliveryGuideId])
+  @@map("sri_transmissions")
+}
+
+// Nota de Crédito de venta (Sprint 4): anula total/parcialmente una factura (devoluciones).
+// Revierte stock, COGS, ingresos, IVA y retenciones. Numeración NC- por empresa.
+model CreditNote {
+  id               String   @id @default(uuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  number           String // NC-0001 — único por empresa (ver @@unique)
+  invoiceId        String
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  reason           String // motivo (devolución, error de facturación, descuento posventa…)
+  status           String   @default("ISSUED") // ISSUED | CANCELLED
+  subtotal         Decimal  @db.Decimal(12, 2)
+  taxAmount        Decimal  @db.Decimal(12, 2)
+  total            Decimal  @db.Decimal(12, 2)
+  withheldReversed Decimal  @default(0) @db.Decimal(12, 2) // retención revertida (proporcional)
+  restock          Boolean  @default(true) // true = devuelve mercancía a stock; false = merma
+  createdBy        String?
+  createdAt        DateTime @default(now())
+
+  // ── Facturación electrónica SRI (Etapa 4 del plan SRI) ──
+  // Mismos campos y mismo significado que en `Invoice` (ver esa entidad para el detalle);
+  // el "documento sustento" que el XML de NC exige (codDocModificado/numDocModificado/
+  // fechaEmisionDocSustento) se deriva de `invoice` en el momento de emitir, no se duplica aquí.
+  sriEstado          String         @default("NO_ENVIADA")
+  sriAmbiente        String?
+  establishmentId    String?
+  establishment      Establishment? @relation(fields: [establishmentId], references: [id])
+  emissionPointId    String?
+  emissionPoint      EmissionPoint? @relation(fields: [emissionPointId], references: [id])
+  sriSecuencial      String?
+  claveAcceso        String?
+  numeroAutorizacion String?
+  fechaAutorizacion  DateTime?
+  xmlFirmado         String?        @db.Text
+  xmlAutorizado      String?        @db.Text
+  sriMensajes        Json?
+  sriUltimoIntento   DateTime?
+
+  items            CreditNoteItem[]
+  sriTransmissions SriTransmission[]
+
+  @@unique([companyId, number])
+  @@unique([companyId, claveAcceso])
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([companyId, sriEstado])
+  @@map("credit_notes")
+}
+
+model CreditNoteItem {
+  id               String     @id @default(uuid())
+  creditNoteId     String
+  creditNote       CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  salesOrderItemId String // línea del pedido acreditada (aporta producto + bodega)
+  productId        String
+  warehouseId      String?
+  description      String
+  quantity         Decimal    @db.Decimal(12, 4)
+  unitPrice        Decimal    @db.Decimal(12, 2)
+  discount         Decimal    @default(0) @db.Decimal(5, 2)
+  taxRate          Decimal    @default(0) @db.Decimal(5, 2)
+  cogsUnit         Decimal    @default(0) @db.Decimal(12, 4) // avgCost capturado al emitir (revierte COGS)
+
+  @@index([creditNoteId])
+  @@map("credit_note_items")
+}
+
+// Nota de Débito de venta (Etapa 4 del plan SRI, resto): carga adicional sobre una factura ya
+// emitida (interés por mora, gasto no facturado, servicio complementario) — a diferencia de la
+// NC, no toca stock/COGS (no hay devolución de mercadería) y no tiene líneas con cantidad, sino
+// `motivos` (razón + valor) según el esquema del SRI. Numeración ND- por empresa.
+model DebitNote {
   id        String   @id @default(uuid())
   companyId String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  number    String   @unique
-  type      String   // SALES, PURCHASE
-  status    String   @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE
-  totalAmount Decimal @db.Decimal(12, 2)
-  paidAmount Decimal @db.Decimal(12, 2) @default(0)
-  issueDate DateTime @default(now())
-  dueDate   DateTime?
-  notes     String?
+  number    String // ND-0001 — único por empresa (ver @@unique)
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  reason    String // motivo general (visible en el PDF/RIDE, distinto de cada `razon` de concepto)
+  status    String   @default("ISSUED") // ISSUED | CANCELLED
+  taxRate   Decimal  @default(0) @db.Decimal(5, 2) // tarifa única de IVA sobre el total de conceptos
+  subtotal  Decimal  @db.Decimal(12, 2)
+  taxAmount Decimal  @db.Decimal(12, 2)
+  total     Decimal  @db.Decimal(12, 2)
+  createdBy String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  // Relations
-  items InvoiceItem[]
+  // ── Facturación electrónica SRI (mismos campos y significado que en `CreditNote`) ──
+  sriEstado          String         @default("NO_ENVIADA")
+  sriAmbiente        String?
+  establishmentId    String?
+  establishment      Establishment? @relation(fields: [establishmentId], references: [id])
+  emissionPointId    String?
+  emissionPoint      EmissionPoint? @relation(fields: [emissionPointId], references: [id])
+  sriSecuencial      String?
+  claveAcceso        String?
+  numeroAutorizacion String?
+  fechaAutorizacion  DateTime?
+  xmlFirmado         String?        @db.Text
+  xmlAutorizado      String?        @db.Text
+  sriMensajes        Json?
+  sriUltimoIntento   DateTime?
 
-  @@map("invoices")
+  concepts         DebitNoteConcept[]
+  sriTransmissions SriTransmission[]
+
+  @@unique([companyId, number])
+  @@unique([companyId, claveAcceso])
   @@index([companyId])
-  @@index([status])
+  @@index([invoiceId])
+  @@index([companyId, sriEstado])
+  @@map("debit_notes")
+}
+
+model DebitNoteConcept {
+  id          String    @id @default(uuid())
+  debitNoteId String
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+  description String // el "razon" del motivo SRI
+  amount      Decimal   @db.Decimal(12, 2)
+
+  @@index([debitNoteId])
+  @@map("debit_note_concepts")
+}
+
+// Guía de Remisión electrónica (Etapa 4 del plan SRI, resto): documento SIN valores monetarios
+// que sustenta el TRASLADO de mercadería — evidencia el transporte, no una venta ni un cargo.
+// A diferencia de factura/NC/ND, no modifica ningún comprobante ("docModificado"): documenta el
+// transportista + el trayecto + las cantidades trasladadas de un `Shipment` ya existente.
+model DeliveryGuide {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  number     String // GR-0001 — único por empresa (ver @@unique)
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  status     String   @default("ISSUED") // ISSUED | CANCELLED
+
+  motivoTraslado                  String // "Venta", "Traslado entre bodegas"...
+  transportistaTipoIdentificacion String // RUC | CEDULA | PASAPORTE
+  transportistaIdentificacion     String
+  transportistaRazonSocial        String
+  placa                           String
+  dirPartida                      String
+  fechaIniTransporte              DateTime
+  fechaFinTransporte              DateTime
+  createdBy                       String?
+  createdAt                       DateTime @default(now())
+
+  // ── Facturación electrónica SRI (mismos campos y significado que en `CreditNote`/`DebitNote`) ──
+  sriEstado          String         @default("NO_ENVIADA")
+  sriAmbiente        String?
+  establishmentId    String?
+  establishment      Establishment? @relation(fields: [establishmentId], references: [id])
+  emissionPointId    String?
+  emissionPoint      EmissionPoint? @relation(fields: [emissionPointId], references: [id])
+  sriSecuencial      String?
+  claveAcceso        String?
+  numeroAutorizacion String?
+  fechaAutorizacion  DateTime?
+  xmlFirmado         String?        @db.Text
+  xmlAutorizado      String?        @db.Text
+  sriMensajes        Json?
+  sriUltimoIntento   DateTime?
+
+  items            DeliveryGuideItem[]
+  sriTransmissions SriTransmission[]
+
+  @@unique([companyId, number])
+  @@unique([companyId, claveAcceso])
+  @@index([companyId])
+  @@index([shipmentId])
+  @@index([companyId, sriEstado])
+  @@map("delivery_guides")
+}
+
+model DeliveryGuideItem {
+  id              String        @id @default(uuid())
+  deliveryGuideId String
+  deliveryGuide   DeliveryGuide @relation(fields: [deliveryGuideId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Decimal       @db.Decimal(12, 4)
+
+  @@index([deliveryGuideId])
+  @@map("delivery_guide_items")
 }
 
 model InvoiceItem {
-  id        String   @id @default(uuid())
-  invoiceId String
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   description String
-  quantity  Int
-  unitPrice Decimal @db.Decimal(12, 2)
-  lineTotal Decimal @db.Decimal(12, 2)
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(12, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
 
-  @@map("invoice_items")
   @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// ============================================================
+// SRI — DOCUMENTOS ELECTRÓNICOS
+// ============================================================
+
+// Documento SRI (factura, nota crédito, etc.) importado via PDF o XML
+model SriDocument {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Estado del procesamiento
+  // PENDING_REVIEW → CONFIRMED | REJECTED
+  status String @default("PENDING_REVIEW")
+
+  // Tipo de comprobante SRI
+  tipoDocumento String @default("FACTURA")
+  // FACTURA, NOTA_CREDITO, NOTA_DEBITO, LIQUIDACION_COMPRA, RETENCION
+
+  // Identificación única SRI
+  claveAcceso        String
+  numeroAutorizacion String?
+
+  // Emisor
+  rucEmisor             String
+  razonSocialEmisor     String
+  nombreComercial       String?
+  dirEmisor             String?
+  contribuyenteEspecial String?
+  obligadoContabilidad  Boolean @default(false)
+
+  // Receptor
+  tipoIdComprador      String?
+  idComprador          String?
+  razonSocialComprador String?
+  dirComprador         String?
+
+  // Numeración
+  estab      String?
+  ptoEmi     String?
+  secuencial String?
+  numeroDoc  String? // ej: 013-001-000001305
+
+  // Fechas
+  fechaEmision      DateTime
+  fechaAutorizacion DateTime?
+  ambiente          String?   @default("PRODUCCION")
+
+  // Totales tributarios
+  subtotal0      Decimal @default(0) @db.Decimal(12, 2)
+  subtotal8      Decimal @default(0) @db.Decimal(12, 2)
+  subtotal12     Decimal @default(0) @db.Decimal(12, 2)
+  subtotal15     Decimal @default(0) @db.Decimal(12, 2)
+  subtotalNoObj  Decimal @default(0) @db.Decimal(12, 2)
+  subtotalExento Decimal @default(0) @db.Decimal(12, 2)
+  totalDescuento Decimal @default(0) @db.Decimal(12, 2)
+  ice            Decimal @default(0) @db.Decimal(12, 2)
+  iva            Decimal @default(0) @db.Decimal(12, 2)
+  irbpnr         Decimal @default(0) @db.Decimal(12, 2)
+  propina        Decimal @default(0) @db.Decimal(12, 2)
+  total          Decimal @db.Decimal(12, 2)
+
+  // Forma de pago
+  formaPago      String?
+  valorFormaPago Decimal? @db.Decimal(12, 2)
+
+  // Retenciones aplicadas al documento
+  retencionRenta Decimal? @db.Decimal(12, 2)
+  retencionIva   Decimal? @db.Decimal(12, 2)
+
+  // Documento sustento (modificado): solo aplica a NOTA_CREDITO / NOTA_DEBITO recibidas del
+  // proveedor. Viene directo del XML del SRI (infoNotaCredito/infoNotaDebito: codDocModificado,
+  // numDocModificado, fechaEmisionDocSustento) — no se infiere, se parsea (ver sri-parser.service.ts).
+  docModificadoTipo   String?
+  docModificadoNumero String?
+  docModificadoFecha  DateTime?
+
+  // Metadata de parseo
+  parseConfidence Int? // 0-100
+  parseWarnings   String? // JSON array de advertencias
+  fileType        String? // PDF, XML
+  rawJson         Json?
+
+  // Observaciones del revisor
+  observaciones String?
+
+  // Estado de pago (cuentas por pagar): PENDING | PARTIAL | PAID
+  paymentStatus String    @default("PENDING")
+  paidAmount    Decimal   @default(0) @db.Decimal(12, 2)
+  paidAt        DateTime?
+
+  // Vínculos al ERP
+  supplierId          String?
+  supplier            Supplier?                 @relation(fields: [supplierId], references: [id])
+  purchaseOrderId     String?
+  purchaseOrder       PurchaseOrder?            @relation(fields: [purchaseOrderId], references: [id])
+  // Trazabilidad (regla 4): si este documento lo generó una plantilla recurrente (B3), queda
+  // enlazado aquí — igual que entityType/entityId en journal_entries.
+  recurringTemplateId String?
+  recurringTemplate   RecurringInvoiceTemplate? @relation(fields: [recurringTemplateId], references: [id])
+
+  items               SriDocumentItem[]
+  retentions          SriRetention[]
+  paymentApplications PaymentApplication[]
+  paymentSchedules    PaymentSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, claveAcceso])
+  @@index([companyId])
+  @@index([rucEmisor])
+  @@index([status])
+  @@index([fechaEmision])
+  @@map("sri_documents")
+}
+
+model SriDocumentItem {
+  id         String      @id @default(uuid())
+  documentId String
+  document   SriDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  linea          Int
+  codPrincipal   String
+  codAuxiliar    String?
+  descripcion    String
+  detAdicional   String?
+  cantidad       Decimal @db.Decimal(12, 4)
+  precioUnitario Decimal @db.Decimal(12, 4)
+  descuento      Decimal @default(0) @db.Decimal(12, 2)
+  precioTotal    Decimal @db.Decimal(12, 2)
+
+  // Impuestos del ítem
+  codigoTarifa String // 0, 8, 12, 15, NO_OBJETO, EXENTO
+  tarifaIva    Decimal @default(0) @db.Decimal(5, 2)
+  valorIva     Decimal @default(0) @db.Decimal(12, 2)
+
+  // Tipo para contabilidad
+  tipoItem String @default("PRODUCTO") // PRODUCTO, SERVICIO
+
+  // Mapeo a producto ERP (el usuario asigna en la revisión)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  @@index([documentId])
+  @@map("sri_document_items")
+}
+
+model SriRetention {
+  id         String      @id @default(uuid())
+  documentId String
+  document   SriDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tipo          String // RENTA, IVA
+  codigo        String
+  descripcion   String
+  baseImponible Decimal @db.Decimal(12, 2)
+  porcentaje    Decimal @db.Decimal(5, 2)
+  valor         Decimal @db.Decimal(12, 2)
+
+  @@index([documentId])
+  @@map("sri_retentions")
+}
+
+// Catálogo de tarifas IVA vigentes en Ecuador
+model IvaTariff {
+  id            String    @id @default(uuid())
+  codigo        String    @unique // 0, 8, 12, 15, NO_OBJETO, EXENTO
+  descripcion   String
+  porcentaje    Decimal   @db.Decimal(5, 2)
+  activo        Boolean   @default(true)
+  vigenciaDesde DateTime
+  vigenciaHasta DateTime?
+
+  @@map("iva_tariffs")
+}
+
+// Catálogo de retenciones SRI (IR + IVA)
+model RetentionCatalog {
+  id          String  @id @default(uuid())
+  tipo        String // RENTA, IVA
+  codigo      String  @unique
+  descripcion String
+  porcentaje  Decimal @db.Decimal(5, 2)
+  activo      Boolean @default(true)
+  aplicaA     String // BIENES, SERVICIOS, AMBOS
+
+  @@map("retention_catalog")
+}
+
+// Retenciones que el CLIENTE nos practica al facturarle una venta (IVA + Renta).
+// Es un activo para nosotros (crédito tributario), NO un pasivo. Tabla separada de
+// SriRetention (que es de compras). Una factura puede tener varias (IVA y Renta).
+model InvoiceWithholding {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tipo          String // RENTA | IVA
+  codigo        String // referencia a RetentionCatalog.codigo
+  descripcion   String
+  baseImponible Decimal  @db.Decimal(12, 2)
+  porcentaje    Decimal  @db.Decimal(5, 2)
+  valor         Decimal  @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([invoiceId, tipo])
+  @@index([tipo, codigo])
+  @@map("invoice_withholdings")
+}
+
+// ============================================================
+// PRICE LISTS (Listas de Precios)
+// ============================================================
+
+// El precio de venta deja de escribirse a mano: sale de la lista vigente.
+model PriceList {
+  id        String    @id @default(uuid())
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime // vigencia desde
+  endDate   DateTime? // vigencia hasta (null = sin fin)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  items PriceListItem[]
+
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@map("price_lists")
+}
+
+model PriceListItem {
+  id          String    @id @default(uuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  unitPrice   Decimal   @db.Decimal(12, 2)
+  // Descuento por volumen: este precio aplica a partir de esta cantidad (escalón).
+  minQuantity Decimal   @default(1) @db.Decimal(12, 4)
+
+  @@unique([priceListId, productId, minQuantity])
+  @@index([priceListId])
+  @@map("price_list_items")
+}
+
+// ============================================================
+// SALES MODULE
+// ============================================================
+
+model Customer {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  ruc         String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  creditLimit Decimal  @default(0) @db.Decimal(12, 2)
+  balance     Decimal  @default(0) @db.Decimal(12, 2)
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ─── UAFE Compliance ─────────────────────────────────────────
+  personType      String? // 'NATURAL' | 'JURIDICA'
+  documentType    String? // 'RUC' | 'CEDULA' | 'PASAPORTE'
+  razonSocial     String?
+  nombreComercial String?
+  ciiuCode        String?
+  ciiuDescription String?
+
+  // Persona Natural
+  birthDate      DateTime?
+  nationality    String?
+  maritalStatus  String? // SOLTERO|CASADO|DIVORCIADO|VIUDO|UNION_LIBRE
+  spouseName     String?
+  spouseDocument String?
+  occupation     String?
+  employerName   String?
+  workplace      String?
+
+  // Persona Jurídica
+  legalRepName     String?
+  legalRepDocument String?
+  beneficialOwners Json? // [{ name, document, percentage }]
+
+  // Financiero KYC
+  annualIncome       Decimal? @db.Decimal(14, 2)
+  estimatedPatrimony Decimal? @db.Decimal(14, 2)
+  paymentTerms       String?
+
+  // Declaración PEP
+  isPEP           Boolean @default(false)
+  pepPosition     String?
+  pepRelationship String?
+
+  // Régimen tributario SRI
+  contribuyenteEspecial Boolean @default(false)
+  obligadoContabilidad  Boolean @default(false)
+
+  // Configuración tributaria por defecto (sincronización contable)
+  taxRegime                 String?
+  defaultIvaCode            String?
+  defaultRetentionCodeRenta String?
+  defaultRetentionCodeIva   String?
+
+  // Audit KYC
+  kycCompletedAt    DateTime?
+  kycCompletedBy    String?
+  kycLastReviewedAt DateTime?
+
+  salesQuotations      SalesQuotation[]
+  salesOrders          SalesOrder[]
+  collectionActivities CollectionActivity[]
+  crmDeals             CrmDeal[]
+
+  @@index([companyId])
+  @@index([ruc])
+  @@index([isPEP])
+  @@map("customers")
+}
+
+model SalesQuotation {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quoteNumber String // COT-0001 — único POR EMPRESA (ver @@unique abajo), no global
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  validUntil  DateTime?
+  status      String    @default("DRAFT")
+  // DRAFT | SENT | ACCEPTED | REJECTED | EXPIRED
+  subtotal    Decimal   @default(0) @db.Decimal(12, 2)
+  taxAmount   Decimal   @default(0) @db.Decimal(12, 2)
+  total       Decimal   @default(0) @db.Decimal(12, 2)
+  notes       String?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items      SalesQuotationItem[]
+  salesOrder SalesOrder?
+  crmDeal    CrmDeal?
+
+  @@unique([companyId, quoteNumber]) // numeración por empresa (evita colisión multi-tenant)
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("sales_quotations")
+}
+
+model SalesQuotationItem {
+  id          String         @id @default(uuid())
+  quotationId String
+  quotation   SalesQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product        @relation(fields: [productId], references: [id])
+  description String?
+  quantity    Decimal        @db.Decimal(12, 4)
+  unitPrice   Decimal        @db.Decimal(12, 4)
+  discount    Decimal        @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal        @db.Decimal(12, 2)
+  taxRate     Decimal        @default(0) @db.Decimal(5, 2)
+  taxAmount   Decimal        @default(0) @db.Decimal(12, 2)
+  total       Decimal        @db.Decimal(12, 2)
+
+  @@index([quotationId])
+  @@map("sales_quotation_items")
+}
+
+model SalesOrder {
+  id              String          @id @default(uuid())
+  companyId       String
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderNumber     String // PV-0001 — único POR EMPRESA (ver @@unique abajo)
+  customerId      String
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  quotationId     String?         @unique
+  quotation       SalesQuotation? @relation(fields: [quotationId], references: [id])
+  status          String          @default("DRAFT")
+  // DRAFT | CONFIRMED | PICKING | PARTIALLY_SHIPPED | DISPATCHED | DELIVERED | PARTIALLY_INVOICED | INVOICED | COMPLETED | CANCELLED
+  // El estado se recalcula con recalculateOrderStatus() según shippedQty/invoicedQty acumulados.
+  subtotal        Decimal         @default(0) @db.Decimal(12, 2)
+  taxAmount       Decimal         @default(0) @db.Decimal(12, 2)
+  total           Decimal         @default(0) @db.Decimal(12, 2)
+  deliveryDate    DateTime?
+  deliveryAddress String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  items    SalesOrderItem[]
+  invoices Invoice[]
+
+  @@unique([companyId, orderNumber]) // numeración por empresa (evita colisión multi-tenant)
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id          String     @id @default(uuid())
+  orderId     String
+  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
+  description String?
+  quantity    Decimal    @db.Decimal(12, 4)
+  unitPrice   Decimal    @db.Decimal(12, 4)
+  discount    Decimal    @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal    @db.Decimal(12, 2)
+  taxRate     Decimal    @default(0) @db.Decimal(5, 2)
+  taxAmount   Decimal    @default(0) @db.Decimal(12, 2)
+  total       Decimal    @db.Decimal(12, 2)
+  reservedQty Decimal    @default(0) @db.Decimal(12, 4)
+  shippedQty  Decimal    @default(0) @db.Decimal(12, 4) // acumulado despachado (despachos parciales)
+  invoicedQty Decimal    @default(0) @db.Decimal(12, 4) // acumulado facturado
+  creditedQty Decimal    @default(0) @db.Decimal(12, 4) // acumulado acreditado vía nota de crédito
+
+  shipmentItems ShipmentItem[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([orderId, shippedQty]) // listados de pendientes por despachar
+  @@index([orderId, invoicedQty]) // listados de pendientes por facturar
+  @@map("sales_order_items")
 }
 
 // ============================================================
@@ -272,17 +1801,1885 @@ model InvoiceItem {
 // ============================================================
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  companyId String
-  userId    String?
-  action    String   // CREATE, UPDATE, DELETE, LOGIN
-  entityType String  // PRODUCT, PO, INVOICE, etc
-  entityId  String?
-  changes   String?  // JSON stringified
-  ipAddress String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  companyId  String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  changes    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 
-  @@map("audit_logs")
   @@index([companyId])
   @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// PROCUREMENT INTELLIGENCE
+// ============================================================
+
+model SupplierPerformanceRecord {
+  id               String        @id @default(uuid())
+  companyId        String
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         Supplier      @relation(fields: [supplierId], references: [id])
+  poId             String
+  purchaseOrder    PurchaseOrder @relation(fields: [poId], references: [id])
+  deliveredDate    DateTime?
+  promisedDate     DateTime?
+  onTimeDays       Int? // negative = early, positive = late
+  isOnTime         Boolean       @default(true)
+  invoiceTotal     Decimal       @default(0) @db.Decimal(12, 2)
+  poTotal          Decimal       @default(0) @db.Decimal(12, 2)
+  priceVariancePct Decimal       @default(0) @db.Decimal(8, 4) // (invoice-PO)/PO*100
+  defectQty        Decimal       @default(0) @db.Decimal(12, 4)
+  totalQty         Decimal       @default(1) @db.Decimal(12, 4)
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([poId])
+  @@map("supplier_performance_records")
+}
+
+model SupplierScore {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplierId      String   @unique
+  supplier        Supplier @relation(fields: [supplierId], references: [id])
+  priceScore      Decimal  @default(0) @db.Decimal(5, 2)
+  deliveryScore   Decimal  @default(0) @db.Decimal(5, 2)
+  qualityScore    Decimal  @default(0) @db.Decimal(5, 2)
+  complianceScore Decimal  @default(0) @db.Decimal(5, 2)
+  totalScore      Decimal  @default(0) @db.Decimal(5, 2)
+  recordsCount    Int      @default(0)
+  lastUpdated     DateTime @updatedAt
+
+  @@unique([companyId, supplierId])
+  @@index([companyId])
+  @@map("supplier_scores")
+}
+
+// ============================================================
+// ATTACHMENTS
+// ============================================================
+
+model Attachment {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entityType  String // REQUISITION | PURCHASE_ORDER | INVOICE | SRI_DOCUMENT
+  entityId    String
+  fileName    String
+  storagePath String
+  fileType    String
+  fileSize    Int
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@map("attachments")
+}
+
+// ============================================================
+// JOURNAL ENTRIES (GL)
+// ============================================================
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entryNumber String // AST-0001
+  entryDate   DateTime @default(now())
+  description String
+  entityType  String? // PURCHASE_ORDER | INVOICE | INVENTORY
+  entityId    String?
+  totalDebit  Decimal  @db.Decimal(12, 2)
+  totalCredit Decimal  @db.Decimal(12, 2)
+  status      String   @default("POSTED") // DRAFT | POSTED | REVERSED
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  lines JournalEntryLine[]
+
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@index([entryDate])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id          String       @id @default(uuid())
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  accountCode String
+  accountName String
+  debit       Decimal      @default(0) @db.Decimal(12, 2)
+  credit      Decimal      @default(0) @db.Decimal(12, 2)
+  description String?
+
+  @@index([entryId])
+  @@map("journal_entry_lines")
+}
+
+// Períodos fiscales (cierre contable mensual). Un mes CLOSED bloquea la creación
+// y el reverso de asientos con fecha dentro de ese mes (Sprint 6 — Contabilidad Pro).
+model FiscalPeriod {
+  id         String    @id @default(uuid())
+  companyId  String
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year       Int
+  month      Int // 1-12
+  status     String    @default("OPEN") // OPEN | CLOSED
+  closedAt   DateTime?
+  closedBy   String?
+  reopenedAt DateTime?
+  reopenedBy String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([companyId, year, month])
+  @@index([companyId, status])
+  @@map("fiscal_periods")
+}
+
+// ============================================================
+// ACTIVOS FIJOS Y DEPRECIACIÓN (B4 del plan de mejoras)
+// ============================================================
+// Registro del activo + depreciación en línea recta (método legal por defecto en Ecuador,
+// art. 28 RLRTI). NO contabiliza la adquisición (eso ya lo hace la factura de compra por su
+// cuenta — vincular ambas es un paso futuro); SÍ genera el asiento mensual de depreciación
+// automáticamente vía journal.service, mismo patrón perezoso (sin cron) que B3.
+model FixedAsset {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assetNumber     String // ACT-0001 — único POR EMPRESA
+  name            String
+  // Categoría NIIF/Supercías: determina la cuenta de activo (1020101-1020110) y sugiere la
+  // vida útil legal (SRI): TERRENO (no deprecia), EDIFICIO (20a), MUEBLES_ENSERES (10a),
+  // MAQUINARIA (10a), EQUIPO_COMPUTO (3a), VEHICULO (5a), OTROS (manual).
+  category        String
+  accountCode     String // cuenta de activo (PPE) correspondiente a la categoría
+  acquisitionDate DateTime
+  acquisitionCost Decimal  @db.Decimal(12, 2)
+  residualValue   Decimal  @default(0) @db.Decimal(12, 2)
+  usefulLifeYears Int // 0 = no deprecia (terrenos)
+
+  accumulatedDepreciation Decimal @default(0) @db.Decimal(12, 2)
+  // Último período depreciado, "AAAA-MM" — evita generar dos veces el mismo mes (idempotencia,
+  // igual que RecurringInvoiceTemplate.lastGeneratedPeriod).
+  lastDepreciatedPeriod   String?
+
+  status       String    @default("ACTIVE") // ACTIVE | FULLY_DEPRECIATED | DISPOSED
+  disposedAt   DateTime?
+  disposalNote String?
+
+  // Trazabilidad opcional (regla 4): de qué proveedor/documento vino la compra.
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  notes     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Los asientos de depreciación se enlazan por entityType='FIXED_ASSET'/entityId (regla 4,
+  // mismo patrón polimórfico que el resto de journal.service), no por relación Prisma directa.
+
+  @@unique([companyId, assetNumber])
+  @@index([companyId])
+  @@index([status])
+  @@map("fixed_assets")
+}
+
+// ============================================================
+// PORTAL DE PROVEEDORES
+// ============================================================
+
+model PortalQuotationResponse {
+  id            String      @id @default(uuid())
+  supplierId    String
+  supplier      Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  requisitionId String
+  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  status        String      @default("PENDING") // PENDING | SUBMITTED | ACCEPTED | REJECTED
+  notes         String?
+  validUntil    DateTime?
+  submittedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items PortalQuotationItem[]
+
+  @@index([supplierId])
+  @@index([requisitionId])
+  @@map("portal_quotation_responses")
+}
+
+model PortalQuotationItem {
+  id           String                  @id @default(uuid())
+  responseId   String
+  response     PortalQuotationResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product                 @relation(fields: [productId], references: [id])
+  quantity     Decimal                 @db.Decimal(12, 4)
+  unitPrice    Decimal                 @db.Decimal(12, 4)
+  deliveryDays Int?
+  notes        String?
+
+  @@index([responseId])
+  @@map("portal_quotation_items")
+}
+
+// ============================================================
+// PRODUCCIÓN / MRP
+// ============================================================
+
+model BillOfMaterials {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  version   String   @default("1.0")
+  isActive  Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items            BOMItem[]
+  productionOrders ProductionOrder[]
+
+  @@index([companyId])
+  @@index([productId])
+  @@map("bills_of_materials")
+}
+
+model BOMItem {
+  id           String          @id @default(uuid())
+  bomId        String
+  bom          BillOfMaterials @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  componentId  String
+  component    Product         @relation("BOMComponent", fields: [componentId], references: [id])
+  quantity     Decimal         @db.Decimal(12, 4)
+  unit         String?
+  wastePercent Decimal         @default(0) @db.Decimal(5, 2)
+  notes        String?
+
+  @@index([bomId])
+  @@map("bom_items")
+}
+
+model ProductionOrder {
+  id           String           @id @default(uuid())
+  companyId    String
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  poNumber     String // PROD-0001
+  productId    String
+  product      Product          @relation("ProductionOrderProduct", fields: [productId], references: [id])
+  warehouseId  String
+  warehouse    Warehouse        @relation(fields: [warehouseId], references: [id])
+  bomId        String?
+  bom          BillOfMaterials? @relation(fields: [bomId], references: [id])
+  quantity     Decimal          @db.Decimal(12, 4)
+  quantityDone Decimal          @default(0) @db.Decimal(12, 4)
+  status       String           @default("PLANNED") // PLANNED | IN_PROGRESS | COMPLETED | CANCELLED
+  plannedStart DateTime?
+  plannedEnd   DateTime?
+  actualStart  DateTime?
+  actualEnd    DateTime?
+  notes        String?
+  createdBy    String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // ─── Lote, trazabilidad y calidad (ISO 9001 §8.5.2/§8.6 · ARCSA BPM) ───
+  lotNumber         String? // lote del producto terminado (LOTE-YYYYMMDD-PROD-000X)
+  manufacturingDate DateTime? // fecha de elaboración (rotulado ARCSA)
+  expiryDate        DateTime? // fecha de vencimiento = elaboración + product.shelfLifeDays
+  // PENDING (aún no producido) → QUARANTINE (producido, esperando QC) → RELEASED | REJECTED
+  qualityStatus     String    @default("PENDING")
+  releasedBy        String? // usuario que autoriza la liberación (ISO 9001 §8.6)
+  releasedAt        DateTime?
+  releaseNotes      String?
+  batchId           String? // InventoryBatch generado por esta orden
+  // Costo REAL de los materiales consumidos (no el avgCost estimado del terminado)
+  actualCost        Decimal   @default(0) @db.Decimal(12, 4)
+  journalEntryId    String? // asiento de transformación (regla 2: todo hecho económico se contabiliza)
+
+  items           ProductionOrderItem[]
+  consumptions    ProductionConsumption[]
+  inspections     QualityInspection[]
+  nonConformities NonConformity[]
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([status])
+  @@index([companyId, qualityStatus])
+  @@map("production_orders")
+}
+
+// ============================================================
+// TRAZABILIDAD DE PRODUCCIÓN (ISO 9001 §8.5.2 · ARCSA)
+// ============================================================
+// Registra QUÉ lote de materia prima entró en QUÉ orden de producción.
+// Es la mitad "hacia atrás" de la trazabilidad; la mitad "hacia adelante"
+// se reconstruye desde el lote producido → envíos → clientes (recall).
+model ProductionConsumption {
+  id          String          @id @default(uuid())
+  orderId     String
+  order       ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  componentId String
+  component   Product         @relation("ProductionConsumptionComponent", fields: [componentId], references: [id])
+  batchId     String? // InventoryBatch de la materia prima consumida
+  lotNumber   String? // copia del nº de lote (sobrevive aunque el batch se agote/borre)
+  quantity    Decimal         @db.Decimal(12, 4)
+  unitCost    Decimal         @db.Decimal(12, 4)
+  totalCost   Decimal         @db.Decimal(12, 4)
+  createdAt   DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([batchId])
+  @@map("production_consumptions")
+}
+
+model ProductionOrderItem {
+  id          String          @id @default(uuid())
+  orderId     String
+  order       ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  componentId String
+  component   Product         @relation("ProductionComponent", fields: [componentId], references: [id])
+  requiredQty Decimal         @db.Decimal(12, 4)
+  consumedQty Decimal         @default(0) @db.Decimal(12, 4)
+
+  @@index([orderId])
+  @@map("production_order_items")
+}
+
+// ============================================================
+// GESTIÓN DE CALIDAD (ISO 9001:2015 · ISO 22000/HACCP · ARCSA BPM)
+// ============================================================
+
+// Especificación de calidad de un producto: qué se mide, con qué método y
+// cuál es el rango aceptable. Un parámetro `isCritical` es un Punto Crítico de
+// Control (PCC/CCP en HACCP): si falla, el lote NO puede liberarse.
+model QualityParameter {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId String? // null = parámetro general aplicable a cualquier producto
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name         String // "pH", "Humedad", "Peso neto", "Ausencia de E. coli"
+  type         String   @default("NUMERIC") // NUMERIC | BOOLEAN | TEXT
+  unit         String? // %, °C, g, UFC/g
+  minValue     Decimal? @db.Decimal(12, 4) // límite inferior (NUMERIC)
+  maxValue     Decimal? @db.Decimal(12, 4) // límite superior (NUMERIC)
+  expectedText String? // valor esperado (BOOLEAN: "true"/"false"; TEXT: cadena exacta)
+  method       String? // método de ensayo (ISO 9001 §7.1.5 / norma INEN)
+  isCritical   Boolean  @default(false) // PCC — su fallo reprueba el lote completo
+  norm         String? // referencia normativa: "ISO 9001 §8.6", "ARCSA BPM", "NTE INEN 1334"
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  results QualityInspectionResult[]
+
+  @@index([companyId, productId, isActive])
+  @@map("quality_parameters")
+}
+
+// Inspección de calidad sobre un lote/orden. Al guardarse con resultados, el
+// motor puro decide PASSED|FAILED y eso habilita (o no) la liberación del lote.
+model QualityInspection {
+  id                String           @id @default(uuid())
+  companyId         String
+  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  inspectionNumber  String // INS-0001 — único por empresa
+  productionOrderId String?
+  productionOrder   ProductionOrder? @relation(fields: [productionOrderId], references: [id])
+  productId         String
+  product           Product          @relation("QualityInspectionProduct", fields: [productId], references: [id])
+
+  type        String    @default("FINAL") // RECEPTION (materia prima) | IN_PROCESS | FINAL
+  status      String    @default("DRAFT") // DRAFT | PASSED | FAILED
+  lotNumber   String?
+  inspectedBy String?
+  inspectedAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  results         QualityInspectionResult[]
+  nonConformities NonConformity[]
+
+  @@unique([companyId, inspectionNumber])
+  @@index([companyId, status])
+  @@index([productionOrderId])
+  @@map("quality_inspections")
+}
+
+model QualityInspectionResult {
+  id           String            @id @default(uuid())
+  inspectionId String
+  inspection   QualityInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  parameterId  String
+  parameter    QualityParameter  @relation(fields: [parameterId], references: [id])
+
+  valueNumeric Decimal? @db.Decimal(12, 4)
+  valueBoolean Boolean?
+  valueText    String?
+  passed       Boolean
+  observation  String?
+
+  @@index([inspectionId])
+  @@map("quality_inspection_results")
+}
+
+// No conformidad + acción correctiva (ISO 9001 §8.7 salidas no conformes y §10.2 CAPA).
+// Cubre el ciclo completo: detección → disposición → causa raíz → acción → verificación de eficacia.
+model NonConformity {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ncNumber  String // NC-0001 — único por empresa
+
+  source      String // PRODUCTION | INSPECTION | CUSTOMER_COMPLAINT | AUDIT | SUPPLIER
+  severity    String @default("MINOR") // MINOR | MAJOR | CRITICAL
+  description String
+
+  productionOrderId String?
+  productionOrder   ProductionOrder?   @relation(fields: [productionOrderId], references: [id])
+  inspectionId      String?
+  inspection        QualityInspection? @relation(fields: [inspectionId], references: [id])
+  productId         String?
+  lotNumber         String?
+
+  // §8.7 — qué se hace con el producto no conforme
+  disposition        String? // REWORK (reproceso) | SCRAP (desecho) | CONCESSION (concesión) | RETURN (devolución)
+  // §10.2 — análisis y acción correctiva
+  rootCause          String?
+  correctiveAction   String?
+  responsibleUserId  String?
+  dueDate            DateTime?
+  effectivenessCheck String? // verificación de eficacia al cerrar
+
+  status    String    @default("OPEN") // OPEN | IN_PROGRESS | VERIFICATION | CLOSED
+  closedAt  DateTime?
+  closedBy  String?
+  createdBy String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([companyId, ncNumber])
+  @@index([companyId, status])
+  @@index([productionOrderId])
+  @@map("non_conformities")
+}
+
+// ============================================================
+// FINANCE MODULE — Módulo Financiero Integral LOGIFI™
+// ============================================================
+
+model FinanceChartOfAccounts {
+  id          String                   @id @default(uuid())
+  companyId   String
+  company     Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  accountType String // ACTIVO | PASIVO | PATRIMONIO | INGRESO | GASTO | COSTO
+  parentId    String?
+  parent      FinanceChartOfAccounts?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    FinanceChartOfAccounts[] @relation("AccountHierarchy")
+  level       Int                      @default(1)
+  isMovement  Boolean                  @default(true)
+  niifRef     String? // Ej: NIC 2, NIIF 9
+  sriRef      String? // Referencia a código SRI
+  isActive    Boolean                  @default(true)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([accountType])
+  @@index([parentId])
+  @@map("finance_chart_of_accounts")
+}
+
+model FinanceDCFModel {
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name              String
+  assumptions       Json // { growth_rate, ebitda_margin, wacc, perpetual_growth, capex_pct, wc_change_pct, years }
+  results           Json // { enterprise_value, equity_value, pv_explicit_flows, pv_terminal }
+  yearlyProjections Json // array de { year, revenue, ebitda, fcf, pv_fcf }
+  sensitivity       Json? // matriz de sensibilidad WACC x growth
+  savedAt           DateTime @default(now())
+  createdBy         String
+
+  @@index([companyId])
+  @@map("finance_dcf_models")
+}
+
+model FinanceScenario {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  type       String   @default("custom") // optimista | base | pesimista | custom
+  parameters Json // { revenue_var_pct, cost_var_pct, capex_var_pct, ... }
+  results    Json // { revenue, ebitda, net_income, fcf, equity_value }
+  baselineId String? // referencia a otro escenario base
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String
+
+  @@index([companyId])
+  @@index([type])
+  @@map("finance_scenarios")
+}
+
+model FinanceSavingsLog {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  savingType   String // HARD | COST_AVOIDANCE | CONSOLIDATION | DOWNTIME
+  amountUsd    Decimal  @db.Decimal(15, 2)
+  sourceModule String // purchases | inventory | logistics | manual
+  sourceId     String? // ID del registro origen (PO, OC, etc.)
+  description  String?
+  periodYear   Int
+  periodMonth  Int
+  evidenceUrl  String?
+  createdAt    DateTime @default(now())
+  createdBy    String?
+
+  @@index([companyId])
+  @@index([savingType])
+  @@index([periodYear, periodMonth])
+  @@map("finance_savings_log")
+}
+
+model FinanceAIInsight {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period      String // "2026-04"
+  insights    Json // array de { title, finding, cause, impact_usd, action, deadline }
+  model       String // ollama | claude-sonnet-4 | fallback
+  tokensUsed  Int?
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([companyId, period])
+  @@map("finance_ai_insights")
+}
+
+model FinancialStatement {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type        String // BALANCE | INCOME
+  period      String // "2026-05" (mes de corte) o "2026" (anual)
+  asOf        DateTime // fecha de corte
+  data        Json // estructura del estado (grupos, cuentas, totales)
+  generatedAt DateTime @default(now())
+  createdBy   String?
+
+  @@unique([companyId, type, period])
+  @@index([companyId])
+  @@map("financial_statements")
+}
+
+// Notas a los estados financieros (NIC 1 §112-116) — texto estructurado configurable por
+// empresa/período, editable en Contabilidad. KallpaPro no infiere el contenido de las notas
+// (políticas contables, desagregaciones, contingencias): son responsabilidad del contador,
+// esto solo las guarda y las incluye en el paquete de exportación NIIF/Supercías (Etapa 8).
+model FinancialStatementNote {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period    String // "2026-02" (mensual) o "2026" (anual) — mismo criterio que FinancialStatement
+  order     Int      @default(0)
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@index([companyId, period])
+  @@map("financial_statement_notes")
+}
+
+// Configuración de cuentas contables (posting setup):
+// mapea eventos del ERP → cuenta del plan, editable por empresa.
+model AccountMapping {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  key         String // CASH | INVENTORY | AR | AP | IVA_CREDIT | IVA_DEBIT | RETENTION_PAYABLE_RENTA | RETENTION_PAYABLE_IVA | RETENTION_ASSET | SALES | COGS | INV_ADJUST_GAIN | INV_WRITEOFF
+  accountCode String
+  accountName String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, key])
+  @@index([companyId])
+  @@map("account_mappings")
+}
+
+// ============================================================
+// CRM MODULE — Módulo CRM + Agentes IA LOGIFI™
+// ============================================================
+
+model CrmContact {
+  id               String      @id @default(uuid())
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  crmCompanyId     String?
+  crmCompany       CrmCompany? @relation(fields: [crmCompanyId], references: [id])
+  firstName        String
+  lastName         String?
+  title            String? // Cargo
+  email            String?
+  phoneE164        String? // +593xxxxxxxxx
+  whatsappId       String? // ID de Unipile
+  telegramId       String?
+  linkedinUrl      String?
+  preferredChannel String?     @default("whatsapp") // whatsapp | telegram | gmail | any
+  language         String      @default("es-EC")
+  timezone         String      @default("America/Guayaquil")
+  leadScore        Int         @default(0) // 0-100
+  leadTemperature  String?     @default("cold") // cold | warm | hot
+  ownerUserId      String? // AE asignado
+  tags             String[]    @default([])
+  customFields     Json?       @default("{}")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  deals         CrmDeal[]
+  conversations CrmConversation[]
+  leadScores    CrmLeadScore[]
+
+  @@index([companyId])
+  @@index([email])
+  @@index([leadScore])
+  @@index([ownerUserId])
+  @@map("crm_contacts")
+}
+
+model CrmCompany {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ruc            String? // RUC Ecuador 13 dígitos
+  legalName      String
+  tradeName      String?
+  industry       String? // Construcción, minería, agro, retail
+  ciiu           String? // Código CIIU Ecuador
+  size           String? // micro | small | medium | large | enterprise
+  employeesEst   Int?
+  revenueEstUsd  Decimal?  @db.Decimal(14, 2)
+  country        String    @default("EC")
+  city           String?
+  address        String?
+  website        String?
+  linkedinUrl    String?
+  lifecycleStage String    @default("lead") // lead | mql | sql | opportunity | customer | churned
+  ownerUserId    String?
+  enrichedAt     DateTime?
+  enrichedData   Json? // datos de Iván Researcher
+  buyingSignals  Json?     @default("[]")
+  tags           String[]  @default([])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  contacts CrmContact[]
+  deals    CrmDeal[]
+
+  @@index([companyId])
+  @@index([ruc])
+  @@index([lifecycleStage])
+  @@index([industry])
+  @@map("crm_companies")
+}
+
+model CrmDeal {
+  id                String      @id @default(uuid())
+  companyId         String
+  company           Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId         String?
+  contact           CrmContact? @relation(fields: [contactId], references: [id])
+  crmCompanyId      String?
+  crmCompany        CrmCompany? @relation(fields: [crmCompanyId], references: [id])
+  name              String
+  stage             String      @default("lead") // lead | qualified | proposal | negotiation | won | lost
+  amountUsd         Decimal     @default(0) @db.Decimal(14, 2)
+  probability       Int         @default(10) // 0-100 %
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  closedReason      String? // won_reason | lost_reason
+  ownerUserId       String?
+  autonomyMode      String      @default("setter_closer") // autopilot | setter_closer | semi_assisted | manual
+  modulesInterest   String[]    @default([])
+  tierInterest      String? // starter | growth | pro | enterprise
+  notes             String?
+  tags              String[]    @default([])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // ─── Pronóstico (Sprint 13) ──────────────────────────────────────
+  // Categoría de pronóstico al estilo Salesforce/HubSpot. Se hereda de la etapa
+  // (CrmPipelineStage.forecastCategory) salvo que el vendedor la fije a mano; en ese
+  // caso categoryOverride = true y el recálculo por cambio de etapa la respeta.
+  forecastCategory String   @default("PIPELINE") // PIPELINE | BEST_CASE | COMMIT | CLOSED | OMITTED
+  categoryOverride Boolean  @default(false)
+  // Fecha del último toque real (mensaje, reunión, cambio de etapa). Alimenta la
+  // detección de oportunidades estancadas; updatedAt no sirve porque cualquier
+  // recálculo automático lo mueve.
+  lastActivityAt   DateTime @default(now())
+  // Origen: lead del que nació esta oportunidad (trazabilidad captura → cierre).
+  leadId           String?
+
+  // ─── Puente CRM → Ventas ─────────────────────────────────────────
+  // Al ganar el deal se crea (o reutiliza) el Customer del ERP y una cotización de venta
+  // con los productos conversados (CrmDealItem). Antes cerrar WON solo cambiaba la etapa
+  // y alguien tenía que volver a capturar todo en Ventas desde cero.
+  customerId       String?
+  customer         Customer?       @relation(fields: [customerId], references: [id])
+  salesQuotationId String?         @unique
+  salesQuotation   SalesQuotation? @relation(fields: [salesQuotationId], references: [id])
+
+  items        CrmDealItem[]
+  stageHistory CrmDealStageHistory[]
+
+  @@index([companyId])
+  @@index([stage])
+  @@index([ownerUserId])
+  @@index([expectedCloseDate])
+  @@index([forecastCategory])
+  @@index([leadId])
+  @@map("crm_deals")
+}
+
+// Productos/servicios conversados en la oportunidad: son la materia prima de la cotización
+// que se genera al ganar. Precio en USD tal como se negoció (la cotización NO re-valora).
+model CrmDealItem {
+  id          String   @id @default(uuid())
+  dealId      String
+  deal        CrmDeal  @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  description String?
+  quantity    Decimal  @db.Decimal(12, 4)
+  unitPrice   Decimal  @db.Decimal(12, 4)
+  createdAt   DateTime @default(now())
+
+  @@index([dealId])
+  @@map("crm_deal_items")
+}
+
+model CrmDealStageHistory {
+  id        String   @id @default(uuid())
+  dealId    String
+  deal      CrmDeal  @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStage String?
+  toStage   String
+  changedBy String? // userId o agent code
+  notes     String?
+  changedAt DateTime @default(now())
+
+  @@index([dealId])
+  @@map("crm_deal_stage_history")
+}
+
+model CrmConversation {
+  id               String      @id @default(uuid())
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId        String?
+  contact          CrmContact? @relation(fields: [contactId], references: [id])
+  channel          String // whatsapp | telegram | gmail | linkedin
+  externalChatId   String? // ID de Unipile
+  unipileAccountId String?
+  status           String      @default("open") // open | resolved | spam
+  aiHandling       Boolean     @default(true)
+  ownerUserId      String?
+  subject          String? // para email
+  lastMessageAt    DateTime?
+  lastMessageBody  String?
+  unreadCount      Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  messages CrmMessage[]
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([channel])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("crm_conversations")
+}
+
+model CrmMessage {
+  id               String          @id @default(uuid())
+  conversationId   String
+  conversation     CrmConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  externalId       String? // ID del mensaje en Unipile
+  direction        String // inbound | outbound
+  channel          String // whatsapp | telegram | gmail
+  body             String
+  attachments      Json?           @default("[]")
+  status           String          @default("sent") // sent | delivered | read | failed
+  sentAt           DateTime        @default(now())
+  senderType       String          @default("human") // human | ai_agent
+  agentCode        String? // si senderType=ai_agent
+  requiresApproval Boolean         @default(false)
+  approvedBy       String?
+  approvedAt       DateTime?
+
+  @@index([conversationId])
+  @@index([direction])
+  @@index([sentAt])
+  @@map("crm_messages")
+}
+
+model CrmAgent {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code            String // router | sdr | researcher | copywriter | closer | success
+  name            String // Sofía · SDR
+  model           String // claude-sonnet-4-20250514 | claude-haiku-4-5-20251001
+  systemPrompt    String   @db.Text
+  maxTokens       Int      @default(1500)
+  temperature     Float    @default(0.5)
+  tools           Json     @default("[]") // tool definitions
+  autonomyDefault String   @default("setter_closer")
+  isActive        Boolean  @default(true)
+  metrics         Json?    @default("{}") // métricas acumuladas
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  runs CrmAgentRun[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("crm_agents")
+}
+
+model CrmAgentRun {
+  id               String   @id @default(uuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId          String
+  agent            CrmAgent @relation(fields: [agentId], references: [id])
+  agentCode        String
+  conversationId   String?
+  dealId           String?
+  inputContext     Json
+  output           Json?
+  toolsCalled      String[] @default([])
+  tokensInput      Int      @default(0)
+  tokensOutput     Int      @default(0)
+  costUsd          Decimal  @default(0) @db.Decimal(10, 6)
+  latencyMs        Int      @default(0)
+  status           String   @default("success") // success | failed | escalated | timeout
+  errorMessage     String?
+  requiresApproval Boolean  @default(false)
+  approvedBy       String?
+  createdAt        DateTime @default(now())
+
+  @@index([companyId])
+  @@index([agentCode])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("crm_agent_runs")
+}
+
+model CrmWorkflow {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  trigger    String // new_contact | stage_change | no_activity | time_based
+  conditions Json     @default("{}")
+  actions    Json     @default("[]")
+  isActive   Boolean  @default(true)
+  runCount   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+
+  @@index([companyId])
+  @@index([trigger])
+  @@map("crm_workflows")
+}
+
+model CrmLeadScore {
+  id             String     @id @default(uuid())
+  contactId      String
+  contact        CrmContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  budgetScore    Int        @default(0) // 0-25
+  authorityScore Int        @default(0) // 0-25
+  needScore      Int        @default(0) // 0-25
+  timelineScore  Int        @default(0) // 0-25
+  totalScore     Int        @default(0) // 0-100
+  evidence       String? // cita textual de la conversación
+  scoredBy       String     @default("system") // agent code | human
+  scoredAt       DateTime   @default(now())
+
+  @@index([contactId])
+  @@index([scoredAt])
+  @@map("crm_lead_scores")
+}
+
+model CrmForecast {
+  id               String   @id @default(uuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period           String // "2026-05"
+  totalPipelineUsd Decimal  @default(0) @db.Decimal(14, 2)
+  weightedFcstUsd  Decimal  @default(0) @db.Decimal(14, 2)
+  wonUsd           Decimal  @default(0) @db.Decimal(14, 2)
+  byStage          Json     @default("{}") // { lead: {count, amount}, qualified: {...} }
+  calculatedAt     DateTime @default(now())
+
+  // ─── Categorías de pronóstico (Sprint 13) ────────────────────────
+  // Se guardan como foto del período para poder medir la PRECISIÓN después: al cerrar
+  // el mes se compara commitUsd contra lo realmente ganado. Sin la foto no hay forma
+  // de saber si el vendedor sub- o sobre-pronosticó.
+  commitUsd        Decimal @default(0) @db.Decimal(14, 2)
+  bestCaseUsd      Decimal @default(0) @db.Decimal(14, 2)
+  omittedUsd       Decimal @default(0) @db.Decimal(14, 2)
+  quotaUsd         Decimal @default(0) @db.Decimal(14, 2) // cuota del período (0 = sin cuota)
+  coverageRatio    Float   @default(0) // pipeline abierto ÷ cuota
+  byCategory       Json    @default("{}")
+  // Precisión medida al cerrar el período: won ÷ commit y won ÷ bestCase (en %).
+  commitAccuracy   Float?
+  bestCaseAccuracy Float?
+  isClosed         Boolean @default(false)
+
+  @@unique([companyId, period])
+  @@index([companyId])
+  @@map("crm_forecasts")
+}
+
+model CrmTemplate {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  channel    String // whatsapp | telegram | gmail
+  category   String   @default("utility") // utility | marketing | transactional
+  subject    String? // para email
+  body       String   @db.Text
+  variables  Json     @default("[]") // [{ name, description, example }]
+  isApproved Boolean  @default(false)
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+
+  @@index([companyId])
+  @@index([channel])
+  @@map("crm_templates")
+}
+
+// ============================================================
+// CRM PRO (Sprint 13) — captura de leads, scoring configurable y pronóstico
+// ============================================================
+// Decisión de diseño: el LEAD es una entidad SEPARADA del contacto. Un lead es materia
+// prima sin verificar (puede ser spam, duplicado o basura); un CrmContact es un registro
+// del que ya nos hacemos responsables. Mezclarlos —como hace un CRM ingenuo— ensucia la
+// base con miles de registros basura y rompe cualquier métrica de conversión.
+// El lead se CONVIERTE (una sola vez) en contacto + empresa + oportunidad.
+
+model CrmLead {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // ─── Datos crudos tal como llegaron ──────────────────────────────
+  firstName   String?
+  lastName    String?
+  email       String?
+  phone       String? // se normaliza a E.164 al entrar
+  jobTitle    String?
+  companyName String?
+  ruc         String?
+  website     String?
+  city        String?
+  message     String? @db.Text
+  // Respuestas de campos personalizados del formulario, sin mapear.
+  rawPayload  Json?   @default("{}")
+
+  // ─── Atribución (los 8-12 campos ocultos del formulario) ─────────
+  source      String          @default("manual") // web_form | whatsapp | telegram | gmail | import | manual | api
+  formId      String?
+  form        CrmCaptureForm? @relation(fields: [formId], references: [id])
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+  referrer    String?
+  landingPage String?
+  gclid       String?
+  ipAddress   String?
+  userAgent   String?
+
+  // ─── Estado y calificación ───────────────────────────────────────
+  status         String    @default("NEW") // NEW | WORKING | QUALIFIED | CONVERTED | DISQUALIFIED
+  // Score total 0-100 calculado por el motor de reglas (fit + engagement - negativos).
+  score          Int       @default(0)
+  fitScore       Int       @default(0)
+  engageScore    Int       @default(0)
+  grade          String    @default("D") // A | B | C | D
+  temperature    String    @default("cold") // hot | warm | cold
+  // Traza de por qué el lead tiene ese score: [{ ruleId, ruleName, category, points }].
+  // Sin esto el score es una caja negra y el vendedor no confía en él.
+  scoreBreakdown Json      @default("[]")
+  scoredAt       DateTime?
+
+  // ─── Deduplicación ───────────────────────────────────────────────
+  // Se calcula al entrar; no se borra el duplicado, se marca para que un humano decida.
+  isDuplicate   Boolean @default(false)
+  duplicateOfId String?
+  dedupeScore   Int     @default(0) // 0-100, confianza de la coincidencia
+  dedupeReason  String?
+
+  // ─── Asignación y conversión ─────────────────────────────────────
+  ownerUserId        String?
+  assignedByRuleId   String?
+  disqualifyReason   String?
+  convertedAt        DateTime?
+  convertedContactId String?
+  convertedCompanyId String?
+  convertedDealId    String?
+
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events CrmLeadEvent[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([score])
+  @@index([email])
+  @@index([phone])
+  @@index([ownerUserId])
+  @@index([source])
+  @@index([createdAt])
+  @@map("crm_leads")
+}
+
+// Cada señal de interés del lead. El motor de scoring cuenta eventos y les aplica
+// DECAIMIENTO por media vida: un formulario enviado hace 6 meses no vale lo mismo que
+// uno de ayer. Sin eventos con fecha no hay forma de decaer nada.
+model CrmLeadEvent {
+  id     String  @id @default(uuid())
+  leadId String
+  lead   CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  eventType  String // form_submit | email_open | email_click | page_view | pricing_view | demo_request | message_reply | meeting_booked | doc_download | unsubscribe
+  channel    String? // web | whatsapp | telegram | gmail
+  metadata   Json?    @default("{}")
+  occurredAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([eventType])
+  @@index([occurredAt])
+  @@map("crm_lead_events")
+}
+
+// Formulario público editable desde la interfaz. Los campos viven en JSON porque el
+// usuario los define en runtime; el backend valida contra esa definición al recibir.
+model CrmCaptureForm {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name        String
+  // Clave pública que va en el <script> o el iframe del sitio del cliente. Es lo único
+  // que el navegador conoce: NO expone el companyId ni requiere token.
+  publicKey   String  @unique
+  description String?
+
+  // [{ key, label, type, required, placeholder, options?, mapsTo }]
+  // mapsTo: campo de CrmLead al que se copia; si no hay, va a rawPayload.
+  fields         Json    @default("[]")
+  consentText    String? @db.Text // texto de tratamiento de datos (Ley Orgánica de Protección de Datos EC)
+  requireConsent Boolean @default(true)
+  successMessage String  @default("¡Gracias! Nos pondremos en contacto contigo.")
+  redirectUrl    String?
+
+  // Comportamiento al recibir
+  defaultOwnerUserId String?
+  autoScore          Boolean  @default(true)
+  autoAssign         Boolean  @default(true)
+  tags               String[] @default([])
+
+  isActive        Boolean  @default(true)
+  submissionCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+
+  leads CrmLead[]
+
+  @@index([companyId])
+  @@index([publicKey])
+  @@map("crm_capture_forms")
+}
+
+// Regla de scoring editable. Se evalúa contra el lead (campos + eventos) y suma o resta
+// puntos. FIT = quién es (firmográfico); ENGAGEMENT = qué hizo (conductual, decae);
+// NEGATIVE = motivo de descalificación (resta siempre, no decae).
+model CrmScoringRule {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name         String
+  category     String // FIT | ENGAGEMENT | NEGATIVE
+  // Campo del lead (email, jobTitle, companyName, city, ruc, utmSource…) o, cuando
+  // operator = EVENT_COUNT, el eventType a contar.
+  field        String
+  operator     String // EQUALS | NOT_EQUALS | CONTAINS | NOT_CONTAINS | IN | GT | GTE | LT | LTE | BETWEEN | EXISTS | NOT_EXISTS | EVENT_COUNT
+  // Valor de comparación. Siempre string[] para poder representar IN y BETWEEN sin
+  // multiplicar columnas; el motor castea según el operador.
+  value        String[] @default([])
+  points       Int      @default(0) // negativo en reglas NEGATIVE
+  // Tope de puntos si la regla puede dispararse varias veces (EVENT_COUNT).
+  maxPoints    Int?
+  // Días de media vida propios de esta regla; si es null usa el global de la config.
+  halfLifeDays Int?
+
+  description String?
+  isActive    Boolean  @default(true)
+  priority    Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([category])
+  @@map("crm_scoring_rules")
+}
+
+// Una fila por empresa: pesos, umbrales y cortes de grado. Editable desde la interfaz.
+model CrmScoringConfig {
+  id        String  @id @default(uuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Pesos con los que se combinan fit y engagement (deben sumar 100).
+  fitWeight        Int @default(50)
+  engagementWeight Int @default(50)
+
+  // Media vida global del engagement, en días. A los `halfLifeDays` un evento vale la
+  // mitad; a los 2×, un cuarto. 30 días es el estándar de la industria.
+  halfLifeDays Int @default(30)
+
+  // Umbrales de ciclo de vida.
+  mqlThreshold Int @default(50)
+  sqlThreshold Int @default(75)
+
+  // Cortes de grado (score >= corte). A > B > C, el resto es D.
+  gradeAThreshold Int @default(80)
+  gradeBThreshold Int @default(60)
+  gradeCThreshold Int @default(40)
+
+  // Cortes de temperatura para el semáforo de la bandeja.
+  hotThreshold  Int @default(75)
+  warmThreshold Int @default(45)
+
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("crm_scoring_config")
+}
+
+// Etapas del pipeline por empresa. Sustituye la constante STAGE_PROBABILITY quemada en
+// deal.service.ts: la probabilidad y la categoría de pronóstico ahora las define el
+// usuario, que es quien conoce su tasa real de conversión.
+model CrmPipelineStage {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  code             String // lead | qualified | proposal | negotiation | won | lost | personalizada
+  name             String // etiqueta en español que ve el usuario
+  sequence         Int     @default(0)
+  probability      Int     @default(10) // 0-100
+  forecastCategory String  @default("PIPELINE") // PIPELINE | BEST_CASE | COMMIT | CLOSED | OMITTED
+  isWon            Boolean @default(false)
+  isLost           Boolean @default(false)
+  // Compuerta de verificación: qué debe cumplirse para promover a esta etapa. Es la
+  // palanca de precisión más grande del pronóstico (criterios documentados de Commit).
+  entryCriteria    String? @db.Text
+  // Días esperados en la etapa; por encima, la oportunidad se marca estancada.
+  targetDays       Int     @default(14)
+  color            String  @default("#6b7280")
+  isActive         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("crm_pipeline_stages")
+}
+
+// Regla de enrutamiento: condiciones sobre el lead → propietario (fijo o round-robin).
+// Se evalúan por prioridad ascendente y gana la primera que casa (como un firewall).
+model CrmAssignmentRule {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name       String
+  priority   Int    @default(100)
+  // [{ field, operator, value: string[] }] — mismos operadores que el scoring.
+  conditions Json   @default("[]")
+
+  assignMode  String   @default("ROUND_ROBIN") // FIXED | ROUND_ROBIN
+  ownerUserId String? // usado si assignMode = FIXED
+  poolUserIds String[] @default([]) // usado si assignMode = ROUND_ROBIN
+  // Cursor del round-robin: índice del último usuario asignado de la lista.
+  rrCursor    Int      @default(0)
+
+  isActive   Boolean  @default(true)
+  matchCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([priority])
+  @@map("crm_assignment_rules")
+}
+
+// ============================================================
+// LOGÍSTICA — envíos con tracking estilo courier (ventas y compras)
+// ============================================================
+
+model Shipment {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Orden vinculada (bidireccional): pedido de venta o entrada de OC
+  orderType String // SALES | PURCHASE
+  orderId   String
+
+  trackingNumber String // KP-XXXXXXXX (interno) — único POR EMPRESA (ver @@unique abajo), no global
+  carrier        String? // SERVIENTREGA | TRAMACO | DHL | PROPIO | otro
+  carrierGuide   String? // nº de guía del courier externo (si aplica)
+
+  status String @default("PENDING") // PENDING | PICKED | DISPATCHED | IN_TRANSIT | OUT_FOR_DELIVERY | DELIVERED | FAILED
+
+  // Costo real del flete (courier o transporte propio) — insumo para que Ventas conozca el
+  // margen real de la entrega, no solo el del producto.
+  freightCost Decimal @default(0) @db.Decimal(12, 2)
+
+  originAddress     String?
+  destAddress       String?
+  recipientName     String?
+  recipientPhone    String?
+  estimatedDelivery DateTime?
+  deliveredAt       DateTime?
+
+  events         ShipmentEvent[]
+  items          ShipmentItem[]
+  deliveryGuides DeliveryGuide[]
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, trackingNumber]) // numeración por empresa (evita colisión multi-tenant)
+  @@index([companyId])
+  @@index([orderType, orderId])
+  @@index([status])
+  @@map("shipments")
+}
+
+// Líneas de un envío de venta: qué cantidad de cada ítem del pedido va en este envío.
+// Permite despachos PARCIALES y facturación por envío (1 pedido → N envíos → N facturas).
+model ShipmentItem {
+  id               String         @id @default(uuid())
+  shipmentId       String
+  shipment         Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  salesOrderItemId String
+  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id])
+  productId        String
+  quantity         Decimal        @db.Decimal(12, 4)
+  // Costo unitario REAL capturado al despachar (capas FIFO/LIFO consumidas o avgCost).
+  // La factura del envío usa este valor para el asiento de COGS exacto; 0 = legado
+  // (envíos anteriores al fix), en cuyo caso se cae a product.avgCost.
+  unitCost         Decimal        @default(0) @db.Decimal(12, 4)
+
+  @@index([shipmentId])
+  @@index([salesOrderItemId])
+  @@map("shipment_items")
+}
+
+model ShipmentEvent {
+  id         String   @id @default(uuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  status    String // mismo catálogo que Shipment.status
+  eventTime DateTime @default(now())
+  location  String?
+  notes     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([shipmentId])
+  @@index([eventTime])
+  @@map("shipment_events")
+}
+
+// ============================================================
+// NUMERACIÓN ATÓMICA DE DOCUMENTOS
+// ============================================================
+// Un contador por (companyId, docType). El incremento se hace dentro de la misma
+// transacción con `update { lastNumber: { increment: 1 } }`, evitando colisiones de
+// correlativos bajo concurrencia. Helper: src/utils/sequence.helper.ts
+model DocumentSequence {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  docType    String // SALES_QUOTATION | SALES_ORDER | SALES_INVOICE | PAYMENT | SHIPMENT | ...
+  prefix     String // COT- | PV- | FAC-V- | PAG- | KP- ...
+  lastNumber Int      @default(0)
+  padding    Int      @default(4)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([companyId, docType])
+  @@index([companyId])
+  @@map("document_sequences")
+}
+
+// ============================================================
+// FACTURACIÓN ELECTRÓNICA SRI — BASE NORMATIVA (Etapa 1)
+// ============================================================
+// Config normativa por empresa: ambiente (pruebas/producción), establecimientos y puntos de
+// emisión (numeración exigida por el SRI, independiente de la numeración interna FAC-V-####
+// que el ERP ya usa para búsqueda humana). El secuencial de 9 dígitos por comprobante SRI
+// reusa `DocumentSequence`/`getNextDocumentNumber` con docType compuesto
+// (p.ej. "SRI_FACTURA_001_001"), padding 9, prefix "" — evita una tabla de contador duplicada.
+model CompanyFiscalConfig {
+  id                    String   @id @default(uuid())
+  companyId             String   @unique
+  company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ruc                   String
+  razonSocial           String
+  nombreComercial       String?
+  // PRUEBAS apunta a celcer.sri.gob.ec (ambiente de certificación), PRODUCCION a cel.sri.gob.ec.
+  // Cambiarlo desde el frontend exige confirmación explícita: afecta documentos reales.
+  ambiente              String   @default("PRUEBAS")
+  tipoEmision           String   @default("NORMAL") // NORMAL | CONTINGENCIA
+  obligadoContabilidad  Boolean  @default(true)
+  contribuyenteEspecial String? // número de resolución; null si no aplica
+  regimen               String   @default("GENERAL") // GENERAL | RIMPE_EMPRENDEDOR | RIMPE_NEGOCIO_POPULAR
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  establishments Establishment[]
+  certificates   DigitalCertificate[]
+
+  @@map("company_fiscal_config")
+}
+
+model Establishment {
+  id             String              @id @default(uuid())
+  fiscalConfigId String
+  fiscalConfig   CompanyFiscalConfig @relation(fields: [fiscalConfigId], references: [id], onDelete: Cascade)
+  code           String // 3 dígitos exigidos por el SRI: "001"
+  name           String // "Matriz", "Sucursal Norte"...
+  address        String
+  isMatriz       Boolean             @default(false)
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+
+  emissionPoints EmissionPoint[]
+  invoices       Invoice[]
+  creditNotes    CreditNote[]
+  debitNotes     DebitNote[]
+  deliveryGuides DeliveryGuide[]
+
+  @@unique([fiscalConfigId, code])
+  @@map("fiscal_establishments")
+}
+
+model EmissionPoint {
+  id              String        @id @default(uuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  code            String // 3 dígitos exigidos por el SRI: "001"
+  name            String? // "Caja 1", "Ventas web"... (uso interno, no lo exige el SRI)
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  invoices       Invoice[]
+  creditNotes    CreditNote[]
+  debitNotes     DebitNote[]
+  deliveryGuides DeliveryGuide[]
+
+  @@unique([establishmentId, code])
+  @@map("fiscal_emission_points")
+}
+
+// Certificado de firma electrónica (.p12) por empresa. El archivo y la contraseña se cifran
+// en reposo (AES-256-GCM, clave de aplicación en CERT_ENCRYPTION_KEY — nunca la contraseña
+// real del usuario); ningún endpoint GET devuelve `fileDataEnc` ni `passwordEnc`.
+model DigitalCertificate {
+  id             String              @id @default(uuid())
+  fiscalConfigId String
+  fiscalConfig   CompanyFiscalConfig @relation(fields: [fiscalConfigId], references: [id], onDelete: Cascade)
+  alias          String
+  fileDataEnc    Bytes // .p12 cifrado (AES-256-GCM: iv(12) + tag(16) + ciphertext)
+  passwordEnc    String // contraseña del .p12 cifrada (iv:tag:ciphertext en hex)
+  validFrom      DateTime?
+  validTo        DateTime?
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+
+  @@index([fiscalConfigId])
+  @@map("fiscal_digital_certificates")
+}
+
+// ============================================================
+// TESORERÍA — PAGOS Y APLICACIÓN DE PAGOS
+// ============================================================
+// Un Payment es un cobro (CUSTOMER) o pago (SUPPLIER). Puede aplicarse parcial o
+// totalmente a una o varias facturas (Invoice) vía PaymentApplication. El remanente
+// no aplicado queda como crédito a favor (totalAmount - appliedAmount).
+model Payment {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  paymentNumber String // PAG-0001 — único POR EMPRESA (ver @@unique abajo), no global
+  entityType    String // CUSTOMER | SUPPLIER
+  entityId      String // customerId o supplierId
+  paymentMethod String // CASH | BANK_TRANSFER | CARD | CHECK | OTHER
+  reference     String?
+  totalAmount   Decimal  @db.Decimal(12, 2)
+  appliedAmount Decimal  @default(0) @db.Decimal(12, 2)
+  status        String   @default("UNAPPLIED") // UNAPPLIED | PARTIAL | APPLIED
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  applications PaymentApplication[]
+
+  @@unique([companyId, paymentNumber]) // numeración por empresa (evita colisión multi-tenant)
+  @@index([companyId])
+  @@index([entityType, entityId])
+  @@map("payments")
+}
+
+model PaymentApplication {
+  id            String       @id @default(uuid())
+  paymentId     String
+  payment       Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  // Se aplica exactamente a UNO de los dos (Invoice = AR/legacy AP manual, SriDocument = AP real).
+  // La regla de "exactamente uno" se valida en payment.service.ts, no a nivel de DB.
+  invoiceId     String?
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id])
+  sriDocumentId String?
+  sriDocument   SriDocument? @relation(fields: [sriDocumentId], references: [id])
+  amountApplied Decimal      @db.Decimal(12, 2)
+  appliedAt     DateTime     @default(now())
+  createdBy     String?
+
+  @@index([paymentId])
+  @@index([invoiceId])
+  @@index([sriDocumentId])
+  @@map("payment_applications")
+}
+
+// Programación de pagos (CxP) — Fase 3 del Asistente Contable Inteligente. Agenda un pago
+// futuro con la prioridad calculada al momento de programar (vencimiento, importancia del
+// proveedor, monto, impacto en flujo de caja — ver payment-priority.engine.ts); NO ejecuta
+// el pago. Al procesarse (individual o en lote "Procesar todo") crea el Payment real vía
+// ap.service.payPayable y esta fila pasa a PROCESSED enlazada a él.
+model PaymentSchedule {
+  id                 String       @id @default(uuid())
+  companyId          String
+  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sriDocumentId      String
+  sriDocument        SriDocument  @relation(fields: [sriDocumentId], references: [id])
+  scheduledDate      DateTime
+  amount             Decimal      @db.Decimal(12, 2)
+  bankAccountId      String?
+  bankAccount        BankAccount? @relation(fields: [bankAccountId], references: [id])
+  priorityScore      Int // score 0-100 calculado al programar (payment-priority.engine)
+  priorityLevel      String // ALTA | MEDIA | BAJA
+  notes              String?
+  status             String       @default("SCHEDULED") // SCHEDULED | PROCESSED | CANCELLED
+  processedPaymentId String?
+  processedAt        DateTime?
+  createdBy          String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([companyId, status])
+  @@index([sriDocumentId])
+  @@index([companyId, scheduledDate])
+  @@map("payment_schedules")
+}
+
+// Gestión de cobranza (CxC): historial de contactos y compromisos de pago sobre la cartera
+// vencida. No reemplaza el Payment (el cobro real); registra el trabajo de cobranza que
+// lleva a ese cobro — lo que un asistente de cuentas por cobrar necesita para priorizar
+// a quién llamar hoy y no perder el hilo de lo prometido.
+model CollectionActivity {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  invoiceId      String?
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+  type           String // CALL | EMAIL | WHATSAPP | MEETING | PAYMENT_PROMISE | NOTE
+  result         String? // resultado de la gestión (texto libre)
+  promisedAmount Decimal?  @db.Decimal(12, 2)
+  promisedDate   DateTime?
+  nextActionAt   DateTime?
+  notes          String?
+  createdBy      String?
+  // Recordatorios automáticos de cobranza (dunning): `automated` los distingue de la gestión
+  // humana y `dunningStep` (índice del escalón de ErpConfig.finance.dunning.steps) garantiza
+  // que cada escalón se dispare UNA sola vez por factura.
+  automated      Boolean   @default(false)
+  dunningStep    Int?
+  createdAt      DateTime  @default(now())
+
+  @@index([companyId, customerId])
+  @@index([companyId, nextActionAt])
+  @@index([companyId, invoiceId, automated])
+  @@map("collection_activities")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NÓMINA (RRHH) — Sprint 8. Normativa Ecuador 2026.
+// ═══════════════════════════════════════════════════════════════
+
+// Empleado en relación de dependencia. Puede (o no) estar vinculado a un User del sistema.
+model Employee {
+  id                        String      @id @default(uuid())
+  companyId                 String
+  company                   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId                    String? // vínculo opcional con el usuario del ERP
+  cedula                    String
+  firstName                 String
+  lastName                  String
+  email                     String?
+  phone                     String?
+  departmentId              String?
+  department                Department? @relation(fields: [departmentId], references: [id])
+  position                  String // cargo descriptivo (ej. "Jefe de Bodega")
+  category                  String // JEFATURA | ASISTENTE | SERVICIOS
+  baseSalary                Decimal     @db.Decimal(12, 2)
+  hireDate                  DateTime
+  terminationDate           DateTime?
+  // Beneficios: forma de pago elegida por el empleado (Acuerdo MDT)
+  monthlyThirteenth         Boolean     @default(false) // décimo tercero mensualizado
+  monthlyFourteenth         Boolean     @default(false) // décimo cuarto mensualizado
+  reserveFundsToIESS        Boolean     @default(false) // fondos de reserva acumulados en IESS (si no, se pagan en el rol)
+  // Datos para retención de impuesto a la renta
+  familyBurdens             Int         @default(0) // cargas familiares (rebaja gastos personales)
+  projectedPersonalExpenses Decimal     @default(0) @db.Decimal(12, 2) // gastos personales proyectados anuales
+  bankAccount               String?
+  isActive                  Boolean     @default(true)
+  managerId                 String? // jefatura directa (auto-relación) — aprobación de permisos
+  manager                   Employee?   @relation("EmployeeManager", fields: [managerId], references: [id])
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
+
+  payslips           Payslip[]
+  novelties          PayrollNovelty[]
+  attendance         AttendanceRecord[]
+  directReports      Employee[]         @relation("EmployeeManager")
+  shifts             ShiftAssignment[]
+  leaveRequests      LeaveRequest[]     @relation("LeaveRequester")
+  approvalsAsManager LeaveRequest[]     @relation("ManagerApprover")
+
+  @@unique([companyId, cedula])
+  @@index([companyId, isActive])
+  @@index([managerId])
+  @@map("employees")
+}
+
+// Plantilla reutilizable de turno (ej. "Turno mañana" 08:00-17:00).
+model ShiftTemplate {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  startTime    String // "HH:mm"
+  endTime      String // "HH:mm"
+  breakMinutes Int      @default(60)
+  color        String? // color para pintar la tarjeta en el calendario
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignments ShiftAssignment[]
+
+  @@unique([companyId, name])
+  @@map("shift_templates")
+}
+
+// Turno planeado de un colaborador para un día específico (la "tarjeta" del calendario).
+model ShiftAssignment {
+  id              String         @id @default(uuid())
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftTemplateId String?
+  shiftTemplate   ShiftTemplate? @relation(fields: [shiftTemplateId], references: [id])
+  date            DateTime // día del turno (medianoche UTC)
+  startTime       String // "HH:mm" (copiado de la plantilla o personalizado)
+  endTime         String // "HH:mm"
+  status          String         @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  notes           String?
+  createdById     String // userId del analista TTHH que agendó/reprogramó
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([companyId, employeeId, date])
+  @@index([companyId, date])
+  @@map("shift_assignments")
+}
+
+// Solicitud de permiso/vacaciones con doble aprobación: jefatura directa → TTHH.
+model LeaveRequest {
+  id                String    @id @default(uuid())
+  companyId         String
+  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee  @relation("LeaveRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  type              String // VACACIONES | ENFERMEDAD | PERSONAL | CALAMIDAD_DOMESTICA | PERMISO_NO_REMUNERADO | OTRO
+  startDate         DateTime
+  endDate           DateTime
+  reason            String
+  status            String    @default("PENDIENTE_JEFATURA") // PENDIENTE_JEFATURA | PENDIENTE_TTHH | APROBADO | RECHAZADO | CANCELADO
+  managerId         String?
+  manager           Employee? @relation("ManagerApprover", fields: [managerId], references: [id])
+  managerDecisionAt DateTime?
+  managerComment    String?
+  hrDecisionById    String? // userId de TTHH que decide
+  hrDecisionAt      DateTime?
+  hrComment         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([companyId, employeeId])
+  @@index([companyId, status])
+  @@map("leave_requests")
+}
+
+// Período mensual de nómina. Flujo: DRAFT → PROCESSED → POSTED → PAID
+model PayrollPeriod {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year           Int
+  month          Int // 1-12
+  status         String    @default("DRAFT") // DRAFT | PROCESSED | POSTED | PAID
+  journalEntryId String? // asiento de devengo (al contabilizar)
+  paymentEntryId String? // asiento de pago (al pagar)
+  processedAt    DateTime?
+  postedAt       DateTime?
+  paidAt         DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  payslips  Payslip[]
+  novelties PayrollNovelty[]
+
+  @@unique([companyId, year, month])
+  @@index([companyId, status])
+  @@map("payroll_periods")
+}
+
+// Rol de pago individual (un empleado en un período).
+model Payslip {
+  id              String        @id @default(uuid())
+  periodId        String
+  period          PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee      @relation(fields: [employeeId], references: [id])
+  // Totales calculados
+  grossEarnings   Decimal       @db.Decimal(12, 2) // ingresos gravados IESS (sueldo + horas + bonos)
+  otherEarnings   Decimal       @db.Decimal(12, 2) // no gravados (décimos mensualizados, fondos de reserva)
+  totalDeductions Decimal       @db.Decimal(12, 2)
+  netPay          Decimal       @db.Decimal(12, 2)
+  employerCost    Decimal       @db.Decimal(12, 2) // aporte patronal + provisiones
+  createdAt       DateTime      @default(now())
+
+  lines PayslipLine[]
+
+  @@unique([periodId, employeeId])
+  @@map("payslips")
+}
+
+// Línea del rol: ingreso, descuento o costo/provisión patronal.
+model PayslipLine {
+  id        String  @id @default(uuid())
+  payslipId String
+  payslip   Payslip @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  kind      String // EARNING | DEDUCTION | EMPLOYER (costo/provisión patronal, no afecta el neto)
+  concept   String // código: SUELDO, HORAS_SUP, DECIMO_TERCERO, APORTE_IESS, IR, etc.
+  label     String // texto legible
+  amount    Decimal @db.Decimal(12, 2)
+  meta      Json? // detalle (horas, tasa, base de cálculo)
+
+  @@index([payslipId])
+  @@map("payslip_lines")
+}
+
+// Novedades del período: horas extras, bonos, anticipos, préstamos, pensiones, multas.
+model PayrollNovelty {
+  id         String        @id @default(uuid())
+  companyId  String
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  periodId   String
+  period     PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee      @relation(fields: [employeeId], references: [id])
+  type       String // HORAS_SUPLEMENTARIAS | HORAS_EXTRAORDINARIAS | BONO | COMISION | ANTICIPO | PRESTAMO_QUIROGRAFARIO | PRESTAMO_HIPOTECARIO | PENSION_ALIMENTICIA | MULTA | OTRO_INGRESO | OTRO_DESCUENTO
+  hours      Decimal?      @db.Decimal(8, 2) // para horas extras
+  amount     Decimal?      @db.Decimal(12, 2) // para montos directos
+  notes      String?
+  createdBy  String?
+  createdAt  DateTime      @default(now())
+
+  @@index([periodId, employeeId])
+  @@map("payroll_novelties")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TESORERÍA (Sprint 9) — bancos, pagos, cobros, flujo de caja
+// ═══════════════════════════════════════════════════════════════
+
+// Cuenta bancaria de la empresa (nacional o extranjera).
+model BankAccount {
+  id             String   @id @default(uuid())
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankCode       String // código del catálogo bancosEcuador.ts, o 'EXTRANJERO'
+  bankName       String
+  accountNumber  String
+  accountType    String   @default("CORRIENTE") // CORRIENTE | AHORROS
+  currency       String   @default("USD")
+  swiftCode      String? // BIC para transferencias internacionales
+  iban           String? // cuentas en el exterior
+  isForeign      Boolean  @default(false)
+  alias          String? // nombre corto para la UI (ej. "Pichincha principal")
+  openingBalance Decimal  @default(0) @db.Decimal(14, 2)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  transactions     BankTransaction[]
+  statementLines   BankStatementLine[]
+  paymentSchedules PaymentSchedule[]
+
+  @@unique([companyId, bankCode, accountNumber])
+  @@index([companyId, isActive])
+  @@map("bank_accounts")
+}
+
+// Movimiento bancario: pagos (egresos) y cobros/recepciones (ingresos).
+// Cuando nace de una obligación del ERP (nómina, factura, impuesto) queda
+// vinculado por sourceType/sourceId y al asiento contable generado.
+model BankTransaction {
+  id             String      @id @default(uuid())
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAccountId  String
+  bankAccount    BankAccount @relation(fields: [bankAccountId], references: [id])
+  type           String // INGRESO | EGRESO
+  method         String // TRANSFERENCIA | CHEQUE | EFECTIVO | SWIFT | TARJETA
+  amount         Decimal     @db.Decimal(14, 2)
+  currency       String      @default("USD")
+  exchangeRate   Decimal?    @db.Decimal(12, 6) // para moneda extranjera → USD
+  date           DateTime    @default(now())
+  reference      String? // n.º de cheque, comprobante, MT103…
+  beneficiary    String? // beneficiario / pagador
+  swiftCode      String? // BIC destino en pagos al exterior
+  status         String      @default("REGISTRADO") // REGISTRADO | CONCILIADO | ANULADO
+  sourceType     String? // PAYROLL | AP_INVOICE | AR_INVOICE | TAX_SRI | TAX_IESS | MANUAL
+  sourceId       String?
+  journalEntryId String?
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime    @default(now())
+
+  @@index([companyId, date])
+  @@index([bankAccountId])
+  @@index([sourceType, sourceId])
+  @@map("bank_transactions")
+}
+
+// Registro de asistencia (biométrico o manual) — alimenta horas extras de nómina.
+model AttendanceRecord {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date        DateTime // día laborado (medianoche UTC)
+  checkIn     DateTime
+  checkOut    DateTime
+  hoursWorked Decimal  @db.Decimal(6, 2) // horas netas del día
+  source      String   @default("BIOMETRIC") // BIOMETRIC | MANUAL
+  deviceId    String? // identificador del reloj biométrico
+  createdAt   DateTime @default(now())
+
+  @@unique([companyId, employeeId, date])
+  @@index([companyId, date])
+  @@map("attendance_records")
+}
+
+// Línea del extracto bancario importado (conciliación automática/semiautomática).
+// El monto es con signo: positivo = crédito (ingreso), negativo = débito (egreso).
+model BankStatementLine {
+  id                   String      @id @default(uuid())
+  companyId            String
+  company              Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAccountId        String
+  bankAccount          BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  date                 DateTime
+  description          String
+  reference            String?
+  amount               Decimal     @db.Decimal(14, 2)
+  status               String      @default("PENDIENTE") // PENDIENTE | CONCILIADO | CREADO (movimiento creado desde el extracto)
+  matchedTransactionId String? // bank_transactions.id conciliado
+  matchType            String? // AUTO | MANUAL
+  importedAt           DateTime    @default(now())
+  importedBy           String?
+
+  @@index([companyId, bankAccountId, status])
+  @@map("bank_statement_lines")
 }

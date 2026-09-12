@@ -1,0 +1,81 @@
+/* Overrides de react-big-calendar para alinear con el design system KallpaPro (brand-*/surface-*) */
+.kp-calendar-wrap .rbc-calendar {
+  font-family: inherit;
+}
+.kp-calendar-wrap .rbc-toolbar button {
+  color: #4B5563;
+  border-color: #E5E7EB;
+  border-radius: 0.5rem;
+}
+.kp-calendar-wrap .rbc-toolbar button:hover {
+  background-color: #F3F4F6;
+}
+.kp-calendar-wrap .rbc-toolbar button.rbc-active {
+  background-color: #00B8E0;
+  border-color: #00B8E0;
+  color: #fff;
+}
+.kp-calendar-wrap .rbc-toolbar-label {
+  font-weight: 600;
+  color: #111827;
+}
+.kp-calendar-wrap .rbc-off-range-bg { background: #F9FAFB; }
+.kp-calendar-wrap .rbc-today { background-color: #E6F8FD; }
+.kp-calendar-wrap .rbc-header,
+.kp-calendar-wrap .rbc-time-header-content,
+.kp-calendar-wrap .rbc-month-row,
+.kp-calendar-wrap .rbc-time-content,
+.kp-calendar-wrap .rbc-day-bg + .rbc-day-bg,
+.kp-calendar-wrap .rbc-month-view,
+.kp-calendar-wrap .rbc-header + .rbc-header {
+  border-color: #E5E7EB;
+}
+.kp-calendar-wrap .rbc-event {
+  border: none;
+  border-radius: 0.375rem;
+}
+.kp-calendar-wrap .rbc-event.kp-event-leave {
+  opacity: 0.9;
+}
+
+html.dark .kp-calendar-wrap .rbc-toolbar button {
+  color: #D1D5DB;
+  border-color: #374151;
+}
+html.dark .kp-calendar-wrap .rbc-toolbar button:hover {
+  background-color: #374151;
+}
+html.dark .kp-calendar-wrap .rbc-toolbar-label {
+  color: #fff;
+}
+html.dark .kp-calendar-wrap .rbc-off-range-bg { background: #111827; }
+html.dark .kp-calendar-wrap .rbc-today { background-color: #003D50; }
+html.dark .kp-calendar-wrap .rbc-header,
+html.dark .kp-calendar-wrap .rbc-time-header-content,
+html.dark .kp-calendar-wrap .rbc-month-row,
+html.dark .kp-calendar-wrap .rbc-time-content,
+html.dark .kp-calendar-wrap .rbc-day-bg + .rbc-day-bg,
+html.dark .kp-calendar-wrap .rbc-month-view,
+html.dark .kp-calendar-wrap .rbc-header + .rbc-header,
+html.dark .kp-calendar-wrap .rbc-time-view,
+html.dark .kp-calendar-wrap .rbc-timeslot-group,
+html.dark .kp-calendar-wrap .rbc-time-gutter,
+html.dark .kp-calendar-wrap .rbc-time-slot {
+  border-color: #374151;
+}
+html.dark .kp-calendar-wrap .rbc-off-range { color: #6B7280; }
+html.dark .kp-calendar-wrap .rbc-date-cell { color: #D1D5DB; }
+html.dark .kp-calendar-wrap .rbc-time-gutter,
+html.dark .kp-calendar-wrap .rbc-label {
+  color: #9CA3AF;
+}
+html.dark .kp-calendar-wrap .rbc-agenda-view table.rbc-agenda-table {
+  color: #D1D5DB;
+  border-color: #374151;
+}
+html.dark .kp-calendar-wrap .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-color: #374151;
+}
+html.dark .kp-calendar-wrap .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  border-color: #374151;
+}

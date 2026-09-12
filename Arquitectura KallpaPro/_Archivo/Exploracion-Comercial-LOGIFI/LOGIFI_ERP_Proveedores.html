@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOGIFI™ ERP · Gestión de Proveedores — KallpaPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1B2B;
+    --ink-2:#13283D;
+    --ink-3:#1B3551;
+    --ink-4:#3A5670;
+    --paper:#F4EFE6;
+    --paper-2:#EAE3D4;
+    --paper-3:#DFD6C2;
+    --gold:#C9A227;
+    --gold-2:#E0B84A;
+    --gold-3:#FFE9A8;
+    --rust:#A6422E;
+    --rust-2:#822f1f;
+    --moss:#3F6B4F;
+    --moss-2:#578869;
+    --sky:#3B6E91;
+    --sky-2:#5A8AA8;
+    --plum:#6B3F5F;
+    --line:rgba(11,27,43,.12);
+    --line-strong:rgba(11,27,43,.28);
+    --shadow:0 1px 0 rgba(11,27,43,.06), 0 12px 40px -18px rgba(11,27,43,.35);
+    --shadow-lg:0 4px 12px -4px rgba(11,27,43,.1), 0 24px 60px -20px rgba(11,27,43,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:'Inter Tight',sans-serif;-webkit-font-smoothing:antialiased;font-size:14px}
+  body{
+    background-image:
+      radial-gradient(1200px 600px at 90% -10%, rgba(201,162,39,.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(63,107,79,.08), transparent 60%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><circle cx='1' cy='1' r='.4' fill='%230B1B2B' opacity='.05'/></svg>");
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:-.01em}
+  .serif{font-family:'Fraunces',serif}
+
+  /* ============ TOP BAR ============ */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;border-bottom:1px solid var(--line);
+    background:rgba(244,239,230,.92);backdrop-filter:blur(12px);
+    position:sticky;top:0;z-index:100;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;background:var(--ink);color:var(--paper);
+    display:grid;place-items:center;font-family:'Fraunces',serif;
+    font-weight:900;font-size:20px;font-style:italic;
+    box-shadow:inset 0 0 0 2px var(--gold);
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.05}
+  .brand-text b{font-family:'Fraunces',serif;font-weight:700;font-size:18px;letter-spacing:-.02em}
+  .brand-text small{font-size:10.5px;color:var(--ink-3);letter-spacing:.18em;text-transform:uppercase}
+
+  .crumbs{font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-left:24px}
+  .crumbs span{opacity:.5}
+  .crumbs b{color:var(--ink);font-weight:600}
+
+  .topbar-right{display:flex;align-items:center;gap:14px}
+  .pill{
+    font-size:11px;padding:5px 10px;border-radius:999px;background:var(--ink);color:var(--paper);
+    letter-spacing:.06em;text-transform:uppercase;font-weight:600
+  }
+  .ai-badge{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    padding:5px 11px;border-radius:999px;
+    background:linear-gradient(90deg,var(--gold) 0%,var(--gold-2) 100%);
+    color:var(--ink);font-weight:600;
+  }
+  .ai-badge::before{
+    content:"";width:7px;height:7px;border-radius:50%;background:var(--ink);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+  .icon-btn{
+    width:34px;height:34px;border-radius:8px;display:grid;place-items:center;cursor:pointer;
+    color:var(--ink-3);transition:all .2s;background:transparent;border:none;font-size:16px;position:relative
+  }
+  .icon-btn:hover{background:var(--paper-2);color:var(--ink)}
+  .icon-btn .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--rust)}
+  .user-chip{display:flex;align-items:center;gap:10px;font-size:13px;padding-left:14px;border-left:1px solid var(--line)}
+  .user-chip .av{width:32px;height:32px;border-radius:50%;background:var(--ink-3);color:var(--paper);display:grid;place-items:center;font-weight:700;font-size:11px;font-family:'JetBrains Mono',monospace}
+
+  /* ============ LAYOUT ============ */
+  .shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 67px)}
+  .sidebar{
+    border-right:1px solid var(--line);
+    padding:24px 16px;background:rgba(234,227,212,.4);
+    position:sticky;top:67px;height:calc(100vh - 67px);overflow-y:auto;
+  }
+  .side-label{
+    font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);
+    margin:18px 8px 8px;font-weight:600
+  }
+  .side-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 12px;border-radius:8px;font-size:13.5px;color:var(--ink-2);
+    cursor:pointer;transition:all .2s;font-weight:500;
+  }
+  .side-item:hover{background:rgba(11,27,43,.06)}
+  .side-item.active{background:var(--ink);color:var(--paper)}
+  .side-item .badge{font-size:10px;padding:2px 7px;border-radius:999px;background:var(--gold);color:var(--ink);font-weight:700;font-family:'JetBrains Mono',monospace}
+  .side-item .badge.crit{background:var(--rust);color:var(--paper)}
+  .side-item.has-sub{position:relative}
+  .side-sub{padding-left:14px;display:flex;flex-direction:column;gap:2px;margin-top:2px}
+  .side-sub .side-item{font-size:12.5px;padding:7px 12px;color:var(--ink-3)}
+  .side-sub .side-item.active{background:var(--paper-2);color:var(--ink);font-weight:600}
+
+  /* ============ MAIN ============ */
+  .main{padding:0}
+  .view{display:none;animation:fadeIn .4s ease}
+  .view.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .page-head{
+    padding:30px 38px 22px;border-bottom:1px solid var(--line);
+    display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;
+  }
+  .page-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:42px;line-height:1;letter-spacing:-.025em}
+  .page-head h1 em{font-style:italic;color:var(--rust);font-weight:500}
+  .page-head p{margin-top:8px;color:var(--ink-3);font-size:14px;max-width:640px;line-height:1.5}
+  .page-head-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  .btn{
+    padding:11px 18px;font-size:13px;font-weight:600;letter-spacing:-.005em;
+    border-radius:8px;cursor:pointer;border:none;font-family:inherit;transition:all .2s;
+    display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+  }
+  .btn-primary{background:var(--ink);color:var(--paper)}
+  .btn-primary:hover{background:var(--ink-2);transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(11,27,43,.4)}
+  .btn-gold{background:var(--gold);color:var(--ink)}
+  .btn-gold:hover{background:var(--gold-2);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
+  .btn-ghost:hover{background:var(--paper-2)}
+  .btn-rust{background:var(--rust);color:var(--paper)}
+  .btn-rust:hover{background:var(--rust-2)}
+  .btn-sm{padding:7px 12px;font-size:12px}
+
+  .body-pad{padding:28px 38px 60px}
+
+  /* ============ DASHBOARD ============ */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px}
+  .kpi-card{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .kpi-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+  .kpi-card .label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .kpi-card .ico{
+    width:34px;height:34px;border-radius:8px;background:var(--paper);
+    display:grid;place-items:center;font-size:16px
+  }
+  .kpi-card.gold .ico{background:rgba(201,162,39,.16);color:var(--gold)}
+  .kpi-card.moss .ico{background:rgba(63,107,79,.16);color:var(--moss)}
+  .kpi-card.rust .ico{background:rgba(166,66,46,.16);color:var(--rust)}
+  .kpi-card.sky .ico{background:rgba(59,110,145,.16);color:var(--sky)}
+  .kpi-card .val{font-family:'Fraunces',serif;font-weight:600;font-size:42px;line-height:1;letter-spacing:-.02em}
+  .kpi-card .val small{font-size:14px;font-family:'Inter Tight',sans-serif;color:var(--ink-3);font-weight:500;margin-left:6px}
+  .kpi-card .delta{font-size:11.5px;margin-top:8px;display:flex;align-items:center;gap:6px;color:var(--ink-3)}
+  .kpi-card .delta b{font-family:'JetBrains Mono',monospace;font-weight:600}
+  .delta.up b{color:var(--moss)}
+  .delta.down b{color:var(--rust)}
+
+  .dash-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;margin-bottom:30px}
+
+  .panel{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .panel-head{
+    padding:18px 22px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);background:var(--paper);
+  }
+  .panel-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:20px;letter-spacing:-.018em}
+  .panel-head .sub{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+  .panel-body{padding:22px}
+
+  /* spend chart */
+  .chart-wrap{height:240px;display:flex;align-items:flex-end;gap:10px;padding:10px 0 24px;position:relative}
+  .bar-grp{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;position:relative;cursor:pointer}
+  .bar-grp:hover .bar-tooltip{opacity:1;transform:translateY(-4px)}
+  .bar{width:100%;background:linear-gradient(180deg,var(--ink-3),var(--ink));border-radius:6px 6px 0 0;transition:transform .25s, opacity .25s;position:relative}
+  .bar.gold{background:linear-gradient(180deg,var(--gold-2),var(--gold))}
+  .bar:hover{transform:scaleY(1.04) translateY(-2px)}
+  .bar-grp .lbl{font-size:10.5px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;margin-top:4px}
+  .bar-tooltip{
+    position:absolute;bottom:calc(100% + 10px);background:var(--ink);color:var(--paper);
+    padding:6px 10px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;
+    white-space:nowrap;opacity:0;transition:all .2s;pointer-events:none;
+  }
+  .chart-legend{display:flex;gap:18px;font-size:11px;color:var(--ink-3);padding-top:12px;border-top:1px dashed var(--line);font-weight:500}
+  .chart-legend span{display:flex;align-items:center;gap:6px}
+  .chart-legend .sw{width:10px;height:10px;border-radius:3px;background:var(--ink)}
+  .chart-legend .sw.g{background:var(--gold)}
+
+  /* alerts list */
+  .alert-list{display:flex;flex-direction:column;gap:10px}
+  .alert-item{
+    display:grid;grid-template-columns:auto 1fr auto;gap:12px;
+    padding:12px 14px;border-radius:9px;background:var(--paper);align-items:center;
+    border-left:3px solid var(--ink-3);cursor:pointer;transition:transform .2s
+  }
+  .alert-item:hover{transform:translateX(3px)}
+  .alert-item.crit{border-left-color:var(--rust);background:rgba(166,66,46,.05)}
+  .alert-item.warn{border-left-color:var(--gold);background:rgba(201,162,39,.05)}
+  .alert-item.info{border-left-color:var(--sky);background:rgba(59,110,145,.05)}
+  .alert-item.ok{border-left-color:var(--moss);background:rgba(63,107,79,.05)}
+  .alert-ico{
+    width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:14px;
+  }
+  .alert-item.crit .alert-ico{color:var(--rust)}
+  .alert-item.warn .alert-ico{color:var(--gold)}
+  .alert-item.info .alert-ico{color:var(--sky)}
+  .alert-item.ok .alert-ico{color:var(--moss)}
+  .alert-info h4{font-size:13px;font-weight:600;letter-spacing:-.005em}
+  .alert-info p{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+  .alert-time{font-size:10.5px;color:var(--ink-3);font-family:'JetBrains Mono',monospace}
+
+  /* top suppliers */
+  .ts-table{width:100%;font-size:13px}
+  .ts-table th{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 8px;border-bottom:1px solid var(--line-strong);font-weight:600}
+  .ts-table th.r,.ts-table td.r{text-align:right}
+  .ts-table td{padding:13px 8px;border-bottom:1px solid var(--line)}
+  .ts-name{display:flex;align-items:center;gap:10px}
+  .ts-avatar{width:32px;height:32px;border-radius:8px;background:var(--paper-2);color:var(--ink);display:grid;place-items:center;font-weight:700;font-size:12px;font-family:'Fraunces',serif}
+  .score-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600}
+  .score-pill.high{background:rgba(63,107,79,.15);color:var(--moss)}
+  .score-pill.med{background:rgba(201,162,39,.18);color:#8a6f1c}
+  .score-pill.low{background:rgba(166,66,46,.15);color:var(--rust)}
+  .otif-mini{display:inline-flex;flex-direction:column;gap:3px;font-size:11px}
+  .otif-bar{width:54px;height:4px;background:var(--paper-2);border-radius:99px;overflow:hidden}
+  .otif-fill{height:100%;background:var(--moss)}
+
+  /* fraud / opportunity / category cards */
+  .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:30px}
+  .insight-card{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden
+  }
+  .insight-card.dark{background:linear-gradient(135deg,var(--ink),var(--ink-2));color:var(--paper);border:none}
+  .insight-card.dark::before{content:"";position:absolute;inset:0;background:radial-gradient(400px 200px at 100% 0%,rgba(201,162,39,.18),transparent)}
+  .insight-card .head{display:flex;align-items:center;gap:8px;margin-bottom:12px;position:relative}
+  .insight-card .head .tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--paper-2)}
+  .insight-card.dark .head .tag{background:var(--gold);color:var(--ink)}
+  .insight-card h3{font-family:'Fraunces',serif;font-weight:600;font-size:17px;line-height:1.25;margin-bottom:8px;position:relative}
+  .insight-card p{font-size:12.5px;line-height:1.55;color:var(--ink-3);position:relative}
+  .insight-card.dark p{color:rgba(244,239,230,.8)}
+  .insight-card .num{font-family:'Fraunces',serif;font-size:36px;font-weight:600;line-height:1;color:var(--rust);margin:8px 0;position:relative}
+  .insight-card.dark .num{color:var(--gold-2)}
+  .insight-card .foot{margin-top:14px;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;position:relative}
+
+  /* ============ SUPPLIERS LIST ============ */
+  .filters-bar{
+    display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+    margin-bottom:18px;padding:14px 18px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;
+  }
+  .search-input{
+    display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--paper);
+    border-radius:8px;border:1px solid transparent;transition:all .2s;flex:1;max-width:420px
+  }
+  .search-input:focus-within{border-color:var(--ink);background:#fff}
+  .search-input input{border:none;background:transparent;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:var(--ink)}
+  .search-input span{color:var(--ink-3);font-size:14px}
+  .filter-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .ftag{
+    padding:6px 11px;border-radius:6px;font-size:11.5px;background:var(--paper);
+    border:1px solid var(--line-strong);cursor:pointer;font-weight:500;display:flex;align-items:center;gap:6px
+  }
+  .ftag:hover{border-color:var(--ink)}
+  .ftag.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .ftag.tag-mining{background:rgba(166,66,46,.1);border-color:var(--rust);color:var(--rust)}
+  .ftag.tag-construction{background:rgba(201,162,39,.15);border-color:var(--gold);color:#8a6f1c}
+  .ftag.tag-agro{background:rgba(63,107,79,.12);border-color:var(--moss);color:var(--moss)}
+  .ftag.tag-retail{background:rgba(59,110,145,.12);border-color:var(--sky);color:var(--sky)}
+  .ftag.tag-critical{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  .bulk-actions{
+    display:none;padding:10px 18px;background:var(--ink);color:var(--paper);
+    border-radius:10px;align-items:center;justify-content:space-between;margin-bottom:18px;
+  }
+  .bulk-actions.show{display:flex;animation:fadeIn .25s}
+  .bulk-actions .count{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace}
+  .bulk-actions .btn-ghost{color:var(--paper);border-color:rgba(244,239,230,.3)}
+  .bulk-actions .btn-ghost:hover{background:rgba(244,239,230,.1)}
+
+  .sup-table-wrap{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .sup-table{width:100%;border-collapse:collapse;font-size:13px}
+  .sup-table thead{background:var(--paper)}
+  .sup-table th{
+    text-align:left;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-3);padding:14px 14px;border-bottom:1px solid var(--line-strong);font-weight:600
+  }
+  .sup-table th.r,.sup-table td.r{text-align:right}
+  .sup-table tbody tr{border-bottom:1px solid var(--line);transition:background .15s}
+  .sup-table tbody tr:hover{background:var(--paper)}
+  .sup-table tbody tr.selected{background:rgba(201,162,39,.08)}
+  .sup-table td{padding:14px 14px;vertical-align:middle}
+  .sup-name{display:flex;align-items:center;gap:12px}
+  .sup-avatar{
+    width:38px;height:38px;border-radius:9px;background:var(--paper-2);color:var(--ink);
+    display:grid;place-items:center;font-weight:700;font-size:13px;font-family:'Fraunces',serif;
+    border:1px solid var(--line)
+  }
+  .sup-avatar.gold{background:linear-gradient(135deg,var(--gold-3),var(--gold));color:var(--ink)}
+  .sup-avatar.moss{background:linear-gradient(135deg,#cfdcd2,var(--moss));color:#fff}
+  .sup-avatar.rust{background:linear-gradient(135deg,#e8c2b8,var(--rust));color:#fff}
+  .sup-avatar.sky{background:linear-gradient(135deg,#c7d8e3,var(--sky));color:#fff}
+  .sup-avatar.plum{background:linear-gradient(135deg,#d4c0cc,var(--plum));color:#fff}
+  .sup-meta b{display:block;font-weight:600;font-size:13.5px;cursor:pointer}
+  .sup-meta b:hover{color:var(--rust)}
+  .sup-meta span{font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace}
+  .tag-mini{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;margin-right:4px;letter-spacing:.02em}
+  .tag-mini.mining{background:rgba(166,66,46,.13);color:var(--rust)}
+  .tag-mini.construction{background:rgba(201,162,39,.18);color:#8a6f1c}
+  .tag-mini.agro{background:rgba(63,107,79,.14);color:var(--moss)}
+  .tag-mini.retail{background:rgba(59,110,145,.14);color:var(--sky)}
+  .tag-mini.critical{background:var(--ink);color:var(--paper)}
+
+  .state-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em}
+  .state-pill .d{width:6px;height:6px;border-radius:50%}
+  .state-active{background:rgba(63,107,79,.15);color:var(--moss)}
+  .state-active .d{background:var(--moss)}
+  .state-onboarding{background:rgba(59,110,145,.13);color:var(--sky)}
+  .state-onboarding .d{background:var(--sky)}
+  .state-prospect{background:var(--paper-2);color:var(--ink-3)}
+  .state-prospect .d{background:var(--ink-3)}
+  .state-observation{background:rgba(201,162,39,.18);color:#8a6f1c}
+  .state-observation .d{background:var(--gold);animation:pulse 1.6s ease-in-out infinite}
+  .state-suspended{background:rgba(166,66,46,.15);color:var(--rust)}
+  .state-suspended .d{background:var(--rust)}
+  .state-blocked{background:var(--ink);color:var(--paper)}
+  .state-blocked .d{background:var(--rust)}
+  .state-vetoed{background:#000;color:var(--paper)}
+  .state-vetoed .d{background:var(--rust)}
+
+  .row-actions{display:flex;gap:4px;justify-content:flex-end}
+  .row-act{width:30px;height:30px;border-radius:6px;background:transparent;border:none;cursor:pointer;color:var(--ink-3);display:grid;place-items:center;font-size:13px;transition:all .15s}
+  .row-act:hover{background:var(--paper-2);color:var(--ink)}
+
+  .pagination{
+    display:flex;justify-content:space-between;align-items:center;padding:14px 18px;
+    background:var(--paper);border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)
+  }
+  .pagination .pages{display:flex;gap:4px}
+  .page-btn{
+    width:30px;height:30px;border-radius:6px;border:1px solid transparent;background:transparent;
+    cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);font-weight:600
+  }
+  .page-btn:hover{border-color:var(--line-strong)}
+  .page-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* ============ SUPPLIER 360 ============ */
+  .sup-hero{
+    padding:30px 38px;background:linear-gradient(180deg,#fff 0%,var(--paper) 100%);
+    border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:30px;
+  }
+  .sup-hero-left{display:flex;gap:22px;align-items:flex-start}
+  .sup-big-avatar{
+    width:88px;height:88px;border-radius:18px;
+    background:linear-gradient(135deg,var(--gold-3),var(--gold));
+    color:var(--ink);display:grid;place-items:center;
+    font-family:'Fraunces',serif;font-weight:700;font-size:34px;
+    box-shadow:0 12px 30px -10px rgba(201,162,39,.5);
+    flex-shrink:0
+  }
+  .sup-hero-info h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;letter-spacing:-.02em;line-height:1.05;margin-bottom:6px}
+  .sup-hero-info h1 em{font-style:italic;color:var(--rust)}
+  .sup-hero-meta{display:flex;gap:20px;font-size:12px;color:var(--ink-3);margin-top:8px;flex-wrap:wrap}
+  .sup-hero-meta b{color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:600;margin-left:5px}
+  .sup-hero-tags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+
+  .sup-hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:14px}
+  .score-circle{
+    width:130px;height:130px;border-radius:50%;
+    background:conic-gradient(var(--moss) 0% 87%, var(--paper-2) 87% 100%);
+    display:grid;place-items:center;position:relative;
+  }
+  .score-circle::before{content:"";position:absolute;inset:8px;background:#fff;border-radius:50%}
+  .score-circle .inner{position:relative;text-align:center}
+  .score-circle .inner b{font-family:'Fraunces',serif;font-size:38px;font-weight:600;line-height:1;display:block;color:var(--moss)}
+  .score-circle .inner span{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .sup-hero-actions{display:flex;gap:8px}
+
+  /* tabs */
+  .tabs-bar{
+    display:flex;gap:4px;padding:0 38px;border-bottom:1px solid var(--line);
+    background:#fff;overflow-x:auto;
+  }
+  .tab{
+    padding:14px 20px;font-size:13.5px;font-weight:500;color:var(--ink-3);cursor:pointer;
+    border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;letter-spacing:-.005em;
+    display:flex;align-items:center;gap:8px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--ink);border-bottom-color:var(--rust);font-weight:600}
+  .tab .badge{font-size:10px;padding:1px 7px;border-radius:99px;background:var(--paper-2);color:var(--ink-3);font-family:'JetBrains Mono',monospace;font-weight:600}
+  .tab.active .badge{background:var(--ink);color:var(--paper)}
+
+  .tab-content{display:none;animation:fadeIn .3s ease}
+  .tab-content.active{display:block}
+
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+  .info-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+  .info-card h3{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+  .info-card h3 .edit{font-size:11px;color:var(--ink-3);font-family:'Inter Tight',sans-serif;font-weight:500;cursor:pointer}
+  .info-card h3 .edit:hover{color:var(--rust)}
+  .info-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px dashed var(--line)}
+  .info-row:last-child{border-bottom:none}
+  .info-row span{color:var(--ink-3)}
+  .info-row b{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12.5px}
+
+  /* documents grid */
+  .docs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .doc-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;
+    transition:transform .2s, box-shadow .2s;cursor:pointer
+  }
+  .doc-card:hover{transform:translateY(-2px);box-shadow:0 12px 24px -10px rgba(11,27,43,.2)}
+  .doc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .doc-icon{
+    width:36px;height:36px;border-radius:8px;background:var(--paper);
+    display:grid;place-items:center;font-size:16px;color:var(--ink-3)
+  }
+  .doc-status{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+  .doc-status.ok{background:rgba(63,107,79,.15);color:var(--moss)}
+  .doc-status.warn{background:rgba(201,162,39,.18);color:#8a6f1c}
+  .doc-status.crit{background:rgba(166,66,46,.15);color:var(--rust)}
+  .doc-card h4{font-size:13.5px;font-weight:600;margin-bottom:4px;letter-spacing:-.005em}
+  .doc-card p{font-size:11.5px;color:var(--ink-3);margin-bottom:10px}
+  .doc-meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-3);padding-top:8px;border-top:1px dashed var(--line);font-weight:500}
+  .doc-meta b{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--ink)}
+
+  /* compliance / risk panel */
+  .compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .compl-list{display:flex;flex-direction:column;gap:10px}
+  .compl-item{
+    display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:12px 14px;
+    border-radius:9px;background:var(--paper);align-items:center
+  }
+  .compl-status{
+    width:28px;height:28px;border-radius:7px;display:grid;place-items:center;
+    font-weight:700;font-size:13px;color:#fff
+  }
+  .compl-status.ok{background:var(--moss)}
+  .compl-status.warn{background:var(--gold);color:var(--ink)}
+  .compl-status.crit{background:var(--rust)}
+  .compl-info h5{font-size:13px;font-weight:600;letter-spacing:-.005em}
+  .compl-info p{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+  .compl-date{font-size:10.5px;font-family:'JetBrains Mono',monospace;color:var(--ink-3);font-weight:600;text-align:right;line-height:1.4}
+  .compl-date b{display:block;color:var(--ink);font-size:11.5px}
+
+  /* risk score panel */
+  .risk-card{
+    background:linear-gradient(135deg,var(--ink),var(--ink-2));color:var(--paper);
+    border-radius:14px;padding:24px;position:relative;overflow:hidden
+  }
+  .risk-card::before{content:"";position:absolute;inset:0;background:radial-gradient(400px 200px at 100% 0%,rgba(201,162,39,.18),transparent)}
+  .risk-card h3{font-family:'Fraunces',serif;font-size:16px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;opacity:.8;margin-bottom:16px;position:relative}
+  .risk-meter{display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;position:relative}
+  .risk-meter b{font-family:'Fraunces',serif;font-size:64px;font-weight:600;line-height:1;color:var(--gold-2)}
+  .risk-meter span{font-size:13px;color:rgba(244,239,230,.7);padding-bottom:10px}
+  .risk-bars{display:flex;flex-direction:column;gap:9px;position:relative}
+  .risk-bar-row{display:grid;grid-template-columns:120px 1fr 40px;gap:12px;align-items:center;font-size:12px}
+  .risk-bar-row label{color:rgba(244,239,230,.7);font-size:11.5px}
+  .risk-bar-track{height:5px;background:rgba(244,239,230,.15);border-radius:99px;overflow:hidden}
+  .risk-bar-fill{height:100%;background:var(--gold);border-radius:99px}
+  .risk-bar-row b{font-family:'JetBrains Mono',monospace;text-align:right;font-weight:600}
+
+  /* KPI / scoring history */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .mini-kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .mini-kpi label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .mini-kpi b{display:block;font-family:'Fraunces',serif;font-size:28px;font-weight:600;line-height:1;margin-top:6px}
+  .mini-kpi b small{font-size:13px;color:var(--ink-3);margin-left:4px;font-weight:500;font-family:'Inter Tight',sans-serif}
+  .mini-kpi .trend{font-size:10.5px;color:var(--moss);font-family:'JetBrains Mono',monospace;font-weight:600;margin-top:4px}
+  .mini-kpi .trend.dn{color:var(--rust)}
+
+  /* timeline / history */
+  .timeline{display:flex;flex-direction:column;gap:0;position:relative;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:9px;top:6px;bottom:0;width:2px;background:var(--paper-2)}
+  .tl-item{position:relative;padding:0 0 22px 18px}
+  .tl-item::before{
+    content:"";position:absolute;left:-28px;top:5px;width:14px;height:14px;border-radius:50%;
+    background:#fff;border:3px solid var(--ink-3)
+  }
+  .tl-item.gold::before{border-color:var(--gold)}
+  .tl-item.moss::before{border-color:var(--moss)}
+  .tl-item.rust::before{border-color:var(--rust)}
+  .tl-date{font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:3px}
+  .tl-title{font-size:13.5px;font-weight:600;margin-bottom:3px}
+  .tl-desc{font-size:12px;color:var(--ink-3);line-height:1.5}
+
+  /* ============ ONBOARDING WIZARD ============ */
+  .wiz-stepper{
+    display:flex;justify-content:space-between;padding:0 38px;background:#fff;
+    border-bottom:1px solid var(--line);position:relative;
+  }
+  .wiz-stepper::before{
+    content:"";position:absolute;left:78px;right:78px;top:42px;height:2px;background:var(--paper-2);z-index:0
+  }
+  .wiz-step{
+    padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    flex:1;position:relative;z-index:1;cursor:pointer;
+  }
+  .wiz-circle{
+    width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--paper-2);
+    display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-weight:700;
+    color:var(--ink-3);font-size:13px;transition:all .25s
+  }
+  .wiz-step.done .wiz-circle{background:var(--moss);border-color:var(--moss);color:#fff}
+  .wiz-step.active .wiz-circle{background:var(--ink);border-color:var(--ink);color:var(--gold);box-shadow:0 0 0 6px rgba(11,27,43,.08)}
+  .wiz-step .wiz-label{font-size:11.5px;font-weight:600;color:var(--ink-3);text-align:center;letter-spacing:-.005em}
+  .wiz-step.active .wiz-label{color:var(--ink)}
+  .wiz-step.done .wiz-label{color:var(--moss)}
+
+  .wiz-body{padding:30px 38px}
+  .wiz-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+  .wiz-form h3{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin-bottom:6px;letter-spacing:-.018em}
+  .wiz-form > p{color:var(--ink-3);font-size:13px;margin-bottom:22px;line-height:1.5;max-width:680px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .form-grid.three{grid-template-columns:1fr 1fr 1fr}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .field label .opt{color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+  .field label .req{color:var(--rust)}
+  .field input,.field select,.field textarea{
+    border:1px solid var(--line-strong);background:#fff;padding:11px 13px;border-radius:8px;
+    font-family:inherit;font-size:13.5px;color:var(--ink);transition:all .2s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(11,27,43,.08)
+  }
+  .field .helper{font-size:11px;color:var(--ink-3);margin-top:2px}
+  .field-with-action{position:relative}
+  .field-with-action input{padding-right:120px}
+  .field-action{position:absolute;right:5px;top:5px;height:calc(100% - 10px);background:var(--ink);color:var(--paper);border:none;padding:0 14px;border-radius:6px;font-family:inherit;font-weight:600;font-size:11.5px;cursor:pointer}
+  .field-action:hover{background:var(--ink-2)}
+  .field.success input{border-color:var(--moss);background:rgba(63,107,79,.04)}
+  .field .check-msg{font-size:11px;color:var(--moss);font-weight:600;margin-top:4px;display:flex;align-items:center;gap:5px}
+
+  .ai-tip{
+    padding:14px 16px;background:linear-gradient(135deg,rgba(201,162,39,.12),rgba(201,162,39,.04));
+    border:1px dashed var(--gold);border-radius:10px;margin-top:18px;display:flex;gap:12px;align-items:flex-start
+  }
+  .ai-tip .ico{
+    width:30px;height:30px;border-radius:8px;background:var(--gold);color:var(--ink);
+    display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0;font-family:'JetBrains Mono',monospace
+  }
+  .ai-tip h5{font-size:13px;font-weight:600;margin-bottom:3px}
+  .ai-tip p{font-size:12px;color:var(--ink-3);line-height:1.5}
+
+  /* ============ IMPORT/EXPORT CENTER ============ */
+  .import-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;margin-bottom:24px}
+  .upload-zone{
+    background:#fff;border:2px dashed var(--line-strong);border-radius:14px;
+    padding:50px 30px;text-align:center;transition:all .25s;cursor:pointer
+  }
+  .upload-zone:hover{border-color:var(--ink);background:var(--paper)}
+  .upload-zone.dragover{border-color:var(--gold);background:rgba(201,162,39,.06)}
+  .upload-icon{
+    width:64px;height:64px;border-radius:14px;background:var(--paper-2);
+    display:grid;place-items:center;margin:0 auto 16px;font-size:26px;color:var(--ink-3)
+  }
+  .upload-zone h3{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:6px;letter-spacing:-.015em}
+  .upload-zone p{color:var(--ink-3);font-size:13px;margin-bottom:18px}
+  .upload-formats{display:flex;justify-content:center;gap:8px;font-size:11px}
+  .fmt{padding:3px 8px;background:var(--paper-2);border-radius:5px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--ink-3)}
+
+  /* templates */
+  .tpl-list{display:flex;flex-direction:column;gap:10px}
+  .tpl-item{
+    display:grid;grid-template-columns:auto 1fr auto;gap:14px;padding:14px;
+    background:#fff;border:1px solid var(--line);border-radius:10px;align-items:center;
+    cursor:pointer;transition:transform .2s
+  }
+  .tpl-item:hover{transform:translateX(3px);border-color:var(--ink-3)}
+  .tpl-icon{width:38px;height:38px;border-radius:8px;background:var(--paper);display:grid;place-items:center;font-size:15px;color:var(--rust);font-family:'Fraunces',serif;font-weight:700}
+  .tpl-info h5{font-size:13.5px;font-weight:600}
+  .tpl-info p{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+
+  /* AI mapping */
+  .mapping-result{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:22px}
+  .mapping-result .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .mapping-result h3{font-family:'Fraunces',serif;font-weight:600;font-size:18px;letter-spacing:-.015em}
+  .mapping-tbl{width:100%;font-size:13px}
+  .mapping-tbl th{text-align:left;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding:8px;border-bottom:1px solid var(--line-strong);font-weight:600}
+  .mapping-tbl td{padding:11px 8px;border-bottom:1px solid var(--line)}
+  .map-from{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--paper);padding:3px 8px;border-radius:5px;display:inline-block;font-weight:500}
+  .map-arrow{color:var(--gold);font-weight:700}
+  .map-to{font-weight:600}
+  .map-conf{display:inline-flex;align-items:center;gap:5px;font-size:11px}
+  .map-conf .bar{width:60px;height:4px;background:var(--paper-2);border-radius:99px;overflow:hidden}
+  .map-conf .fill{height:100%;background:var(--moss)}
+  .map-conf.med .fill{background:var(--gold)}
+  .map-conf.low .fill{background:var(--rust)}
+
+  /* ============ WORKFLOWS ============ */
+  .wf-canvas{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:36px 28px;
+    box-shadow:var(--shadow);overflow-x:auto;
+  }
+  .wf-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:38px;min-width:max-content}
+  .wf-row:last-child{margin-bottom:0}
+  .wf-state{
+    background:linear-gradient(180deg,#fff,var(--paper));
+    border:2px solid var(--line-strong);border-radius:12px;padding:16px 18px;
+    min-width:155px;text-align:center;position:relative;cursor:pointer;transition:all .2s
+  }
+  .wf-state:hover{transform:translateY(-3px);box-shadow:0 12px 24px -8px rgba(11,27,43,.2)}
+  .wf-state .state-name{font-family:'Fraunces',serif;font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:3px}
+  .wf-state .state-meta{font-size:10.5px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;font-weight:500}
+  .wf-state .state-count{font-family:'Fraunces',serif;font-size:30px;font-weight:600;color:var(--rust);line-height:1;margin:6px 0}
+  .wf-state.start{border-color:var(--ink-3)}
+  .wf-state.normal{border-color:var(--moss)}
+  .wf-state.warn{border-color:var(--gold)}
+  .wf-state.crit{border-color:var(--rust)}
+  .wf-state.dead{border-color:#000;background:linear-gradient(180deg,#1a1a1a,#000);color:var(--paper)}
+  .wf-state.dead .state-meta{color:rgba(244,239,230,.6)}
+  .wf-state.dead .state-count{color:var(--gold-2)}
+
+  .wf-arrow{
+    color:var(--ink-3);font-size:22px;font-family:'Fraunces',serif;
+    display:grid;place-items:center;flex-shrink:0
+  }
+  .wf-arrow-down{
+    width:2px;height:30px;background:var(--ink-3);position:relative;margin:0 auto;
+  }
+  .wf-arrow-down::after{
+    content:"";position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-top-color:var(--ink-3)
+  }
+
+  .wf-legend{
+    display:flex;gap:18px;margin-top:24px;padding:14px 18px;background:var(--paper);
+    border-radius:10px;font-size:12px;color:var(--ink-3);flex-wrap:wrap
+  }
+  .wf-legend span{display:flex;align-items:center;gap:7px;font-weight:500}
+  .wf-legend .dot{width:10px;height:10px;border-radius:3px}
+
+  /* ============ AI ALERTS ============ */
+  .alert-stream{display:flex;flex-direction:column;gap:14px}
+  .stream-item{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 22px;
+    display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;
+    box-shadow:var(--shadow);position:relative;overflow:hidden
+  }
+  .stream-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .stream-item.crit::before{background:var(--rust)}
+  .stream-item.warn::before{background:var(--gold)}
+  .stream-item.info::before{background:var(--sky)}
+  .stream-item.ok::before{background:var(--moss)}
+  .stream-ico{
+    width:48px;height:48px;border-radius:12px;background:var(--paper);
+    display:grid;place-items:center;font-size:20px;flex-shrink:0
+  }
+  .stream-item.crit .stream-ico{background:rgba(166,66,46,.12);color:var(--rust)}
+  .stream-item.warn .stream-ico{background:rgba(201,162,39,.16);color:var(--gold)}
+  .stream-item.info .stream-ico{background:rgba(59,110,145,.12);color:var(--sky)}
+  .stream-item.ok .stream-ico{background:rgba(63,107,79,.12);color:var(--moss)}
+  .stream-info h4{font-size:14.5px;font-weight:600;letter-spacing:-.005em;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+  .stream-info h4 .lvl{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:4px}
+  .stream-item.crit .lvl{background:var(--rust);color:var(--paper)}
+  .stream-item.warn .lvl{background:var(--gold);color:var(--ink)}
+  .stream-item.info .lvl{background:var(--sky);color:var(--paper)}
+  .stream-item.ok .lvl{background:var(--moss);color:var(--paper)}
+  .stream-info p{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .stream-info .meta{font-size:11px;color:var(--ink-3);margin-top:6px;font-family:'JetBrains Mono',monospace;font-weight:500}
+  .stream-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .stream-time{font-size:10.5px;color:var(--ink-3);font-family:'JetBrains Mono',monospace}
+
+  /* ============ EXTERNAL PORTAL ============ */
+  .portal-mock{
+    background:linear-gradient(135deg,#fff 0%,var(--paper) 100%);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:var(--shadow-lg);max-width:1100px;margin:0 auto
+  }
+  .portal-bar{
+    padding:14px 24px;background:var(--ink);color:var(--paper);
+    display:flex;justify-content:space-between;align-items:center
+  }
+  .portal-bar .ext-brand{font-family:'Fraunces',serif;font-weight:600;font-size:16px;letter-spacing:-.01em}
+  .portal-bar .ext-brand span{color:var(--gold);margin-right:4px}
+  .portal-bar .ext-user{font-size:12px;display:flex;align-items:center;gap:10px}
+  .portal-content{padding:32px}
+  .portal-welcome{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;gap:24px}
+  .portal-welcome h2{font-family:'Fraunces',serif;font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+  .portal-welcome p{color:var(--ink-3);font-size:13px;margin-top:6px;max-width:520px}
+  .portal-status{
+    background:var(--paper);border-left:3px solid var(--moss);
+    padding:14px 18px;border-radius:8px;font-size:12px
+  }
+  .portal-status b{display:block;font-family:'Fraunces',serif;font-size:15px;color:var(--moss);font-weight:600;margin-bottom:3px}
+
+  .portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+  .portal-tile{
+    background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px;
+    cursor:pointer;transition:transform .2s
+  }
+  .portal-tile:hover{transform:translateY(-3px);border-color:var(--gold)}
+  .portal-tile .ti{font-size:22px;margin-bottom:10px}
+  .portal-tile h4{font-family:'Fraunces',serif;font-weight:600;font-size:15px;margin-bottom:3px}
+  .portal-tile p{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+  .portal-tile .num{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--rust);margin-top:8px}
+
+  .portal-pending{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px}
+  .portal-pending h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:14px;letter-spacing:-.015em}
+  .pending-item{
+    display:grid;grid-template-columns:auto 1fr auto;gap:14px;padding:12px 0;
+    border-bottom:1px dashed var(--line);align-items:center
+  }
+  .pending-item:last-child{border-bottom:none}
+  .pending-ico{width:34px;height:34px;border-radius:8px;background:var(--paper);display:grid;place-items:center;font-size:14px;color:var(--rust)}
+  .pending-info h5{font-size:13px;font-weight:600;margin-bottom:2px}
+  .pending-info p{font-size:11.5px;color:var(--ink-3)}
+  .pending-due{font-size:11px;color:var(--rust);font-weight:600;font-family:'JetBrains Mono',monospace;text-align:right}
+
+  /* ============ SHARED FOOTER ============ */
+  .footer-note{
+    margin-top:60px;padding:30px 38px;text-align:center;font-size:11px;color:var(--ink-3);
+    letter-spacing:.1em;text-transform:uppercase;font-weight:600;border-top:1px solid var(--line)
+  }
+  .footer-note span{color:var(--rust)}
+
+  /* responsive */
+  @media (max-width:1100px){
+    .shell{grid-template-columns:1fr}.sidebar{display:none}
+    .kpi-grid,.dash-grid,.insight-grid,.import-grid,.docs-grid,.kpi-row,.compliance-grid,.info-grid{grid-template-columns:1fr}
+    .form-grid,.form-grid.three{grid-template-columns:1fr}
+    .page-head{grid-template-columns:1fr}
+    .page-head h1{font-size:30px}
+    .sup-hero{grid-template-columns:1fr}
+    .sup-hero-right{align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ TOP BAR ============================ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">L</div>
+    <div class="brand-text">
+      <b>LOGIFI<span style="color:var(--gold)">™</span></b>
+      <small>ERP · KallpaPro</small>
+    </div>
+    <div class="crumbs" id="crumbs">
+      <span>Compras</span> / <b id="crumbCurrent">Dashboard de proveedores</b>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="ai-badge">IA · 3 alertas activas</span>
+    <button class="icon-btn"><span>🔔</span><span class="dot"></span></button>
+    <button class="icon-btn">⚙</button>
+    <span class="pill">Plan Pro · B2B</span>
+    <div class="user-chip">
+      <div class="av">CM</div>
+      <div>
+        <div style="font-weight:600">Cristhan M.</div>
+        <div style="font-size:11px;color:var(--ink-3)">Comprador · Admin</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ============================ SIDEBAR ============================ -->
+  <aside class="sidebar">
+    <div class="side-label">Operación</div>
+    <div class="side-item"><span>📊 Dashboard</span></div>
+    <div class="side-item"><span>📦 Inventario</span></div>
+    <div class="side-item active" style="background:rgba(11,27,43,.06);color:var(--ink)"><span>🛒 Compras</span><span class="badge">14</span></div>
+    <div class="side-sub">
+      <div class="side-item" onclick="goView('dashboard')"><span>Dashboard SRM</span></div>
+      <div class="side-item active" onclick="goView('list')"><span>Proveedores</span><span class="badge">847</span></div>
+      <div class="side-item" onclick="goView('360')"><span>Ficha 360°</span></div>
+      <div class="side-item" onclick="goView('onboarding')"><span>Onboarding</span></div>
+      <div class="side-item" onclick="goView('import')"><span>Import / Export</span></div>
+      <div class="side-item" onclick="goView('workflows')"><span>Workflows</span></div>
+      <div class="side-item" onclick="goView('alerts')"><span>Alertas IA</span><span class="badge crit">3</span></div>
+      <div class="side-item" onclick="goView('portal')"><span>Portal externo</span></div>
+      <div class="side-item"><span>Requerimientos</span></div>
+      <div class="side-item"><span>Órdenes de compra</span></div>
+    </div>
+    <div class="side-item"><span>💰 Ventas</span></div>
+    <div class="side-item"><span>🚚 Logística · TMS</span></div>
+    <div class="side-item"><span>📈 Financiero</span></div>
+
+    <div class="side-label" style="margin-top:24px">Configuración</div>
+    <div class="side-item"><span>🏢 Empresa &amp; sucursales</span></div>
+    <div class="side-item"><span>👥 Usuarios &amp; roles</span></div>
+    <div class="side-item"><span>⚖️ Aprobaciones</span></div>
+    <div class="side-item"><span>📋 Auditoría</span></div>
+  </aside>
+
+  <!-- ============================ MAIN CONTENT ============================ -->
+  <main class="main">
+
+    <!-- =================================================================== -->
+    <!-- VIEW 1: DASHBOARD                                                    -->
+    <!-- =================================================================== -->
+    <section class="view active" data-view="dashboard">
+      <header class="page-head">
+        <div>
+          <h1>Dashboard <em>SRM</em>.</h1>
+          <p>Visión panorámica de tu base de proveedores: salud, riesgos, oportunidades y desempeño operativo. Actualizado en tiempo real.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">📅 Último trimestre ▾</button>
+          <button class="btn btn-ghost">📥 Exportar reportes</button>
+          <button class="btn btn-primary" onclick="goView('onboarding')">+ Nuevo proveedor</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+
+        <!-- KPI ROW -->
+        <div class="kpi-grid">
+          <div class="kpi-card gold">
+            <div class="head">
+              <span class="label">Proveedores activos</span>
+              <div class="ico">🏢</div>
+            </div>
+            <div class="val">847<small>/ 1 204 totales</small></div>
+            <div class="delta up"><b>▲ 6.2%</b> vs trimestre anterior</div>
+          </div>
+          <div class="kpi-card moss">
+            <div class="head">
+              <span class="label">OTIF Promedio 12m</span>
+              <div class="ico">🎯</div>
+            </div>
+            <div class="val">89.4<small>%</small></div>
+            <div class="delta up"><b>▲ 2.1 pts</b> mejora sostenida</div>
+          </div>
+          <div class="kpi-card sky">
+            <div class="head">
+              <span class="label">Spend gestionado</span>
+              <div class="ico">💸</div>
+            </div>
+            <div class="val">$4.7M<small>USD trimestre</small></div>
+            <div class="delta up"><b>▲ 12.4%</b> + 18 nuevos contratos</div>
+          </div>
+          <div class="kpi-card rust">
+            <div class="head">
+              <span class="label">Alertas críticas</span>
+              <div class="ico">⚠</div>
+            </div>
+            <div class="val">3<small>· 12 medias</small></div>
+            <div class="delta down"><b>▼ -8</b> vs mes anterior</div>
+          </div>
+        </div>
+
+        <!-- INSIGHT IA -->
+        <div class="insight-grid">
+          <div class="insight-card dark">
+            <div class="head"><span class="tag">★ Recomendación IA</span></div>
+            <h3>Oportunidad de ahorro detectada en categoría Repuestos Industriales.</h3>
+            <p>Los precios de rodamientos SKF/NSK en el mercado regional bajaron <b style="color:var(--gold-2)">7.8%</b> respecto al promedio histórico. Tienes 14 contratos activos en esta categoría.</p>
+            <div class="num">$ 38 240</div>
+            <div class="foot" style="color:var(--gold-2)">Ahorro estimado próximo trimestre · ver detalles →</div>
+          </div>
+          <div class="insight-card">
+            <div class="head"><span class="tag" style="background:rgba(166,66,46,.15);color:var(--rust)">⚠ Riesgo</span></div>
+            <h3>Concentración alta en proveedor único.</h3>
+            <p>El <b style="color:var(--rust)">42%</b> del spend de fertilizantes depende de AgroQuímicos del Pacífico. Recomendamos diversificar con al menos 2 proveedores adicionales calificados.</p>
+            <div class="num" style="color:var(--rust)">42%</div>
+            <div class="foot" style="color:var(--rust)">Ver plan de mitigación →</div>
+          </div>
+          <div class="insight-card">
+            <div class="head"><span class="tag" style="background:rgba(63,107,79,.14);color:var(--moss)">✓ Performance</span></div>
+            <h3>14 proveedores listos para upgrade a Estratégicos.</h3>
+            <p>OTIF &gt; 95%, score &gt; 90, sin incidencias en 12 meses. Califican para condiciones preferentes y contratos marco.</p>
+            <div class="num" style="color:var(--moss)">14</div>
+            <div class="foot" style="color:var(--moss)">Iniciar workflow de upgrade →</div>
+          </div>
+        </div>
+
+        <!-- DASH GRID -->
+        <div class="dash-grid">
+          <!-- Spend chart -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Spend por categoría</h2>
+                <div class="sub">Distribución del gasto · últimos 12 meses · USD miles</div>
+              </div>
+              <button class="btn btn-ghost btn-sm">Ver detalle</button>
+            </div>
+            <div class="panel-body">
+              <div class="chart-wrap">
+                <div class="bar-grp"><div class="bar-tooltip">$ 1 240k · 26.3%</div><div class="bar" style="height:80%"></div><div class="lbl">Repuestos</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 980k · 20.8%</div><div class="bar gold" style="height:62%"></div><div class="lbl">Materiales</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 760k · 16.1%</div><div class="bar" style="height:48%"></div><div class="lbl">Logística</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 540k · 11.4%</div><div class="bar gold" style="height:34%"></div><div class="lbl">Energía</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 480k · 10.2%</div><div class="bar" style="height:30%"></div><div class="lbl">Servicios</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 360k · 7.6%</div><div class="bar gold" style="height:23%"></div><div class="lbl">Tecnología</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 240k · 5.1%</div><div class="bar" style="height:15%"></div><div class="lbl">EPP</div></div>
+                <div class="bar-grp"><div class="bar-tooltip">$ 120k · 2.5%</div><div class="bar gold" style="height:8%"></div><div class="lbl">Otros</div></div>
+              </div>
+              <div class="chart-legend">
+                <span><span class="sw"></span>Categorías directas</span>
+                <span><span class="sw g"></span>Categorías indirectas</span>
+                <span style="margin-left:auto;font-family:'JetBrains Mono',monospace">Total: <b style="color:var(--ink)">$ 4 720k</b></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Alertas recientes</h2>
+                <div class="sub">Últimas 24 horas</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="goView('alerts')">Ver todas →</button>
+            </div>
+            <div class="panel-body">
+              <div class="alert-list">
+                <div class="alert-item crit">
+                  <div class="alert-ico">⚠</div>
+                  <div class="alert-info">
+                    <h4>Posible colusión detectada</h4>
+                    <p>3 cotizaciones con margen idéntico</p>
+                  </div>
+                  <div class="alert-time">14:22</div>
+                </div>
+                <div class="alert-item warn">
+                  <div class="alert-ico">📅</div>
+                  <div class="alert-info">
+                    <h4>Vence póliza fidelidad</h4>
+                    <p>Industrial Andina S.A. · 22 días</p>
+                  </div>
+                  <div class="alert-time">11:08</div>
+                </div>
+                <div class="alert-item info">
+                  <div class="alert-ico">💡</div>
+                  <div class="alert-info">
+                    <h4>Precio bajó 7.8%</h4>
+                    <p>Rodamientos SKF · oportunidad</p>
+                  </div>
+                  <div class="alert-time">09:45</div>
+                </div>
+                <div class="alert-item ok">
+                  <div class="alert-ico">✓</div>
+                  <div class="alert-info">
+                    <h4>RUC validado en SRI</h4>
+                    <p>Repuestos del Pacífico · activo</p>
+                  </div>
+                  <div class="alert-time">08:30</div>
+                </div>
+                <div class="alert-item warn">
+                  <div class="alert-ico">📦</div>
+                  <div class="alert-info">
+                    <h4>Stock crítico detectado</h4>
+                    <p>4 ítems requieren reposición</p>
+                  </div>
+                  <div class="alert-time">07:15</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOP SUPPLIERS -->
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Top 10 proveedores · ranking ponderado</h2>
+              <div class="sub">Score combinado: OTIF + calidad + cumplimiento + precio competitivo</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm">Por categoría ▾</button>
+              <button class="btn btn-ghost btn-sm">Exportar</button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0 22px">
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th style="width:50px">#</th>
+                  <th>Proveedor</th>
+                  <th>Categorías</th>
+                  <th>Estado</th>
+                  <th class="r">OTIF 12m</th>
+                  <th class="r">Score</th>
+                  <th class="r">Spend acum.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--rust);font-style:italic">01</td>
+                  <td><div class="ts-name"><div class="ts-avatar" style="background:linear-gradient(135deg,var(--gold-3),var(--gold))">IA</div><div><b>Industrial Andina S.A.</b><div style="font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">RUC 0992145678001</div></div></div></td>
+                  <td><span class="tag-mini mining">Mining</span><span class="tag-mini critical">Crítico</span></td>
+                  <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                  <td class="r"><div class="otif-mini" style="display:inline-flex;align-items:flex-end"><div class="otif-bar"><div class="otif-fill" style="width:96%"></div></div><span style="font-family:'JetBrains Mono',monospace;font-weight:600">96.4%</span></div></td>
+                  <td class="r"><span class="score-pill high">★ 92</span></td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;font-weight:600">$ 482 100</td>
+                </tr>
+                <tr>
+                  <td style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--rust);font-style:italic">02</td>
+                  <td><div class="ts-name"><div class="ts-avatar moss">AG</div><div><b>AgroQuímicos del Pacífico</b><div style="font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">RUC 0991887423001</div></div></div></td>
+                  <td><span class="tag-mini agro">Agro</span><span class="tag-mini critical">Crítico</span></td>
+                  <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                  <td class="r"><div class="otif-mini" style="display:inline-flex;align-items:flex-end"><div class="otif-bar"><div class="otif-fill" style="width:94%"></div></div><span style="font-family:'JetBrains Mono',monospace;font-weight:600">94.1%</span></div></td>
+                  <td class="r"><span class="score-pill high">★ 88</span></td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;font-weight:600">$ 412 400</td>
+                </tr>
+                <tr>
+                  <td style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--rust);font-style:italic">03</td>
+                  <td><div class="ts-name"><div class="ts-avatar rust">CC</div><div><b>Constructora del Cotopaxi</b><div style="font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">RUC 1791234567001</div></div></div></td>
+                  <td><span class="tag-mini construction">Construcción</span></td>
+                  <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                  <td class="r"><div class="otif-mini" style="display:inline-flex;align-items:flex-end"><div class="otif-bar"><div class="otif-fill" style="width:91%"></div></div><span style="font-family:'JetBrains Mono',monospace;font-weight:600">91.2%</span></div></td>
+                  <td class="r"><span class="score-pill high">★ 86</span></td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;font-weight:600">$ 318 750</td>
+                </tr>
+                <tr>
+                  <td style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--rust);font-style:italic">04</td>
+                  <td><div class="ts-name"><div class="ts-avatar sky">FS</div><div><b>FerroSur Cía. Ltda.</b><div style="font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">RUC 0993014522001</div></div></div></td>
+                  <td><span class="tag-mini mining">Mining</span><span class="tag-mini retail">Retail</span></td>
+                  <td><span class="state-pill state-observation"><span class="d"></span>Observación</span></td>
+                  <td class="r"><div class="otif-mini" style="display:inline-flex;align-items:flex-end"><div class="otif-bar"><div class="otif-fill" style="width:84%;background:var(--gold)"></div></div><span style="font-family:'JetBrains Mono',monospace;font-weight:600">84.5%</span></div></td>
+                  <td class="r"><span class="score-pill med">★ 78</span></td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;font-weight:600">$ 287 200</td>
+                </tr>
+                <tr>
+                  <td style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--rust);font-style:italic">05</td>
+                  <td><div class="ts-name"><div class="ts-avatar plum">TS</div><div><b>Tecnologías Sierra Norte</b><div style="font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">RUC 1792003456001</div></div></div></td>
+                  <td><span class="tag-mini retail">Retail</span></td>
+                  <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                  <td class="r"><div class="otif-mini" style="display:inline-flex;align-items:flex-end"><div class="otif-bar"><div class="otif-fill" style="width:88%"></div></div><span style="font-family:'JetBrains Mono',monospace;font-weight:600">88.0%</span></div></td>
+                  <td class="r"><span class="score-pill med">★ 81</span></td>
+                  <td class="r" style="font-family:'JetBrains Mono',monospace;font-weight:600">$ 224 500</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span>Mostrando 1–5 de 847 proveedores</span>
+            <div class="pages">
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">…</button>
+              <button class="page-btn">170</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 2: SUPPLIERS LIST                                              -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="list">
+      <header class="page-head">
+        <div>
+          <h1>Proveedores <em>activos</em>.</h1>
+          <p>847 proveedores calificados · multi-categoría con tags · estado en tiempo real validado contra el SRI Ecuador.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost" onclick="goView('import')">📥 Importar</button>
+          <button class="btn btn-ghost" onclick="goView('import')">📤 Exportar</button>
+          <button class="btn btn-primary" onclick="goView('onboarding')">+ Nuevo proveedor</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+
+        <!-- Filters -->
+        <div class="filters-bar">
+          <div class="search-input">
+            <span>🔍</span>
+            <input placeholder="Buscar por nombre, RUC, categoría, ciudad…" />
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm">Estado: Todos ▾</button>
+            <button class="btn btn-ghost btn-sm">Score: Cualquiera ▾</button>
+            <button class="btn btn-ghost btn-sm">Sucursal: Todas ▾</button>
+            <button class="btn btn-ghost btn-sm">Más filtros</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+          <span style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;align-self:center;margin-right:4px">Tags activos:</span>
+          <span class="ftag tag-mining active">⛏ Mining ✕</span>
+          <span class="ftag tag-construction">🏗 Construcción</span>
+          <span class="ftag tag-agro">🌾 Agro</span>
+          <span class="ftag tag-retail">🏪 Retail</span>
+          <span class="ftag tag-critical active">🔥 Crítico ✕</span>
+          <span class="ftag">+ Agregar tag</span>
+        </div>
+
+        <!-- Bulk actions bar (initially hidden) -->
+        <div class="bulk-actions" id="bulkBar">
+          <div class="count"><span id="selCount">3</span> proveedores seleccionados</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm">Cambiar estado</button>
+            <button class="btn btn-ghost btn-sm">Asignar tags</button>
+            <button class="btn btn-ghost btn-sm">Actualizar precios</button>
+            <button class="btn btn-gold btn-sm">📤 Exportar selección</button>
+          </div>
+        </div>
+
+        <!-- Suppliers table -->
+        <div class="sup-table-wrap">
+          <table class="sup-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="selAll" onclick="toggleAll(this)" /></th>
+                <th>Proveedor</th>
+                <th>Categorías &amp; tags</th>
+                <th>Estado</th>
+                <th>Sucursal preferente</th>
+                <th class="r">OTIF</th>
+                <th class="r">Score</th>
+                <th class="r">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar gold">IA</div>
+                    <div class="sup-meta"><b onclick="goView('360')">Industrial Andina S.A.</b><span>RUC 0992145678001 · Guayaquil</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini mining">Mining</span><span class="tag-mini critical">Crítico</span><span class="tag-mini retail">Repuestos</span></td>
+                <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                <td style="font-size:12px">Quevedo · Bod. 03</td>
+                <td class="r"><span class="mono" style="font-weight:600">96.4%</span></td>
+                <td class="r"><span class="score-pill high">★ 92</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act" onclick="goView('360')">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar moss">AG</div>
+                    <div class="sup-meta"><b>AgroQuímicos del Pacífico</b><span>RUC 0991887423001 · Manta</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini agro">Agro</span><span class="tag-mini critical">Crítico</span></td>
+                <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                <td style="font-size:12px">Quevedo · Bod. 01</td>
+                <td class="r"><span class="mono" style="font-weight:600">94.1%</span></td>
+                <td class="r"><span class="score-pill high">★ 88</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar rust">CC</div>
+                    <div class="sup-meta"><b>Constructora del Cotopaxi</b><span>RUC 1791234567001 · Latacunga</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini construction">Construcción</span></td>
+                <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                <td style="font-size:12px">Quito · Bod. Norte</td>
+                <td class="r"><span class="mono" style="font-weight:600">91.2%</span></td>
+                <td class="r"><span class="score-pill high">★ 86</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar sky">FS</div>
+                    <div class="sup-meta"><b>FerroSur Cía. Ltda.</b><span>RUC 0993014522001 · Quito</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini mining">Mining</span><span class="tag-mini retail">Retail</span></td>
+                <td><span class="state-pill state-observation"><span class="d"></span>Observación</span></td>
+                <td style="font-size:12px">Quito · Bod. Sur</td>
+                <td class="r"><span class="mono" style="font-weight:600;color:#8a6f1c">84.5%</span></td>
+                <td class="r"><span class="score-pill med">★ 78</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar plum">TS</div>
+                    <div class="sup-meta"><b>Tecnologías Sierra Norte</b><span>RUC 1792003456001 · Otavalo</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini retail">Retail</span></td>
+                <td><span class="state-pill state-active"><span class="d"></span>Activo</span></td>
+                <td style="font-size:12px">Quito · Bod. Norte</td>
+                <td class="r"><span class="mono" style="font-weight:600">88.0%</span></td>
+                <td class="r"><span class="score-pill med">★ 81</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar moss">RP</div>
+                    <div class="sup-meta"><b>Repuestos Pacífico</b><span>RUC 1391557789001 · Manta</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini retail">Retail</span><span class="tag-mini mining">Mining</span></td>
+                <td><span class="state-pill state-onboarding"><span class="d"></span>Onboarding</span></td>
+                <td style="font-size:12px">—</td>
+                <td class="r"><span class="mono" style="color:var(--ink-3)">—</span></td>
+                <td class="r"><span class="score-pill med">★ 65</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar rust">DI</div>
+                    <div class="sup-meta"><b>Distribuidora Inter Sur</b><span>RUC 0992999111001 · Cuenca</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini agro">Agro</span></td>
+                <td><span class="state-pill state-suspended"><span class="d"></span>Suspendido</span></td>
+                <td style="font-size:12px">Cuenca · Bod. 01</td>
+                <td class="r"><span class="mono" style="color:var(--rust);font-weight:600">62.3%</span></td>
+                <td class="r"><span class="score-pill low">★ 48</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" class="row-chk" onclick="updSel()" /></td>
+                <td>
+                  <div class="sup-name">
+                    <div class="sup-avatar sky">SE</div>
+                    <div class="sup-meta"><b>Servicios Especiales del Sur</b><span>RUC 0790012345001 · Loja</span></div>
+                  </div>
+                </td>
+                <td><span class="tag-mini construction">Construcción</span></td>
+                <td><span class="state-pill state-prospect"><span class="d"></span>Prospecto</span></td>
+                <td style="font-size:12px">—</td>
+                <td class="r"><span class="mono" style="color:var(--ink-3)">—</span></td>
+                <td class="r"><span class="mono" style="color:var(--ink-3)">—</span></td>
+                <td class="r"><div class="row-actions"><button class="row-act">👁</button><button class="row-act">✎</button><button class="row-act">⋯</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span>Mostrando 1–8 de 847 proveedores</span>
+            <div class="pages">
+              <button class="page-btn">‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">…</button>
+              <button class="page-btn">106</button>
+              <button class="page-btn">›</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 3: SUPPLIER 360                                                -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="360">
+      <div class="sup-hero">
+        <div class="sup-hero-left">
+          <div class="sup-big-avatar">IA</div>
+          <div class="sup-hero-info">
+            <h1>Industrial <em>Andina</em> S.A.</h1>
+            <div class="sup-hero-meta">
+              <span>RUC<b>0992145678001</b></span>
+              <span>Estado<b style="color:var(--moss)">● Activo</b></span>
+              <span>Calificación<b>Estratégico</b></span>
+              <span>Desde<b>2019</b></span>
+              <span>Sucursales atendidas<b>4 / 4</b></span>
+            </div>
+            <div class="sup-hero-tags">
+              <span class="tag-mini mining">⛏ Mining</span>
+              <span class="tag-mini critical">🔥 Crítico</span>
+              <span class="tag-mini retail">📦 Repuestos</span>
+              <span class="tag-mini" style="background:var(--paper-2);color:var(--ink-3)">+ tag</span>
+            </div>
+          </div>
+        </div>
+        <div class="sup-hero-right">
+          <div class="score-circle">
+            <div class="inner">
+              <b>92</b>
+              <span>Score / 100</span>
+            </div>
+          </div>
+          <div class="sup-hero-actions">
+            <button class="btn btn-ghost btn-sm">📧 Contactar</button>
+            <button class="btn btn-ghost btn-sm">📊 Reporte</button>
+            <button class="btn btn-primary btn-sm">+ Nueva OC</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs-bar">
+        <div class="tab active" onclick="switchTab(this,'general')">General</div>
+        <div class="tab" onclick="switchTab(this,'legal')">Legal &amp; Fiscal</div>
+        <div class="tab" onclick="switchTab(this,'banking')">Bancario</div>
+        <div class="tab" onclick="switchTab(this,'docs')">Documentos <span class="badge">12</span></div>
+        <div class="tab" onclick="switchTab(this,'compliance')">Compliance &amp; Riesgo</div>
+        <div class="tab" onclick="switchTab(this,'kpis')">KPIs &amp; Scoring</div>
+        <div class="tab" onclick="switchTab(this,'history')">Historial</div>
+      </div>
+
+      <div class="body-pad">
+        <!-- GENERAL -->
+        <div class="tab-content active" data-tab="general">
+          <div class="info-grid">
+            <div class="info-card">
+              <h3>Identificación <span class="edit">✎ Editar</span></h3>
+              <div class="info-row"><span>Razón social</span><b>Industrial Andina S.A.</b></div>
+              <div class="info-row"><span>Nombre comercial</span><b>Industrial Andina</b></div>
+              <div class="info-row"><span>RUC</span><b>0992145678001</b></div>
+              <div class="info-row"><span>Tipo de contribuyente</span><b>Sociedad anónima</b></div>
+              <div class="info-row"><span>Fecha constitución</span><b>14 / 03 / 2008</b></div>
+              <div class="info-row"><span>Representante legal</span><b>Ricardo Vélez M.</b></div>
+              <div class="info-row"><span>Cédula representante</span><b>0918234567</b></div>
+            </div>
+            <div class="info-card">
+              <h3>Contacto comercial <span class="edit">✎ Editar</span></h3>
+              <div class="info-row"><span>Email principal</span><b style="font-family:'Inter Tight',sans-serif">ventas@industrialandina.com.ec</b></div>
+              <div class="info-row"><span>Teléfono</span><b>+593 4 220 1188</b></div>
+              <div class="info-row"><span>WhatsApp Business</span><b>+593 99 845 2210</b></div>
+              <div class="info-row"><span>Sitio web</span><b style="font-family:'Inter Tight',sans-serif">industrialandina.com.ec</b></div>
+              <div class="info-row"><span>Asesor asignado</span><b>Pablo Macías</b></div>
+              <div class="info-row"><span>Idiomas atención</span><b>Español, Inglés</b></div>
+            </div>
+            <div class="info-card">
+              <h3>Dirección fiscal <span class="edit">✎ Editar</span></h3>
+              <div class="info-row"><span>País</span><b>Ecuador 🇪🇨</b></div>
+              <div class="info-row"><span>Provincia</span><b>Guayas</b></div>
+              <div class="info-row"><span>Ciudad</span><b>Guayaquil</b></div>
+              <div class="info-row"><span>Dirección</span><b style="font-family:'Inter Tight',sans-serif;text-align:right">Vía Daule km 8.5, lote 14<br/>Parque Industrial El Sauce</b></div>
+              <div class="info-row"><span>Código postal</span><b>090501</b></div>
+              <div class="info-row"><span>Sucursales propias</span><b>3 (GYE · UIO · CUE)</b></div>
+            </div>
+            <div class="info-card">
+              <h3>Comercial <span class="edit">✎ Editar</span></h3>
+              <div class="info-row"><span>Moneda preferente</span><b>USD</b></div>
+              <div class="info-row"><span>Plazo de pago estándar</span><b>30 días</b></div>
+              <div class="info-row"><span>Anticipo requerido</span><b>0%</b></div>
+              <div class="info-row"><span>Lead time promedio</span><b>4 días</b></div>
+              <div class="info-row"><span>Capacidad mensual</span><b>$ 180 000 USD</b></div>
+              <div class="info-row"><span>Cupo crédito asignado</span><b>$ 80 000 USD</b></div>
+              <div class="info-row"><span>Uso actual del cupo</span><b style="color:var(--moss)">$ 24 100 (30%)</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEGAL -->
+        <div class="tab-content" data-tab="legal">
+          <div class="info-grid">
+            <div class="info-card">
+              <h3>Régimen tributario</h3>
+              <div class="info-row"><span>Régimen SRI</span><b>Régimen General</b></div>
+              <div class="info-row"><span>Obligado a llevar contabilidad</span><b>Sí</b></div>
+              <div class="info-row"><span>Agente de retención</span><b>Sí</b></div>
+              <div class="info-row"><span>Contribuyente especial</span><b>No</b></div>
+              <div class="info-row"><span>Resolución SRI</span><b>—</b></div>
+              <div class="info-row"><span>Última declaración</span><b>Abr 2026 ✓</b></div>
+              <div class="info-row"><span>Estado en SRI</span><b style="color:var(--moss)">● Activo · validado hoy</b></div>
+            </div>
+            <div class="info-card">
+              <h3>Información societaria</h3>
+              <div class="info-row"><span>Tipo de sociedad</span><b>S.A.</b></div>
+              <div class="info-row"><span>Capital social</span><b>$ 250 000 USD</b></div>
+              <div class="info-row"><span>Inscrita Reg. Mercantil</span><b>Sí · Foja 245</b></div>
+              <div class="info-row"><span>Superintendencia Compañías</span><b>Vigente · al día</b></div>
+              <div class="info-row"><span>Listas restrictivas</span><b style="color:var(--moss)">✓ No registra (PEP/OFAC)</b></div>
+              <div class="info-row"><span>Litigios activos</span><b>0</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANKING -->
+        <div class="tab-content" data-tab="banking">
+          <div class="info-grid">
+            <div class="info-card">
+              <h3>Cuenta principal</h3>
+              <div class="info-row"><span>Banco</span><b>Banco Pichincha</b></div>
+              <div class="info-row"><span>Tipo de cuenta</span><b>Corriente</b></div>
+              <div class="info-row"><span>N° de cuenta</span><b>21•••••4521</b></div>
+              <div class="info-row"><span>Titular</span><b>Industrial Andina S.A.</b></div>
+              <div class="info-row"><span>Validada</span><b style="color:var(--moss)">✓ 12·feb·2026</b></div>
+            </div>
+            <div class="info-card">
+              <h3>Cuenta secundaria</h3>
+              <div class="info-row"><span>Banco</span><b>Banco Internacional</b></div>
+              <div class="info-row"><span>Tipo de cuenta</span><b>Ahorros</b></div>
+              <div class="info-row"><span>N° de cuenta</span><b>50•••••1188</b></div>
+              <div class="info-row"><span>Titular</span><b>Industrial Andina S.A.</b></div>
+              <div class="info-row"><span>Validada</span><b style="color:var(--moss)">✓ 12·feb·2026</b></div>
+            </div>
+          </div>
+          <div class="info-card" style="margin-top:18px">
+            <h3>Métodos de pago aceptados</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+              <span class="ftag active">Transferencia</span>
+              <span class="ftag active">Cheque certificado</span>
+              <span class="ftag">Tarjeta corporativa</span>
+              <span class="ftag">Cripto USDT (en evaluación)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOCS -->
+        <div class="tab-content" data-tab="docs">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-family:'Fraunces',serif;font-weight:600;font-size:20px">12 documentos · 10 vigentes · 2 próximos a vencer</h3>
+            <button class="btn btn-primary btn-sm">+ Subir documento</button>
+          </div>
+
+          <div class="docs-grid">
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">📄</div><span class="doc-status ok">Vigente</span></div>
+              <h4>RUC actualizado</h4>
+              <p>Certificado SRI Ecuador</p>
+              <div class="doc-meta"><span>Vence</span><b>12·feb·2027</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">🏛</div><span class="doc-status ok">Vigente</span></div>
+              <h4>Certificado Sup. Compañías</h4>
+              <p>Cumplimiento societario al día</p>
+              <div class="doc-meta"><span>Vence</span><b>30·sep·2026</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">🏆</div><span class="doc-status ok">Vigente</span></div>
+              <h4>ISO 9001:2015</h4>
+              <p>Sistema de gestión de calidad</p>
+              <div class="doc-meta"><span>Vence</span><b>14·jul·2027</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">🌳</div><span class="doc-status ok">Vigente</span></div>
+              <h4>ISO 14001:2015</h4>
+              <p>Gestión ambiental</p>
+              <div class="doc-meta"><span>Vence</span><b>22·sep·2027</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">🛡</div><span class="doc-status warn">22 días</span></div>
+              <h4>Póliza de fidelidad</h4>
+              <p>Seguros Equinoccial · USD 50 000</p>
+              <div class="doc-meta"><span>Vence</span><b>24·may·2026</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">📋</div><span class="doc-status ok">Vigente</span></div>
+              <h4>Póliza de cumplimiento</h4>
+              <p>Sucre Seguros · USD 100 000</p>
+              <div class="doc-meta"><span>Vence</span><b>15·oct·2026</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">💰</div><span class="doc-status ok">Vigente</span></div>
+              <h4>Estados financieros 2025</h4>
+              <p>Auditados por Deloitte</p>
+              <div class="doc-meta"><span>Recibido</span><b>28·feb·2026</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">🆔</div><span class="doc-status ok">Vigente</span></div>
+              <h4>Cédula representante legal</h4>
+              <p>Ricardo Vélez M.</p>
+              <div class="doc-meta"><span>Vence</span><b>2031</b></div>
+            </div>
+            <div class="doc-card">
+              <div class="doc-head"><div class="doc-icon">📊</div><span class="doc-status warn">45 días</span></div>
+              <h4>Recalificación anual</h4>
+              <p>Pendiente desde 2025</p>
+              <div class="doc-meta"><span>Plazo</span><b>16·jun·2026</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPLIANCE -->
+        <div class="tab-content" data-tab="compliance">
+          <div class="compliance-grid">
+            <div>
+              <div class="info-card">
+                <h3>Validaciones obligatorias</h3>
+                <div class="compl-list">
+                  <div class="compl-item">
+                    <div class="compl-status ok">✓</div>
+                    <div class="compl-info"><h5>RUC activo en SRI</h5><p>Validado en tiempo real</p></div>
+                    <div class="compl-date">Hoy<b>02·may·2026</b></div>
+                  </div>
+                  <div class="compl-item">
+                    <div class="compl-status ok">✓</div>
+                    <div class="compl-info"><h5>Sin obligaciones tributarias pendientes</h5><p>SRI Ecuador</p></div>
+                    <div class="compl-date">Hoy<b>02·may·2026</b></div>
+                  </div>
+                  <div class="compl-item">
+                    <div class="compl-status ok">✓</div>
+                    <div class="compl-info"><h5>Lista PEP</h5><p>Personas Expuestas Políticamente</p></div>
+                    <div class="compl-date">02·abr·2026<b>Aprobado</b></div>
+                  </div>
+                  <div class="compl-item">
+                    <div class="compl-status ok">✓</div>
+                    <div class="compl-info"><h5>Lista OFAC</h5><p>Office of Foreign Assets Control</p></div>
+                    <div class="compl-date">02·abr·2026<b>Aprobado</b></div>
+                  </div>
+                  <div class="compl-item">
+                    <div class="compl-status ok">✓</div>
+                    <div class="compl-info"><h5>Listas Función Judicial</h5><p>Sin antecedentes penales</p></div>
+                    <div class="compl-date">02·abr·2026<b>Aprobado</b></div>
+                  </div>
+                  <div class="compl-item">
+                    <div class="compl-status warn">!</div>
+                    <div class="compl-info"><h5>Recalificación anual</h5><p>Vence en 45 días</p></div>
+                    <div class="compl-date">Plazo<b>16·jun·2026</b></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="risk-card">
+                <h3>Análisis de riesgo IA</h3>
+                <div class="risk-meter"><b>BAJO</b><span>· score 12 / 100</span></div>
+                <div class="risk-bars">
+                  <div class="risk-bar-row"><label>Financiero</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:18%"></div></div><b>0.18</b></div>
+                  <div class="risk-bar-row"><label>Operativo</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:8%"></div></div><b>0.08</b></div>
+                  <div class="risk-bar-row"><label>Reputacional</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:5%"></div></div><b>0.05</b></div>
+                  <div class="risk-bar-row"><label>Concentración</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:14%"></div></div><b>0.14</b></div>
+                  <div class="risk-bar-row"><label>Compliance</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:10%"></div></div><b>0.10</b></div>
+                  <div class="risk-bar-row"><label>Geopolítico</label><div class="risk-bar-track"><div class="risk-bar-fill" style="width:16%"></div></div><b>0.16</b></div>
+                </div>
+                <p style="margin-top:18px;font-size:11.5px;color:rgba(244,239,230,.7);position:relative;line-height:1.5">Modelo entrenado con 24 meses de historia operativa. Reevaluación automática cada 30 días.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIS -->
+        <div class="tab-content" data-tab="kpis">
+          <div class="kpi-row">
+            <div class="mini-kpi">
+              <label>OTIF 12 meses</label>
+              <b>96.4<small>%</small></b>
+              <div class="trend">▲ +2.1 pts</div>
+            </div>
+            <div class="mini-kpi">
+              <label>Lead time promedio</label>
+              <b>4.2<small>días</small></b>
+              <div class="trend">▲ -0.8 d</div>
+            </div>
+            <div class="mini-kpi">
+              <label>% defectos recibidos</label>
+              <b>0.8<small>%</small></b>
+              <div class="trend">▲ -0.3%</div>
+            </div>
+            <div class="mini-kpi">
+              <label>Disputas / año</label>
+              <b>2<small>de 412 OC</small></b>
+              <div class="trend">▲ -1</div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3>Score por dimensión · ponderación actual</h3>
+            <div class="risk-bars" style="margin-top:14px">
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Precio competitivo</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:88%;background:var(--ink)"></div></div><b style="color:var(--ink)">88 / 100</b></div>
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Calidad &amp; certificaciones</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:96%;background:var(--ink)"></div></div><b style="color:var(--ink)">96 / 100</b></div>
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Tiempos de entrega</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:90%;background:var(--ink)"></div></div><b style="color:var(--ink)">90 / 100</b></div>
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Cumplimiento OTIF</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:94%;background:var(--ink)"></div></div><b style="color:var(--ink)">94 / 100</b></div>
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Condiciones de pago</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:95%;background:var(--ink)"></div></div><b style="color:var(--ink)">95 / 100</b></div>
+              <div class="risk-bar-row" style="grid-template-columns:160px 1fr 60px"><label style="color:var(--ink-3)">Servicio post-venta</label><div class="risk-bar-track" style="background:var(--paper-2)"><div class="risk-bar-fill" style="width:91%;background:var(--ink)"></div></div><b style="color:var(--ink)">91 / 100</b></div>
+            </div>
+            <div style="margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;color:var(--ink-3)">Score consolidado (ponderación balanceada)</span>
+              <span style="font-family:'Fraunces',serif;font-size:42px;font-weight:600;color:var(--moss);line-height:1">★ 92<small style="font-size:14px;color:var(--ink-3);margin-left:4px;font-family:'Inter Tight',sans-serif">/ 100</small></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="tab-content" data-tab="history">
+          <div class="info-card">
+            <h3>Línea de tiempo · 30 últimos eventos</h3>
+            <div class="timeline" style="margin-top:18px">
+              <div class="tl-item moss">
+                <div class="tl-date">02·may·2026 · 09:14</div>
+                <div class="tl-title">RUC validado en SRI Ecuador</div>
+                <div class="tl-desc">Validación automática · sistema · todo correcto</div>
+              </div>
+              <div class="tl-item gold">
+                <div class="tl-date">28·abr·2026 · 16:30</div>
+                <div class="tl-title">Score recalculado · 90 → 92</div>
+                <div class="tl-desc">Mejora por 3 entregas a tiempo consecutivas. Modelo IA</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-date">22·abr·2026 · 11:08</div>
+                <div class="tl-title">OC-2026-00854 · cerrada</div>
+                <div class="tl-desc">$ 1 412 USD · entregada el 26·abr (1 día antes del SLA)</div>
+              </div>
+              <div class="tl-item moss">
+                <div class="tl-date">15·abr·2026 · 14:00</div>
+                <div class="tl-title">Recepción técnica · acta firmada</div>
+                <div class="tl-desc">Bod. Quevedo 03 · Lote OC-00821 · 0 defectos detectados</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-date">02·abr·2026 · 09:00</div>
+                <div class="tl-title">Due diligence trimestral · OK</div>
+                <div class="tl-desc">PEP, OFAC, Función Judicial · sin observaciones</div>
+              </div>
+              <div class="tl-item gold">
+                <div class="tl-date">15·mar·2026 · 10:42</div>
+                <div class="tl-title">Categoría &quot;Crítico&quot; añadida</div>
+                <div class="tl-desc">Por Cristhan M. · justificación: proveedor único en repuestos KP-2200</div>
+              </div>
+              <div class="tl-item rust">
+                <div class="tl-date">28·feb·2026 · 16:00</div>
+                <div class="tl-title">Estados financieros 2025 recibidos</div>
+                <div class="tl-desc">Auditados por Deloitte · ratio liquidez 1.84 · margen neto 8.2%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 4: ONBOARDING                                                  -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="onboarding">
+      <header class="page-head">
+        <div>
+          <h1>Onboarding de <em>nuevo</em> proveedor.</h1>
+          <p>Wizard guiado en 5 etapas. Validación automática contra SRI, listas restrictivas y due diligence completo. La IA mapea documentos y sugiere clasificación.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">💾 Guardar borrador</button>
+          <button class="btn btn-ghost">✕ Cancelar</button>
+        </div>
+      </header>
+
+      <!-- Wizard stepper -->
+      <div class="wiz-stepper">
+        <div class="wiz-step done"><div class="wiz-circle">✓</div><div class="wiz-label">Datos básicos</div></div>
+        <div class="wiz-step active"><div class="wiz-circle">02</div><div class="wiz-label">Documentación legal</div></div>
+        <div class="wiz-step"><div class="wiz-circle">03</div><div class="wiz-label">Due diligence</div></div>
+        <div class="wiz-step"><div class="wiz-circle">04</div><div class="wiz-label">Calificación</div></div>
+        <div class="wiz-step"><div class="wiz-circle">05</div><div class="wiz-label">Aprobación</div></div>
+      </div>
+
+      <div class="wiz-body">
+        <div class="wiz-form">
+          <h3>Identificación &amp; clasificación</h3>
+          <p>Comienza con el RUC. La IA validará en SRI Ecuador en tiempo real y autocompletará razón social, dirección fiscal y estado tributario. Luego confirma las categorías sugeridas.</p>
+
+          <div class="form-grid">
+            <div class="field full success">
+              <label>RUC <span class="req">*</span></label>
+              <div class="field-with-action">
+                <input value="0992145678001" />
+                <button class="field-action">Validar SRI</button>
+              </div>
+              <div class="check-msg">✓ RUC válido · contribuyente activo · al día con SRI</div>
+            </div>
+            <div class="field">
+              <label>Razón social <span class="req">*</span></label>
+              <input value="Industrial Andina S.A." />
+              <div class="helper">Auto-completado desde SRI</div>
+            </div>
+            <div class="field">
+              <label>Nombre comercial</label>
+              <input value="Industrial Andina" />
+            </div>
+            <div class="field">
+              <label>Tipo de contribuyente <span class="req">*</span></label>
+              <select><option>Sociedad anónima</option><option>Compañía limitada</option><option>Persona natural</option></select>
+            </div>
+            <div class="field">
+              <label>Régimen tributario <span class="req">*</span></label>
+              <select><option>Régimen General</option><option>RIMPE</option><option>Régimen Simplificado</option></select>
+            </div>
+            <div class="field">
+              <label>Email comercial <span class="req">*</span></label>
+              <input value="ventas@industrialandina.com.ec" />
+            </div>
+            <div class="field">
+              <label>Teléfono principal <span class="req">*</span></label>
+              <input value="+593 4 220 1188" />
+            </div>
+            <div class="field full">
+              <label>Categorías y tags <span class="req">*</span> <span class="opt">· selección múltiple</span></label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:#fff">
+                <span class="ftag tag-mining active">⛏ Mining ✕</span>
+                <span class="ftag tag-retail active">📦 Repuestos ✕</span>
+                <span class="ftag tag-critical active">🔥 Crítico ✕</span>
+                <span class="ftag" style="background:transparent;border-style:dashed">+ Agregar tag</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>País <span class="req">*</span></label>
+              <select><option>🇪🇨 Ecuador</option><option>🇨🇴 Colombia</option><option>🇵🇪 Perú</option></select>
+            </div>
+            <div class="field">
+              <label>Provincia <span class="req">*</span></label>
+              <select><option>Guayas</option><option>Pichincha</option></select>
+            </div>
+            <div class="field full">
+              <label>Dirección fiscal <span class="req">*</span></label>
+              <input value="Vía Daule km 8.5, lote 14, Parque Industrial El Sauce" />
+            </div>
+          </div>
+
+          <div class="ai-tip">
+            <div class="ico">IA</div>
+            <div>
+              <h5>Sugerencia automática de Claude</h5>
+              <p>Basado en el sector que registraste y la actividad económica del SRI (CIIU C2592), te sugiero clasificarlo también como <b style="color:var(--ink)">Repuestos Industriales</b> y <b style="color:var(--ink)">Mecanizados</b>. ¿Aplicamos estos tags adicionales?</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <button class="btn btn-ghost">← Paso anterior</button>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-ghost">Guardar borrador</button>
+            <button class="btn btn-primary">Continuar a documentación legal →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 5: IMPORT/EXPORT                                               -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="import">
+      <header class="page-head">
+        <div>
+          <h1>Centro de <em>import</em> &amp; export.</h1>
+          <p>Carga masiva de proveedores con plantillas inteligentes. La IA mapea automáticamente las columnas de tu Excel a los campos del sistema, valida cada RUC en SRI y detecta duplicados.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">📋 Historial de cargas</button>
+          <button class="btn btn-ghost">⚙ Configurar plantillas</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+        <div class="import-grid">
+          <!-- Upload zone -->
+          <div class="upload-zone">
+            <div class="upload-icon">📤</div>
+            <h3>Arrastra tu archivo aquí</h3>
+            <p>o haz clic para seleccionar desde tu equipo</p>
+            <button class="btn btn-primary">Seleccionar archivo</button>
+            <div class="upload-formats" style="margin-top:18px">
+              <span class="fmt">.xlsx</span>
+              <span class="fmt">.csv</span>
+              <span class="fmt">.tsv</span>
+              <span class="fmt">.json</span>
+            </div>
+          </div>
+
+          <!-- Templates -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Plantillas configurables</h2>
+                <div class="sub">Por categoría · descarga y completa</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="tpl-list">
+                <div class="tpl-item">
+                  <div class="tpl-icon">⛏</div>
+                  <div class="tpl-info"><h5>Proveedores · Mining</h5><p>32 campos · validación específica</p></div>
+                  <button class="btn btn-ghost btn-sm">⬇ Descargar</button>
+                </div>
+                <div class="tpl-item">
+                  <div class="tpl-icon">🏗</div>
+                  <div class="tpl-info"><h5>Proveedores · Construcción</h5><p>28 campos · pólizas obligatorias</p></div>
+                  <button class="btn btn-ghost btn-sm">⬇ Descargar</button>
+                </div>
+                <div class="tpl-item">
+                  <div class="tpl-icon">🌾</div>
+                  <div class="tpl-info"><h5>Proveedores · Agro</h5><p>30 campos · cert. fitosanitarios</p></div>
+                  <button class="btn btn-ghost btn-sm">⬇ Descargar</button>
+                </div>
+                <div class="tpl-item">
+                  <div class="tpl-icon">🏪</div>
+                  <div class="tpl-info"><h5>Proveedores · Retail</h5><p>22 campos · genérica</p></div>
+                  <button class="btn btn-ghost btn-sm">⬇ Descargar</button>
+                </div>
+                <div class="tpl-item">
+                  <div class="tpl-icon">★</div>
+                  <div class="tpl-info"><h5>Plantilla maestra · multi-categoría</h5><p>Todos los campos posibles · 56 columnas</p></div>
+                  <button class="btn btn-gold btn-sm">⬇ Descargar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI mapping result -->
+        <div class="mapping-result">
+          <div class="head">
+            <div>
+              <h3>Mapeo automático IA · proveedores_q1_2026.xlsx</h3>
+              <div style="font-size:12px;color:var(--ink-3);margin-top:3px">142 filas detectadas · 18 columnas mapeadas · 96% confianza promedio</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm">Ajustar mapeo</button>
+              <button class="btn btn-primary btn-sm">Continuar a validación →</button>
+            </div>
+          </div>
+
+          <table class="mapping-tbl">
+            <thead>
+              <tr>
+                <th>Columna del archivo</th>
+                <th></th>
+                <th>Campo LOGIFI</th>
+                <th>Confianza IA</th>
+                <th>Muestra</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="map-from">Razón_Social</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.legal_name</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:99%"></div></div>99%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">Industrial Andina S.A.</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">RUC</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.tax_id</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:100%"></div></div>100%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">0992145678001</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Nombre Comercial</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.commercial_name</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:97%"></div></div>97%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">Industrial Andina</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Mail</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.email</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:98%"></div></div>98%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">ventas@industrialandina.com.ec</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Tel</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.phone</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:96%"></div></div>96%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">+593 4 220 1188</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Dirección</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.address</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:94%"></div></div>94%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">Vía Daule km 8.5</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Categ_Sugerida</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.tags[]</span></td>
+                <td><span class="map-conf med"><div class="bar"><div class="fill" style="width:82%"></div></div>82%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">Mining; Repuestos</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Cuenta_Bco</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.bank_account</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:93%"></div></div>93%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">21********4521</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">Plazo_Días</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.payment_terms_days</span></td>
+                <td><span class="map-conf"><div class="bar"><div class="fill" style="width:95%"></div></div>95%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">30</td>
+              </tr>
+              <tr>
+                <td><span class="map-from">obs</span></td>
+                <td><span class="map-arrow">→</span></td>
+                <td><span class="map-to">supplier.internal_notes</span></td>
+                <td><span class="map-conf low"><div class="bar"><div class="fill" style="width:64%"></div></div>64%</span></td>
+                <td style="color:var(--ink-3);font-size:12px">"Excelente proveedor"</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="ai-tip" style="margin-top:18px">
+            <div class="ico">IA</div>
+            <div>
+              <h5>Análisis preliminar de Claude</h5>
+              <p>Detecté <b style="color:var(--ink)">142 filas</b>: 138 nuevos proveedores potenciales, 3 duplicados con tu base actual (mismo RUC) y 1 fila con datos incompletos (falta email). En la siguiente etapa validaré <b style="color:var(--ink)">cada RUC contra el SRI Ecuador en tiempo real</b> y aplicaré due diligence automático.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 6: WORKFLOWS                                                   -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="workflows">
+      <header class="page-head">
+        <div>
+          <h1>Workflow del <em>ciclo</em> de vida.</h1>
+          <p>Estados, transiciones y reglas configurables. Cada empresa cliente puede ajustar las etapas según sus políticas internas. Visualización del pipeline completo con número actual de proveedores en cada estado.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">⚙ Editar reglas</button>
+          <button class="btn btn-primary">+ Nueva transición</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+        <div class="wf-canvas">
+          <!-- Row 1: Main flow -->
+          <div class="wf-row">
+            <div class="wf-state start">
+              <div class="state-name">Prospecto</div>
+              <div class="state-count">42</div>
+              <div class="state-meta">Sin documentar</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-state normal">
+              <div class="state-name">Onboarding</div>
+              <div class="state-count">28</div>
+              <div class="state-meta">Subiendo docs</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-state normal">
+              <div class="state-name">Calificado</div>
+              <div class="state-count">87</div>
+              <div class="state-meta">Due diligence OK</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-state normal">
+              <div class="state-name">Aprobado</div>
+              <div class="state-count">154</div>
+              <div class="state-meta">Listo para OC</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-state normal" style="border-color:var(--moss);background:linear-gradient(180deg,#fff,rgba(63,107,79,.06))">
+              <div class="state-name">Activo</div>
+              <div class="state-count" style="color:var(--moss)">847</div>
+              <div class="state-meta">Operación normal</div>
+            </div>
+          </div>
+
+          <!-- Down arrow -->
+          <div class="wf-arrow-down" style="margin-bottom:16px"></div>
+
+          <!-- Row 2: Special states -->
+          <div class="wf-row">
+            <div class="wf-state warn">
+              <div class="state-name">Observación</div>
+              <div class="state-count" style="color:var(--gold)">12</div>
+              <div class="state-meta">SLA crítico / docs</div>
+            </div>
+            <div class="wf-arrow">↔</div>
+            <div class="wf-state crit">
+              <div class="state-name">Suspendido</div>
+              <div class="state-count">8</div>
+              <div class="state-meta">No genera nuevas OC</div>
+            </div>
+            <div class="wf-arrow">↔</div>
+            <div class="wf-state crit" style="background:linear-gradient(180deg,#fff,rgba(166,66,46,.06))">
+              <div class="state-name">Bloqueado</div>
+              <div class="state-count">3</div>
+              <div class="state-meta">Investigación abierta</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-state dead">
+              <div class="state-name">Vetado</div>
+              <div class="state-count">5</div>
+              <div class="state-meta">Lista negra · permanente</div>
+            </div>
+          </div>
+
+          <div class="wf-legend">
+            <span><span class="dot" style="background:var(--ink-3)"></span>Inicio del ciclo</span>
+            <span><span class="dot" style="background:var(--moss)"></span>Estados positivos</span>
+            <span><span class="dot" style="background:var(--gold)"></span>Estados de advertencia</span>
+            <span><span class="dot" style="background:var(--rust)"></span>Estados restrictivos</span>
+            <span><span class="dot" style="background:#000"></span>Estado terminal (lista negra)</span>
+            <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;color:var(--ink)"><b>1 186</b> proveedores en pipeline</span>
+          </div>
+        </div>
+
+        <!-- Workflow rules -->
+        <div class="panel" style="margin-top:24px">
+          <div class="panel-head">
+            <div>
+              <h2>Reglas de transición · auto-ejecución</h2>
+              <div class="sub">La IA aplica estas reglas continuamente. Configurable por empresa cliente.</div>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="alert-list" style="padding:18px 22px">
+              <div class="alert-item ok"><div class="alert-ico">⚡</div><div class="alert-info"><h4>Onboarding → Calificado · automática</h4><p>Cuando: docs legales completos + due diligence aprobado + cuenta bancaria validada</p></div><div class="alert-time">Activa</div></div>
+              <div class="alert-item info"><div class="alert-ico">⚡</div><div class="alert-info"><h4>Activo → Observación · automática</h4><p>Cuando: OTIF cae bajo 80% en 3 entregas consecutivas O documento próximo a vencer (30 días)</p></div><div class="alert-time">Activa</div></div>
+              <div class="alert-item warn"><div class="alert-ico">⚡</div><div class="alert-info"><h4>Observación → Suspendido · automática</h4><p>Cuando: documento vencido sin renovar O score &lt; 60 por 60 días</p></div><div class="alert-time">Activa</div></div>
+              <div class="alert-item crit"><div class="alert-ico">👤</div><div class="alert-info"><h4>Suspendido → Bloqueado · manual</h4><p>Requiere aprobación de Contralor + justificación documentada</p></div><div class="alert-time">Manual</div></div>
+              <div class="alert-item crit"><div class="alert-ico">⚖</div><div class="alert-info"><h4>Bloqueado → Vetado · manual + comité</h4><p>Requiere aprobación de comité de compras (3 firmas) · acción irreversible</p></div><div class="alert-time">Manual</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 7: AI ALERTS                                                   -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="alerts">
+      <header class="page-head">
+        <div>
+          <h1>Alertas <em>IA</em>.</h1>
+          <p>Stream en tiempo real de detecciones de Claude: vencimientos, oportunidades de precio, patrones anómalos, posible colusión y cambios en patrones de stock. Cada alerta es accionable.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">🔇 Silenciar</button>
+          <button class="btn btn-ghost">⚙ Configurar reglas</button>
+          <button class="btn btn-primary">📥 Exportar log</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+          <span class="ftag active">📍 Todas (47)</span>
+          <span class="ftag">⚠ Críticas (3)</span>
+          <span class="ftag">📅 Vencimientos (12)</span>
+          <span class="ftag">💰 Oportunidades (8)</span>
+          <span class="ftag">🎭 Fraude / Colusión (1)</span>
+          <span class="ftag">📦 Stock crítico (4)</span>
+          <span class="ftag">✓ Resueltas (19)</span>
+        </div>
+
+        <div class="alert-stream">
+
+          <div class="stream-item crit">
+            <div class="stream-ico">🎭</div>
+            <div class="stream-info">
+              <h4>Posible colusión detectada en RFQ-2026-00128 <span class="lvl">CRÍTICO</span></h4>
+              <p>3 cotizaciones recibidas por el ítem &quot;Rodillo Ø108×550&quot; presentan margen idéntico de 18.4% sobre costo y precios casi simétricos (variación &lt;0.6%). Patrón estadísticamente improbable bajo competencia normal.</p>
+              <p class="meta">Proveedores involucrados: FerroSur · MetalCorp Sur · Comercial Andina · IP de envío similar (3 cotizaciones desde el mismo rango)</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Hoy · 14:22</span>
+              <button class="btn btn-rust btn-sm">Investigar</button>
+              <button class="btn btn-ghost btn-sm">Marcar revisado</button>
+            </div>
+          </div>
+
+          <div class="stream-item info">
+            <div class="stream-ico">💰</div>
+            <div class="stream-info">
+              <h4>Oportunidad de ahorro · Rodamientos SKF/NSK <span class="lvl">OPORTUNIDAD</span></h4>
+              <p>Los precios regionales de la categoría bajaron 7.8% respecto al promedio histórico de 12 meses. Tienes 14 contratos activos en esta categoría con valor total de USD 491k anuales.</p>
+              <p class="meta">Ahorro proyectado: USD 38 240 · Recomendación: renegociar con tus 3 proveedores top o lanzar RFQ comparativo</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Hoy · 09:45</span>
+              <button class="btn btn-gold btn-sm">Lanzar RFQ</button>
+              <button class="btn btn-ghost btn-sm">Detalles</button>
+            </div>
+          </div>
+
+          <div class="stream-item warn">
+            <div class="stream-ico">📅</div>
+            <div class="stream-info">
+              <h4>Póliza de fidelidad próxima a vencer <span class="lvl">ATENCIÓN</span></h4>
+              <p>Industrial Andina S.A. · Póliza N°FID-2025-00891 (Seguros Equinoccial) vence en 22 días. Se requiere renovación antes del 24·may·2026 para mantener estado &quot;Activo&quot;.</p>
+              <p class="meta">Acción automática programada: aviso al proveedor en T-15 días vía portal y email. Bloqueo automático en T+1 si no renueva.</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Hoy · 11:08</span>
+              <button class="btn btn-gold btn-sm">Notificar ahora</button>
+              <button class="btn btn-ghost btn-sm">Ver doc</button>
+            </div>
+          </div>
+
+          <div class="stream-item warn">
+            <div class="stream-ico">📦</div>
+            <div class="stream-info">
+              <h4>Stock crítico detectado · acción automática sugerida <span class="lvl">STOCK</span></h4>
+              <p>4 ítems alcanzaron punto de reposición en bodega Quevedo-03. Basado en consumo histórico, recomiendo generar requerimiento por USD 1 596 con tu proveedor preferente Industrial Andina (lead time 4 días).</p>
+              <p class="meta">Items: Rodillo Ø108×550 (2 ud), Polín 3"×450 (0 ud), Empalme K-27 (1 ud), Grasa EP-2 (8 ud)</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Hoy · 07:15</span>
+              <button class="btn btn-primary btn-sm">Generar req.</button>
+              <button class="btn btn-ghost btn-sm">Ignorar</button>
+            </div>
+          </div>
+
+          <div class="stream-item info">
+            <div class="stream-ico">📈</div>
+            <div class="stream-info">
+              <h4>Predicción de precio · Cemento Portland tipo I <span class="lvl">PREDICCIÓN</span></h4>
+              <p>Modelo predictivo proyecta alza de 4.2% en los próximos 60 días por incremento de costo de combustible y restricción regulatoria en clínker importado.</p>
+              <p class="meta">Recomendación: adelantar compras programadas de Q3 a Q2 si capacidad de almacén lo permite. Ahorro estimado: USD 12 400</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Ayer · 18:30</span>
+              <button class="btn btn-primary btn-sm">Adelantar</button>
+              <button class="btn btn-ghost btn-sm">Detalles</button>
+            </div>
+          </div>
+
+          <div class="stream-item ok">
+            <div class="stream-ico">✓</div>
+            <div class="stream-info">
+              <h4>Validación SRI completada · 142 RUCs <span class="lvl">OK</span></h4>
+              <p>Importación masiva de proveedores procesada. 138 RUCs activos y al día, 3 duplicados detectados, 1 fila descartada por datos incompletos.</p>
+              <p class="meta">Archivo: proveedores_q1_2026.xlsx · Procesado por Cristhan M.</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Ayer · 16:14</span>
+              <button class="btn btn-ghost btn-sm">Ver reporte</button>
+            </div>
+          </div>
+
+          <div class="stream-item crit">
+            <div class="stream-ico">⚠</div>
+            <div class="stream-info">
+              <h4>Cambio sospechoso detectado · alerta a Contralor <span class="lvl">AUDITORÍA</span></h4>
+              <p>Usuario "amartinez" modificó la cuenta bancaria del proveedor Distribuidora Inter Sur a las 03:42 (fuera de horario laboral). Cambio fue revertido automáticamente. Aviso enviado al contralor.</p>
+              <p class="meta">IP origen: 186.45.xx.xx · Acción: bloqueada · Revisión humana requerida</p>
+            </div>
+            <div class="stream-actions">
+              <span class="stream-time">Ayer · 03:42</span>
+              <button class="btn btn-rust btn-sm">Revisar</button>
+              <button class="btn btn-ghost btn-sm">Log completo</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 8: EXTERNAL PORTAL                                             -->
+    <!-- =================================================================== -->
+    <section class="view" data-view="portal">
+      <header class="page-head">
+        <div>
+          <h1>Portal externo del <em>proveedor</em>.</h1>
+          <p>Vista previa de cómo ven el sistema tus proveedores. Acceso limitado a sus propios datos: documentos, OCs, estado de pagos, y un canal directo para subir actualizaciones sin intervención manual de tu equipo.</p>
+        </div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost">🔗 Compartir link de demo</button>
+          <button class="btn btn-ghost">⚙ Configurar permisos</button>
+        </div>
+      </header>
+
+      <div class="body-pad">
+
+        <div class="portal-mock">
+          <div class="portal-bar">
+            <div class="ext-brand"><span>L</span>LOGIFI™ · Portal Proveedores</div>
+            <div class="ext-user">👤 Industrial Andina S.A. · ricardo.velez@industrialandina.com.ec | Salir</div>
+          </div>
+
+          <div class="portal-content">
+
+            <div class="portal-welcome">
+              <div>
+                <h2>Hola, Ricardo. Buenas tardes.</h2>
+                <p>Estás operando con <b>Mining Co. del Pacífico S.A.</b> — Empresa cliente. Esta es tu vista resumen.</p>
+              </div>
+              <div class="portal-status">
+                <b>● Estado: Activo</b>
+                Score 92/100 · OTIF 96.4%<br/>
+                Última actualización hoy
+              </div>
+            </div>
+
+            <div class="portal-grid">
+              <div class="portal-tile">
+                <div class="ti">📨</div>
+                <h4>Nuevas OCs por confirmar</h4>
+                <p>Pendientes de tu aceptación</p>
+                <div class="num">2</div>
+              </div>
+              <div class="portal-tile">
+                <div class="ti">📦</div>
+                <h4>OCs en proceso</h4>
+                <p>En preparación / despacho</p>
+                <div class="num">5</div>
+              </div>
+              <div class="portal-tile">
+                <div class="ti">💸</div>
+                <h4>Facturas por cobrar</h4>
+                <p>Total pendiente: USD 18 420</p>
+                <div class="num">3</div>
+              </div>
+              <div class="portal-tile">
+                <div class="ti">📅</div>
+                <h4>Documentos a renovar</h4>
+                <p>Próximos 30 días</p>
+                <div class="num" style="color:var(--rust)">1</div>
+              </div>
+              <div class="portal-tile">
+                <div class="ti">📊</div>
+                <h4>Reporte de desempeño</h4>
+                <p>Tu OTIF y scoring mensual</p>
+                <div class="num" style="color:var(--moss)">96.4%</div>
+              </div>
+              <div class="portal-tile">
+                <div class="ti">💬</div>
+                <h4>Mensajes pendientes</h4>
+                <p>De tu comprador asignado</p>
+                <div class="num">4</div>
+              </div>
+            </div>
+
+            <div class="portal-pending">
+              <h3>Acciones pendientes que requieren tu atención</h3>
+              <div class="pending-item">
+                <div class="pending-ico">📋</div>
+                <div class="pending-info">
+                  <h5>Renovar póliza de fidelidad</h5>
+                  <p>Sube el documento renovado vía este portal · Seguros Equinoccial · USD 50 000</p>
+                </div>
+                <div class="pending-due">22 días<br/><span style="font-weight:400">24·may·2026</span></div>
+              </div>
+              <div class="pending-item">
+                <div class="pending-ico" style="color:var(--moss)">✓</div>
+                <div class="pending-info">
+                  <h5>Confirmar OC-2026-00891</h5>
+                  <p>Recibida: 01·may·2026 · monto USD 1 412 · acepta o solicita cambios</p>
+                </div>
+                <div class="pending-due" style="color:var(--moss)">SLA 24 h</div>
+              </div>
+              <div class="pending-item">
+                <div class="pending-ico">📊</div>
+                <div class="pending-info">
+                  <h5>Recalificación anual 2026</h5>
+                  <p>Completa el formulario actualizado de calificación · ~15 minutos</p>
+                </div>
+                <div class="pending-due">45 días<br/><span style="font-weight:400">16·jun·2026</span></div>
+              </div>
+              <div class="pending-item">
+                <div class="pending-ico" style="color:var(--gold)">💰</div>
+                <div class="pending-info">
+                  <h5>Programa de pronto pago habilitado</h5>
+                  <p>Califiqúica para descuento por pronto pago · ahorra hasta 2.4% en facturas USD 8 200</p>
+                </div>
+                <div class="pending-due" style="color:var(--gold)">Activable</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="margin-top:24px;padding:18px 22px;background:var(--paper);border-radius:12px;border-left:3px solid var(--gold);max-width:1100px;margin-left:auto;margin-right:auto">
+          <h4 style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin-bottom:5px">Sobre el portal externo</h4>
+          <p style="font-size:12.5px;color:var(--ink-3);line-height:1.55">El proveedor accede mediante invitación con link único. Tiene visibilidad solo de <b style="color:var(--ink)">su propia información</b> y las OCs/facturas que tu empresa le ha emitido. Toda actualización de datos pasa por aprobación de tu equipo (audit log). Modular: lo activas por suscripción del cliente y se cobra por cantidad de proveedores activos.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="footer-note">
+      LOGIFI<span>™</span> ERP · Módulo SRM · KallpaPro Soluciones Integrales · Guayaquil · EC · 2026
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // VIEW navigation
+  const crumbMap = {
+    dashboard: 'Dashboard de proveedores',
+    list: 'Lista de proveedores',
+    '360': 'Industrial Andina S.A. · 360°',
+    onboarding: 'Onboarding de proveedor',
+    import: 'Centro de import / export',
+    workflows: 'Workflow del ciclo de vida',
+    alerts: 'Bandeja de alertas IA',
+    portal: 'Portal externo del proveedor'
+  };
+  function goView(v){
+    document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+    document.querySelector(`[data-view="${v}"]`).classList.add('active');
+    document.querySelectorAll('.side-sub .side-item').forEach(i=>i.classList.remove('active'));
+    const link = document.querySelector(`.side-sub .side-item[onclick*="${v}"]`);
+    if(link) link.classList.add('active');
+    document.getElementById('crumbCurrent').textContent = crumbMap[v] || v;
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // Tabs in 360
+  function switchTab(el, key){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.querySelector(`[data-tab="${key}"]`).classList.add('active');
+  }
+
+  // Bulk selection
+  function toggleAll(cb){
+    document.querySelectorAll('.row-chk').forEach(c=>c.checked = cb.checked);
+    updSel();
+  }
+  function updSel(){
+    const n = document.querySelectorAll('.row-chk:checked').length;
+    const bar = document.getElementById('bulkBar');
+    document.getElementById('selCount').textContent = n;
+    if(n>0){
+      bar.classList.add('show');
+      document.querySelectorAll('.row-chk').forEach(c=>{
+        const tr = c.closest('tr');
+        if(c.checked) tr.classList.add('selected'); else tr.classList.remove('selected');
+      });
+    } else {
+      bar.classList.remove('show');
+      document.querySelectorAll('tr.selected').forEach(t=>t.classList.remove('selected'));
+    }
+  }
+
+  // Drag & drop visual on upload zone
+  const uz = document.querySelector('.upload-zone');
+  if(uz){
+    ['dragenter','dragover'].forEach(e=>uz.addEventListener(e,ev=>{ev.preventDefault();uz.classList.add('dragover')}));
+    ['dragleave','drop'].forEach(e=>uz.addEventListener(e,ev=>{ev.preventDefault();uz.classList.remove('dragover')}));
+  }
+</script>
+
+</body>
+</html>

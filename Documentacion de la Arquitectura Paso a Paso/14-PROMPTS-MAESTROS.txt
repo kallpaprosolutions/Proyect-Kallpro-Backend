@@ -1,0 +1,253 @@
+===============================================================================
+PROMPTS MAESTROS — KALLPAPRO ERP
+Archivo de texto plano. Copia y pega cada bloque directamente en Claude.
+===============================================================================
+
+
+================================================================================
+PROMPT MAESTRO 1 — CREAR KALLPAPRO COMPLETO DESDE CERO
+================================================================================
+
+Crea KallpaPro, un ERP multi-tenant para empresas de Ecuador.
+
+STACK:
+- Backend: Node.js 20, Express 4.x, TypeScript, Prisma 5.x, PostgreSQL 15 (Docker)
+- Frontend: React 18, TypeScript, Vite (puerto 3000), Tailwind CSS dark mode, React Router v6, Zustand, Axios
+- Auth: JWT (access 15min, refresh 7d), bcrypt, multi-tenant por companyId
+
+CREDENCIALES/CONFIGURACION:
+- DB Docker: postgresql://postgres:postgres@127.0.0.1:5432/kallpapro
+- Backend puerto: 5000
+- Frontend puerto: 3000
+- JWT_SECRET: kallpapro_super_secret_jwt_key_2024_development
+- JWT_REFRESH_SECRET: kallpapro_super_secret_refresh_key_2024_development
+- Usuario prueba: admin@gmail.com / 12345678
+
+MODULOS A CREAR:
+1. Auth: register (crea Company+User), login (JWT tokens), refresh, me
+2. Inventario: categorías, bodegas, productos, movimientos (kardex), KPIs
+   - Motor promedio ponderado: (stock*costo + qty*nuevoCosto) / (stock+qty)
+3. Compras: proveedores (con campo ruc), órdenes de compra, recepción automática
+   - OC auto-número: OC-0001
+   - receivePurchaseOrder() → registerMovement(IN) por cada ítem
+4. Financiero: facturas internas (SALES/PURCHASE), KPIs CxC/CxP
+   - Auto-número: FAC-0001 (ventas), OCP-0001 (compras)
+5. SRI Ecuador: importar facturas electrónicas PDF/XML
+   - pdf-parse@1.1.1 (NO v2.x) con nextNumber() para layout two-column
+   - parseClaveAcceso() para 49 dígitos
+   - Matching OC por RUC + tolerancia de monto
+   - Confirmar → carga inventario automáticamente
+   - Catálogos: 6 tarifas IVA + 42 retenciones
+
+PATRON DE ARCHIVOS:
+Backend: src/routes/*.routes.ts → src/controllers/*.controller.ts → src/services/*.service.ts
+Frontend: src/api/*.ts → src/pages/[modulo]/*.tsx
+
+MIDDLEWARE: exportar como `authMiddleware` (NO `authenticate`)
+
+Crear en orden: schema.prisma → index.ts → auth → inventario → compras → financiero → SRI → frontend
+
+
+================================================================================
+PROMPT MAESTRO 2 — RECREAR SOLO EL MODULO SRI ECUADOR
+================================================================================
+
+Crea el módulo de documentos SRI Ecuador para KallpaPro (ERP Express+Prisma+TypeScript).
+
+El proyecto ya existe con los módulos de auth, inventario, compras y financiero.
+El schema Prisma ya tiene los modelos SriDocument, SriDocumentItem, SriRetention, IvaTariff, RetentionCatalog.
+
+CREAR:
+
+1. src/services/sri-parser.service.ts:
+   - IMPORTANTE: pdf-parse DEBE ser v1.1.1. Usar: const pdfParse = require('pdf-parse')
+   - Los RIDE PDF tienen layout two-column. Solución: función nextNumber(label, maxChars=80)
+     que busca el label en el texto extraído y luego encuentra el primer número decimal dentro de maxChars chars
+   - parseClaveAcceso(clave49digitos): extrae fecha(0-8), tipo(8-10), RUC(10-23), ambiente(23), estab(24-27), ptoEmi(27-30), secuencial(30-39)
+   - parsePdf(buffer): usa nextNumber para subtotales e IVA
+   - parseXml(buffer): xml2js, nodo raíz factura/notaCredito/notaDebito/retencion
+     codigoPorcentaje: 0=0%, 2=12%, 5=15%, 7=8%, 4=NO_OBJETO, 6=EXENTO
+
+2. src/services/sri-document.service.ts:
+   - uploadSriDocument(): parse → check @@unique[companyId,claveAcceso] → buscar supplier por ruc → findMatchingPO → create
+   - findMatchingPO(): OC SENT/PARTIAL/DRAFT del mismo proveedor, confidence: ±1%=95, ±5%=80, ±10%=65, ±20%=50, else=40
+   - confirmSriDocument(): registerMovement(IN) por cada item PRODUCTO con productId → update OC status
+   - deleteSriDocument(): bloquear si CONFIRMED
+   - rejectSriDocument, getSriDocuments, updateSriDocument, getSriKpis, getCatalogs
+
+3. src/routes/sri-document.routes.ts:
+   - multer memoryStorage, 10MB, PDF+XML only
+   - IMPORTAR: import { authMiddleware } from '../middleware/auth.middleware'  ← nombre exacto
+   - Rutas: POST /upload, GET /, GET /kpis, GET /catalogs, GET/:id, PATCH/:id, POST/:id/confirm, POST/:id/reject, DELETE/:id
+
+4. Registrar en src/index.ts:
+   app.use('/api/sri', sriDocumentRoutes)
+
+5. prisma/seed-tax.ts: sembrar 6 tarifas IVA + 42 retenciones IR/IVA
+
+6. Frontend src/api/sriDocuments.ts + SriDocumentsPage.tsx + SriDocumentReviewPage.tsx
+
+
+================================================================================
+PROMPT MAESTRO 3 — RECREAR BACKEND COMPLETO (sin frontend)
+================================================================================
+
+Crea el backend de KallpaPro ERP.
+
+Ruta: Proyect-Kallpro-Backend/
+
+ESTRUCTURA DE CARPETAS:
+src/
+  index.ts              ← Express app, CORS, rutas
+  types/index.ts        ← AuthPayload interface + Express Request extension
+  middleware/
+    auth.middleware.ts  ← export: authMiddleware (verificar nombre exacto)
+  routes/               ← [modulo].routes.ts (5 archivos)
+  controllers/          ← [modulo].controller.ts (5 archivos)
+  services/             ← [modulo].service.ts (6 archivos incluyendo sri-parser)
+prisma/
+  schema.prisma         ← 25 modelos
+  seed-tax.ts           ← IVA + retenciones Ecuador
+
+DEPENDENCIAS:
+npm install express cors dotenv @prisma/client bcryptjs jsonwebtoken zod multer pdf-parse@1.1.1 xml2js node-cron winston
+npm install --save-dev typescript ts-node nodemon @types/node @types/express @types/cors @types/bcryptjs @types/jsonwebtoken @types/multer @types/pdf-parse @types/xml2js prisma
+
+CRITICO:
+- pdf-parse DEBE ser v1.1.1 (v2.x incompatible - exports clase no función)
+- authMiddleware (NO authenticate) en todos los routers
+- Prisma Decimal → usar new Prisma.Decimal(value) al escribir, Number(campo) al leer
+- prisma.$transaction() en registerMovement() para atomicidad
+
+CONFIG .env:
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/kallpapro
+JWT_SECRET=kallpapro_super_secret_jwt_key_2024_development
+JWT_REFRESH_SECRET=kallpapro_super_secret_refresh_key_2024_development
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+
+DESPUES DE CREAR:
+npx prisma migrate dev --name init
+npx ts-node --project tsconfig.json prisma/seed-tax.ts
+
+
+================================================================================
+PROMPT MAESTRO 4 — RECREAR FRONTEND COMPLETO (sin backend)
+================================================================================
+
+Crea el frontend de KallpaPro ERP. El backend ya existe en localhost:5000.
+
+STACK: React 18 + TypeScript + Vite (puerto 3000) + Tailwind CSS + React Router v6 + Zustand + Axios
+
+TEMA VISUAL (dark mode):
+- Fondo: bg-gray-950
+- Cards/panels: bg-gray-900
+- Inputs: bg-gray-800 border-gray-700
+- Texto: text-white / text-gray-400
+- Acentos: cyan-400 / cyan-600
+- Éxito: green-400, Error: red-400, Warning: yellow-400
+
+ARCHIVOS CLAVE:
+1. src/api/client.ts: axios baseURL='/api', interceptor agrega Bearer token, auto-refresh con localStorage refreshToken
+2. src/store/auth.store.ts: Zustand, accessToken init desde localStorage, setAuth/logout/isAuthenticated
+3. src/App.tsx: BrowserRouter + ProtectedRoute + 18 rutas
+4. src/api/{auth,inventory,purchases,financial,sriDocuments}.ts
+
+PAGINAS (15):
+Login, Register, Dashboard (5 tarjetas módulos)
+inventory/: InventoryPage (KPIs+lista), NewProductPage, ProductDetailPage (kardex), WarehousesPage, CategoriesPage
+purchases/: PurchasesPage, SuppliersPage, NewOrderPage (ítems dinámicos), OrderDetailPage
+financial/: FinancialPage (KPIs+lista+botón SRI), NewInvoicePage, InvoiceDetailPage
+financial/SriDocumentsPage: drag&drop upload + KPIs + tabla con tabs por status + eliminar
+financial/SriDocumentReviewPage: detalle emisor+comprobante+ítems editables + confirmar/rechazar/eliminar
+
+RUTAS:
+/dashboard, /inventory, /inventory/products/new, /inventory/products/:id
+/inventory/warehouses, /inventory/categories
+/purchases, /purchases/suppliers, /purchases/new, /purchases/:id
+/financial, /financial/invoices/new, /financial/invoices/:id
+/sri, /sri/:id
+
+
+================================================================================
+PROMPT MAESTRO 5 — MIGRACION A NUEVO PC
+================================================================================
+
+Migra KallpaPro a este nuevo PC Windows 11.
+
+El código fuente está disponible en: [RUTA O REPOSITORIO]
+
+PASOS EN ORDEN:
+
+PASO 1 — Preparar PostgreSQL Docker
+  Stop-Service -Name "postgresql*" -Force
+  Set-Service -Name "postgresql*" -StartupType Disabled
+  docker run --name kallpapro-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=kallpapro -p 5432:5432 -d postgres:15
+  docker ps  (verificar que está corriendo en 0.0.0.0:5432)
+
+PASO 2 — Backend
+  cd [ruta backend]
+  Crear .env con:
+    DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/kallpapro
+    JWT_SECRET=kallpapro_super_secret_jwt_key_2024_development
+    JWT_REFRESH_SECRET=kallpapro_super_secret_refresh_key_2024_development
+    PORT=5000
+    NODE_ENV=development
+    FRONTEND_URL=http://localhost:3000
+  npm install
+  npx prisma migrate deploy    ← NO usar migrate dev en migración
+  npx ts-node --project tsconfig.json prisma/seed-tax.ts
+
+PASO 3 — Frontend
+  cd [ruta frontend]
+  Crear .env con:
+    VITE_API_URL=http://localhost:5000/api
+    VITE_APP_NAME=KallpaPro
+    VITE_APP_VERSION=0.1.0
+  npm install
+
+PASO 4 — Iniciar (3 terminales)
+  Terminal 1: docker start kallpapro-db
+  Terminal 2: cd [backend] && npm run dev   (esperar "KallpaPro Backend running on port 5000")
+  Terminal 3: cd [frontend] && npm run dev  (esperar "Local: http://localhost:3000")
+
+PASO 5 — Verificar
+  Abrir http://localhost:3000
+  Login: admin@gmail.com / 12345678
+  Navegar a Inventario, Compras, Financiero, SRI para verificar módulos
+
+
+================================================================================
+PROMPT MAESTRO 6 — AGREGAR NUEVO MODULO AL ERP
+================================================================================
+
+Agrega el módulo de VENTAS a KallpaPro ERP.
+
+El proyecto ya tiene: Auth, Inventario, Compras, Financiero, SRI.
+Seguir exactamente el mismo patrón de arquitectura:
+
+BACKEND:
+1. Agregar modelos Prisma (Customer, Quote, SalesOrder, SalesOrderItem)
+2. Crear migración: npx prisma migrate dev --name add_sales_module
+3. src/services/sales.service.ts — lógica de negocio
+4. src/controllers/sales.controller.ts
+5. src/routes/sales.routes.ts — con authMiddleware
+6. Registrar en src/index.ts: app.use('/api/sales', salesRoutes)
+
+FRONTEND:
+1. src/api/sales.ts — funciones Axios
+2. src/pages/sales/ — páginas del módulo
+3. Agregar rutas en src/App.tsx
+4. Activar módulo en Dashboard.tsx: active: true, path: '/sales'
+
+PATRON DE ENDPOINTS:
+GET  /api/sales/customers       — listar clientes
+POST /api/sales/customers       — crear cliente
+GET  /api/sales/quotes          — listar cotizaciones
+POST /api/sales/quotes          — crear cotización
+GET  /api/sales/quotes/:id      — detalle
+POST /api/sales/quotes/:id/approve — aprobar → crea SalesOrder
+POST /api/sales/orders/:id/fulfill — despachar → genera OUT en inventario
+
+Todo con multi-tenancy: where: { companyId: req.user.companyId }

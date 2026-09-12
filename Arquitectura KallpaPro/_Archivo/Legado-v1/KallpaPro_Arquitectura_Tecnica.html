@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KallpaPro — Arquitectura Técnica Unificada</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0D1F6E; --navy2:#1A3DB5; --cyan:#00B8E0; --cyan2:#0086A8;
+  --bg:#060D2E; --bg2:#0A1340; --bg3:#0F1A55;
+  --surface:rgba(255,255,255,.04); --surface2:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08); --border2:rgba(0,184,224,.25);
+  --text:#E8EEFF; --text2:rgba(232,238,255,.65); --text3:rgba(232,238,255,.4);
+  --cyan-glow:0 0 30px rgba(0,184,224,.3);
+  --navy-glow:0 0 30px rgba(26,61,181,.4);
+  --green:#10B981; --green2:rgba(16,185,129,.15);
+  --amber:#F59E0B; --amber2:rgba(245,158,11,.15);
+  --red:#EF4444; --red2:rgba(239,68,68,.15);
+  --purple:#8B5CF6; --purple2:rgba(139,92,246,.15);
+  --r:8px; --rl:14px; --rxl:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+::selection{background:rgba(0,184,224,.3);color:#fff}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* NOISE TEXTURE */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+/* HEADER */
+.header{position:sticky;top:0;z-index:100;background:rgba(6,13,46,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 2rem}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:1rem;height:60px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy2),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:.3px}
+.logo-tag{font-size:9px;color:var(--text3);margin-top:1px;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.doc-badge{background:rgba(0,184,224,.12);border:1px solid rgba(0,184,224,.25);color:var(--cyan);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-left:auto;letter-spacing:.04em;font-family:'JetBrains Mono',monospace}
+.nav-pills{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nav-pills::-webkit-scrollbar{display:none}
+.nav-pill{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:.15s;white-space:nowrap;border:none;background:none;font-family:'Sora',sans-serif}
+.nav-pill:hover{color:var(--text);background:var(--surface)}
+.nav-pill.active{background:rgba(0,184,224,.15);color:var(--cyan);border:1px solid rgba(0,184,224,.2)}
+
+/* HERO */
+.hero{padding:5rem 2rem 4rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(26,61,181,.15),transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-100px;left:10%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,224,.08),transparent 70%);pointer-events:none}
+.hero-inner{max-width:1400px;margin:0 auto;position:relative;z-index:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.5rem;font-family:'JetBrains Mono',monospace}
+.hero-eyebrow::before{content:'';width:20px;height:1px;background:var(--cyan)}
+.hero-title{font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-.02em}
+.hero-title span{color:var(--cyan)}
+.hero-meta{display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:2rem}
+.meta-item{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.meta-item strong{display:block;font-size:13px;color:var(--text2);margin-bottom:2px;font-family:'Sora',sans-serif;font-weight:600}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem}
+.hero-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem;position:relative;overflow:hidden;transition:.2s}
+.hero-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.hero-stat.bl::before{background:var(--navy2)}
+.hero-stat.cy::before{background:var(--cyan)}
+.hero-stat.gn::before{background:var(--green)}
+.hero-stat.pu::before{background:var(--purple)}
+.hs-val{font-size:26px;font-weight:800;display:block;line-height:1;margin-bottom:4px}
+.hs-val.cy{color:var(--cyan)}.hs-val.gn{color:var(--green)}.hs-val.pu{color:var(--purple)}
+.hs-lbl{font-size:11px;color:var(--text3);line-height:1.4}
+
+/* MAIN */
+.main{max-width:1400px;margin:0 auto;padding:0 2rem 4rem}
+.section{margin-bottom:5rem;scroll-margin-top:80px}
+.sec-header{display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:2.5rem}
+.sec-num{font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.12em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding-top:6px;flex-shrink:0;min-width:32px}
+.sec-title{font-size:26px;font-weight:800;letter-spacing:-.01em;margin-bottom:.5rem}
+.sec-sub{font-size:13px;color:var(--text3);max-width:600px}
+.sec-line{width:40px;height:2px;background:linear-gradient(90deg,var(--navy2),var(--cyan));border-radius:1px;margin-bottom:1.5rem}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;position:relative;overflow:hidden;transition:.2s}
+.card:hover{border-color:var(--border2);background:var(--surface2)}
+.card.glow:hover{box-shadow:0 0 0 1px rgba(0,184,224,.2),0 8px 32px rgba(0,0,0,.3)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.card-icon.cy{background:rgba(0,184,224,.1);border:1px solid rgba(0,184,224,.2)}
+.card-icon.gn{background:var(--green2);border:1px solid rgba(16,185,129,.2)}
+.card-icon.am{background:var(--amber2);border:1px solid rgba(245,158,11,.2)}
+.card-icon.pu{background:var(--purple2);border:1px solid rgba(139,92,246,.2)}
+.card-icon.rd{background:var(--red2);border:1px solid rgba(239,68,68,.2)}
+.card-icon.nv{background:rgba(26,61,181,.2);border:1px solid rgba(26,61,181,.3)}
+.card-title{font-size:15px;font-weight:700;margin-bottom:.4rem}
+.card-sub{font-size:12px;color:var(--text3);line-height:1.6}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.04em;text-transform:uppercase}
+.badge.cy{background:rgba(0,184,224,.15);color:var(--cyan);border:1px solid rgba(0,184,224,.2)}
+.badge.gn{background:var(--green2);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.badge.am{background:var(--amber2);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.badge.pu{background:var(--purple2);color:var(--purple);border:1px solid rgba(139,92,246,.2)}
+.badge.rd{background:var(--red2);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.badge.nv{background:rgba(26,61,181,.2);color:#7B9FFF;border:1px solid rgba(26,61,181,.3)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+hr.dv{border:none;border-top:1px solid var(--border);margin:1.25rem 0}
+
+/* CODE BLOCKS */
+.code-block{background:#020712;border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;position:relative}
+.code-block .cb-label{position:absolute;top:8px;right:10px;font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+.kw{color:#7B9FFF}.cl{color:#F9A8D4}.fn{color:#67E8F9}.str{color:#86EFAC}.cm{color:rgba(255,255,255,.3)}.op{color:var(--cyan)}.nm{color:#FDE68A}
+
+/* TECH PILLS */
+.tech-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:500;color:var(--text2);transition:.15s;white-space:nowrap}
+.tech-pill:hover{border-color:var(--border2);color:var(--text)}
+.tech-pill .tp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tech-pills-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:.75rem}
+
+/* ARCHITECTURE DIAGRAM */
+.arch-diagram{background:#020712;border:1px solid rgba(255,255,255,.06);border-radius:var(--rl);padding:2rem;overflow:hidden;position:relative}
+.arch-layer{margin-bottom:1.5rem}
+.arch-layer-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:.6rem}
+.arch-layer-items{display:flex;gap:.6rem;flex-wrap:wrap}
+.arch-item{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:12px;font-weight:500;transition:.15s}
+.arch-item:hover{border-color:var(--border2);background:var(--surface2)}
+.arch-item .ai-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.arch-arrow{text-align:center;margin:.5rem 0;color:var(--text3);font-size:18px}
+
+/* FLOW DIAGRAM */
+.flow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+.flow-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;font-size:12px;font-weight:500;white-space:nowrap;transition:.15s}
+.flow-step:hover{border-color:var(--border2)}
+.flow-arrow{color:var(--text3);font-size:18px;flex-shrink:0}
+.flow-step.cy{background:rgba(0,184,224,.08);border-color:rgba(0,184,224,.2);color:var(--cyan)}
+.flow-step.gn{background:var(--green2);border-color:rgba(16,185,129,.2);color:var(--green)}
+.flow-step.am{background:var(--amber2);border-color:rgba(245,158,11,.2);color:var(--amber)}
+.flow-step.pu{background:var(--purple2);border-color:rgba(139,92,246,.2);color:var(--purple)}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:2rem}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:1.5rem}
+.tl-dot{position:absolute;left:-2rem;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg);z-index:1}
+.tl-dot.cy{background:var(--cyan);box-shadow:0 0 12px rgba(0,184,224,.4)}
+.tl-dot.gn{background:var(--green);box-shadow:0 0 12px rgba(16,185,129,.4)}
+.tl-dot.pu{background:var(--purple);box-shadow:0 0 12px rgba(139,92,246,.4)}
+.tl-dot.am{background:var(--amber);box-shadow:0 0 12px rgba(245,158,11,.4)}
+.tl-phase{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem}
+.tl-title{font-size:15px;font-weight:700;margin-bottom:.4rem}
+.tl-desc{font-size:12.5px;color:var(--text3);line-height:1.6}
+.tl-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:.6rem}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);font-family:'JetBrains Mono',monospace}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2);vertical-align:middle}
+td:first-child{font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface)}
+
+/* RISK MATRIX */
+.risk-item{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem;border-radius:var(--r);border:1px solid var(--border);margin-bottom:.5rem;transition:.15s}
+.risk-item:hover{border-color:var(--border2);background:var(--surface)}
+.risk-level{width:60px;font-size:9px;font-weight:700;text-align:center;padding:3px 6px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;margin-top:2px}
+.risk-level.hi{background:var(--red2);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.risk-level.md{background:var(--amber2);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.risk-level.lo{background:var(--green2);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.risk-title{font-size:13px;font-weight:600;margin-bottom:.2rem}
+.risk-mit{font-size:11.5px;color:var(--text3);line-height:1.5}
+
+/* METRIC CARDS */
+.metric{text-align:center;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.metric-val{font-size:22px;font-weight:800;display:block;line-height:1;margin-bottom:4px}
+.metric-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+
+/* PHASE CARDS */
+.phase{border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.phase-header{padding:.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.phase-body{padding:1.25rem;border-top:1px solid var(--border)}
+.phase-check{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);margin-bottom:.4rem}
+.phase-check::before{content:'▸';color:var(--cyan);font-size:10px;flex-shrink:0}
+
+/* EXEC SUMMARY */
+.exec-box{background:linear-gradient(135deg,rgba(26,61,181,.15),rgba(0,184,224,.05));border:1px solid rgba(0,184,224,.2);border-radius:var(--rxl);padding:2rem;position:relative;overflow:hidden}
+.exec-box::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,224,.15),transparent 70%);pointer-events:none}
+.exec-highlight{background:rgba(0,184,224,.08);border-left:3px solid var(--cyan);padding:.75rem 1rem;border-radius:0 var(--r) var(--r) 0;font-size:13px;color:var(--text2);margin:.75rem 0;line-height:1.6}
+p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:.75rem}
+p:last-child{margin-bottom:0}
+h4{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem;margin-top:1rem}
+h4:first-child{margin-top:0}
+ul,ol{padding-left:1.2rem;margin-bottom:.75rem}
+li{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:2px}
+strong{color:var(--text);font-weight:600}
+
+/* ANNOTATIONS */
+.anno{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+
+/* SCROLLSPY ACTIVE */
+.section-active .sec-num{color:var(--cyan)}
+
+@media(max-width:768px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .hero-stats{grid-template-columns:1fr 1fr}
+  .arch-layer-items{flex-direction:column}
+  .flow{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">KP</div>
+      <div>
+        <div class="logo-name">KallpaPro</div>
+        <div class="logo-tag">Plataforma Logística Unificada</div>
+      </div>
+    </div>
+    <div class="nav-pills" id="nav-pills">
+      <button class="nav-pill active" onclick="scrollTo('s1',this)">Resumen</button>
+      <button class="nav-pill" onclick="scrollTo('s2',this)">Arquitectura</button>
+      <button class="nav-pill" onclick="scrollTo('s3',this)">Stack</button>
+      <button class="nav-pill" onclick="scrollTo('s4',this)">IA</button>
+      <button class="nav-pill" onclick="scrollTo('s5',this)">Tiempo Real</button>
+      <button class="nav-pill" onclick="scrollTo('s6',this)">Integraciones</button>
+      <button class="nav-pill" onclick="scrollTo('s7',this)">Multi-tenant</button>
+      <button class="nav-pill" onclick="scrollTo('s8',this)">UX/UI</button>
+      <button class="nav-pill" onclick="scrollTo('s9',this)">Seguridad</button>
+      <button class="nav-pill" onclick="scrollTo('s10',this)">Escalabilidad</button>
+      <button class="nav-pill" onclick="scrollTo('s11',this)">Riesgos</button>
+      <button class="nav-pill" onclick="scrollTo('s12',this)">Roadmap</button>
+    </div>
+    <div class="doc-badge">v2.0 · TDD Arquitectura</div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Technical Design Document</div>
+    <h1 class="hero-title">
+      KallpaPro Unified<br>
+      <span>SaaS Platform</span>
+    </h1>
+    <div class="hero-meta">
+      <div class="meta-item"><strong>Tipo de documento</strong>Technical Architecture & Design</div>
+      <div class="meta-item"><strong>Versión</strong>2.0 — Unificación completa</div>
+      <div class="meta-item"><strong>Mercado objetivo</strong>Ecuador · B2B Logística</div>
+      <div class="meta-item"><strong>Fuentes analizadas</strong>KallpaPro Interactive + KallpaPro Secure</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat bl"><span class="hs-val">12</span><span class="hs-lbl">Módulos integrados en la plataforma unificada</span></div>
+      <div class="hero-stat cy"><span class="hs-val cy">&lt;50ms</span><span class="hs-lbl">Latencia objetivo para operaciones críticas en tiempo real</span></div>
+      <div class="hero-stat gn"><span class="hs-val gn">99.9%</span><span class="hs-lbl">SLA de uptime objetivo con arquitectura multi-AZ</span></div>
+      <div class="hero-stat pu"><span class="hs-val pu">∞</span><span class="hs-lbl">Tenants escalables con arquitectura multi-tenant nativa</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ============================== S1: EXECUTIVE SUMMARY ============================== -->
+<div class="section" id="s1">
+  <div class="sec-header">
+    <div class="sec-num">01</div>
+    <div>
+      <div class="sec-title">Resumen Ejecutivo</div>
+      <div class="sec-sub">Visión estratégica y propuesta de valor de la plataforma unificada</div>
+    </div>
+  </div>
+
+  <div class="exec-box" style="margin-bottom:1.5rem">
+    <h4 style="font-size:18px;margin-bottom:.75rem">El problema actual</h4>
+    <p>KallpaPro opera hoy con <strong>dos sistemas paralelos desconectados</strong>: KallpaPro Interactive (UX enriquecida, asistente IA, flujos de solicitud y reportes) y KallpaPro Secure (login por roles, gestión de usuarios, seguridad avanzada). Esta fragmentación crea fricciones de UX, duplicación de lógica de negocio, mantenimiento doble del código base, y riesgo de inconsistencia de datos entre los dos sistemas.</p>
+    <div class="exec-highlight">La unificación no es solo técnica: es estratégica. La plataforma combinada transforma a KallpaPro de "dos herramientas" a un verdadero <strong>SaaS logístico enterprise</strong> competitivo con Nowports, Flexport y los players regionales emergentes en LATAM.</div>
+    <h4 style="font-size:16px;margin-top:1rem">La solución propuesta</h4>
+    <p>Una plataforma única denominada <strong>LOGIFI™ Platform v2.0</strong> construida sobre arquitectura híbrida (monolito modular + microservicios selectivos), desplegada en la nube con capacidades de multi-tenancy, IA contextual con Claude, rastreo GPS en tiempo real, y gestión granular de usuarios y dominios por tenant.</p>
+  </div>
+
+  <div class="grid3">
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon cy">🔗</div><div class="badge cy">Core</div></div>
+      <div class="card-title">Unificación total</div>
+      <div class="card-sub">Una sola codebase, un solo estado de autenticación, un solo flujo de datos. Elimina la duplicación y los bugs por inconsistencia entre sistemas.</div>
+    </div>
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon gn">🤖</div><div class="badge gn">IA</div></div>
+      <div class="card-title">IA como co-piloto operativo</div>
+      <div class="card-sub">Claude integrado en cada módulo con contexto completo de la plataforma. No un chatbot genérico: un analista logístico que conoce cada pedido, proveedor y ruta.</div>
+    </div>
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon pu">📡</div><div class="badge pu">Real-time</div></div>
+      <div class="card-title">Tiempo real nativo</div>
+      <div class="card-sub">WebSockets + Server-Sent Events para tracking GPS, alertas, y actualizaciones de dashboard. Arquitectura event-driven con Apache Kafka para escalar sin límite.</div>
+    </div>
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon am">🏢</div><div class="badge am">SaaS</div></div>
+      <div class="card-title">Multi-tenancy nativa</div>
+      <div class="card-sub">Aislamiento de datos por tenant, dominios personalizados configurables por admin, y gestión granular de roles y permisos (RBAC + ABAC).</div>
+    </div>
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon rd">🔒</div><div class="badge rd">Security</div></div>
+      <div class="card-title">Seguridad enterprise</div>
+      <div class="card-sub">MFA obligatorio para admins, TLS 1.3, cifrado AES-256 en reposo, auditoría completa de cada acción, y SIEM integrado para detección de amenazas.</div>
+    </div>
+    <div class="card glow">
+      <div class="card-top"><div class="card-icon nv">🔌</div><div class="badge nv">Open API</div></div>
+      <div class="card-title">Framework de integración</div>
+      <div class="card-sub">API REST + GraphQL pública documentada. Webhooks para eventos. Conectores nativos para GPS (Geotab/Mapon), ERPs (SAP, Odoo), y facturación SRI Ecuador.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S2: ARCHITECTURE ============================== -->
+<div class="section" id="s2">
+  <div class="sec-header">
+    <div class="sec-num">02</div>
+    <div>
+      <div class="sec-title">Arquitectura del Sistema</div>
+      <div class="sec-sub">Diseño modular escalable — Híbrido: monolito modular + microservicios selectivos</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h4>Decisión arquitectónica: ¿Por qué híbrido?</h4>
+    <p>Los microservicios puros son prematuros para el estado actual de KallpaPro (complejidad operacional sin beneficio real). Un monolito puro limita la escala independiente de módulos críticos como IA y tracking. La arquitectura <strong>híbrida (Modular Monolith + Microservices selectivos)</strong> permite comenzar con velocidad de desarrollo y escalar los módulos de mayor demanda de forma independiente.</p>
+    <div class="grid2" style="margin-top:1rem">
+      <div style="background:rgba(0,184,224,.05);border:1px solid rgba(0,184,224,.15);border-radius:var(--r);padding:1rem">
+        <div class="badge cy" style="margin-bottom:.75rem">Monolito modular</div>
+        <ul><li>Core business logic (pedidos, proveedores, usuarios)</li><li>API Gateway unificado</li><li>Base de datos principal PostgreSQL</li><li>Autenticación y autorización</li><li>Módulo de reportes y POV</li></ul>
+      </div>
+      <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--r);padding:1rem">
+        <div class="badge pu" style="margin-bottom:.75rem">Microservicios selectivos</div>
+        <ul><li><strong>Tracking Service</strong>: GPS, WebSockets, alta frecuencia</li><li><strong>AI Service</strong>: Claude API proxy, rate limiting, caching</li><li><strong>Notification Service</strong>: WhatsApp, email, push</li><li><strong>Integration Service</strong>: ERP connectors, GPS APIs, SRI</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-diagram">
+    <div class="code-block" style="border:none;padding:0;background:transparent">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:1rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em">KALLPAPRO LOGIFI™ PLATFORM v2.0 — ARCHITECTURE OVERVIEW</div>
+    </div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">⬆ Cliente / Edge Layer</div>
+      <div class="arch-layer-items">
+        <div class="arch-item"><div class="ai-dot" style="background:var(--cyan)"></div>Web App (Next.js 14)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--cyan)"></div>Mobile App (React Native)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--cyan)"></div>Driver App (PWA)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--cyan)"></div>Cloudflare CDN + WAF</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--cyan)"></div>Custom Domains (per tenant)</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ HTTPS + WSS</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">⬆ API Gateway Layer</div>
+      <div class="arch-layer-items">
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>Kong Gateway (Auth + Rate Limit)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>JWT Validation</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>Tenant Routing</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>GraphQL Subscriptions</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>REST API v2</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ Internal gRPC + REST</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">⬆ Application Services Layer</div>
+      <div class="arch-layer-items">
+        <div class="arch-item"><div class="ai-dot" style="background:var(--navy2)"></div>Core API (Node.js/Fastify)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--green)"></div>Tracking µService</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--purple)"></div>AI µService (Claude proxy)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>Notification µService</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--red)"></div>Integration µService</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ Event Bus + Direct DB</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">⬆ Data Layer</div>
+      <div class="arch-layer-items">
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>PostgreSQL (primary)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>TimescaleDB (GPS/time-series)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>Redis (cache + sessions)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>Apache Kafka (event bus)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--amber)"></div>S3/R2 (files + PODs)</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ Secure API Calls</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">⬆ External Services Layer</div>
+      <div class="arch-layer-items">
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>Claude API (Anthropic)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>GPS: Geotab / Mapon API</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>WhatsApp Business API</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>SRI Ecuador (facturación)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>Kushki / PaymentEZ (pagos)</div>
+        <div class="arch-item"><div class="ai-dot" style="background:var(--text3)"></div>SendGrid (email)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:1rem">
+    <div class="card">
+      <h4>Diseño de base de datos multi-tenant</h4>
+      <div class="code-block">
+<span class="cm">-- Schema por tenant (Row-Level Security)</span>
+<span class="kw">CREATE TABLE</span> <span class="cl">tenants</span> (
+  id <span class="op">UUID PRIMARY KEY</span>,
+  slug <span class="op">VARCHAR(64) UNIQUE</span>,
+  domain <span class="op">VARCHAR(255)</span>,
+  plan <span class="nm">ENUM</span>(<span class="str">'starter','pro','enterprise'</span>),
+  config <span class="op">JSONB</span>,
+  created_at <span class="op">TIMESTAMPTZ</span>
+);
+
+<span class="kw">ALTER TABLE</span> <span class="cl">orders</span>
+  <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="kw">CREATE POLICY</span> tenant_isolation <span class="kw">ON</span> orders
+  <span class="kw">USING</span> (tenant_id = <span class="fn">current_setting</span>(
+    <span class="str">'app.current_tenant'</span>)::<span class="op">UUID</span>);
+      </div>
+    </div>
+    <div class="card">
+      <h4>Flujo de datos principal</h4>
+      <div class="flow" style="flex-direction:column;align-items:stretch">
+        <div class="flow-step cy">1. Cliente hace request → Cloudflare WAF</div>
+        <div style="text-align:center;color:var(--text3)">↓</div>
+        <div class="flow-step pu">2. Kong Gateway: auth JWT + tenant_id injection</div>
+        <div style="text-align:center;color:var(--text3)">↓</div>
+        <div class="flow-step" style="background:rgba(26,61,181,.1);border-color:rgba(26,61,181,.2)">3. Core API: business logic + RLS activado</div>
+        <div style="text-align:center;color:var(--text3)">↓</div>
+        <div class="flow-step am">4. Kafka event emitido → Tracking + Notifs</div>
+        <div style="text-align:center;color:var(--text3)">↓</div>
+        <div class="flow-step gn">5. WebSocket push → Dashboard en tiempo real</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S3: TECH STACK ============================== -->
+<div class="section" id="s3">
+  <div class="sec-header">
+    <div class="sec-num">03</div>
+    <div>
+      <div class="sec-title">Technology Stack</div>
+      <div class="sec-sub">Selección técnica justificada para el contexto de KallpaPro en Ecuador</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-top"><div class="card-icon cy">🖥️</div><div class="badge cy">Frontend</div></div>
+      <div class="card-title">Capa de presentación</div>
+      <div class="tech-pills-wrap">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Next.js 14 (App Router)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>React 18 + TypeScript</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Tailwind CSS + shadcn/ui</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Zustand (state management)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>TanStack Query v5</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Socket.io-client</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>MapLibre GL JS (mapas)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Recharts / Visx</div>
+      </div>
+      <div style="margin-top:.75rem;font-size:11.5px;color:var(--text3)"><strong style="color:var(--text2)">Por qué Next.js 14:</strong> SSR para SEO en landing, RSC para performance, App Router para layouts por tenant, API routes para BFF pattern.</div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon gn">⚙️</div><div class="badge gn">Backend</div></div>
+      <div class="card-title">Capa de aplicación</div>
+      <div class="tech-pills-wrap">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Node.js 20 LTS + Fastify 4</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>TypeScript estricto</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Prisma ORM</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>GraphQL (Pothos schema)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Bull MQ (job queues)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Zod (validation)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>JWT + RefreshTokens</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>OpenTelemetry</div>
+      </div>
+      <div style="margin-top:.75rem;font-size:11.5px;color:var(--text3)"><strong style="color:var(--text2)">Por qué Fastify:</strong> 3x más rápido que Express, TypeScript nativo, schema validation built-in, plugin system escalable.</div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon am">🗄️</div><div class="badge am">Datos</div></div>
+      <div class="card-title">Capa de persistencia</div>
+      <div class="tech-pills-wrap">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>PostgreSQL 16 (primary)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>TimescaleDB (GPS time-series)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Redis 7 (cache + pub/sub)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Apache Kafka 3.x</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Cloudflare R2 (archivos, PODs)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Elasticsearch (búsqueda avanzada)</div>
+      </div>
+      <div style="margin-top:.75rem;font-size:11.5px;color:var(--text3)"><strong style="color:var(--text2)">Por qué TimescaleDB:</strong> Extensión de Postgres para time-series. Los datos GPS (posición cada 30s × 100 vehículos) generan ~17M registros/mes. TimescaleDB los comprime 20x automáticamente.</div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon pu">☁️</div><div class="badge pu">Infra</div></div>
+      <div class="card-title">Infraestructura y DevOps</div>
+      <div class="tech-pills-wrap">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>AWS (us-east-1 + sa-east-1)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Kubernetes (EKS)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Terraform (IaC)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Docker + GitHub Actions</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Cloudflare (CDN + DNS + WAF)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Grafana + Prometheus</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Sentry (error tracking)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Vault (secrets management)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Análisis de costos estimados — infraestructura mensual (Año 1)</h4>
+    <div class="tbl-wrap">
+    <table>
+      <tr><th>Servicio</th><th>Configuración inicial</th><th>Costo/mes (USD)</th><th>Escala a</th></tr>
+      <tr><td>AWS EKS (3 nodos t3.medium)</td><td>Kubernetes cluster principal</td><td>$210</td><td>Horizontal autoscaling</td></tr>
+      <tr><td>RDS PostgreSQL + TimescaleDB</td><td>db.t3.medium, Multi-AZ</td><td>$180</td><td>Read replicas on demand</td></tr>
+      <tr><td>ElastiCache Redis (r7g.large)</td><td>Cluster mode 3 shards</td><td>$120</td><td>Add shards automáticamente</td></tr>
+      <tr><td>MSK Kafka (3 brokers)</td><td>kafka.t3.small</td><td>$140</td><td>Broker size up</td></tr>
+      <tr><td>Cloudflare (Pro + R2)</td><td>WAF + CDN + Storage</td><td>$60</td><td>Pay-per-use</td></tr>
+      <tr><td>Claude API (Anthropic)</td><td>claude-3.5-sonnet ~50K tokens/día</td><td>$90</td><td>Per-token billing</td></tr>
+      <tr><td>Otros (DNS, email, monitoring)</td><td>Datadog, Sentry, SendGrid</td><td>$80</td><td>Fixed + usage</td></tr>
+      <tr style="background:rgba(0,184,224,.05)"><td><strong>TOTAL FASE 1</strong></td><td>10–20 tenants, ~500 usuarios</td><td><strong style="color:var(--cyan)">~$880/mes</strong></td><td>Elástico por demanda</td></tr>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S4: AI ASSISTANT ============================== -->
+<div class="section" id="s4">
+  <div class="sec-header">
+    <div class="sec-num">04</div>
+    <div>
+      <div class="sec-title">Asistente IA — Diseño Completo</div>
+      <div class="sec-sub">Co-piloto operativo integrado en cada módulo con contexto total de la plataforma</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card" style="border-color:rgba(139,92,246,.2)">
+      <div class="card-top"><div class="card-icon pu">🧠</div><div class="badge pu">LLM Core</div></div>
+      <div class="card-title">Modelo base: Claude 3.5 Sonnet</div>
+      <div class="card-sub">LLM de Anthropic con 200K tokens de contexto. Permite inyectar el estado completo de la plataforma (pedidos activos, alertas, KPIs, historial del tenant) en cada request sin truncar información crítica.</div>
+      <div style="margin-top:.75rem">
+        <div class="badge pu" style="margin-right:4px">Razonamiento</div>
+        <div class="badge cy" style="margin-right:4px">Tool use</div>
+        <div class="badge gn">Function calling</div>
+      </div>
+    </div>
+    <div class="card" style="border-color:rgba(0,184,224,.2)">
+      <div class="card-top"><div class="card-icon cy">⚡</div><div class="badge cy">Hybrid</div></div>
+      <div class="card-title">Capa de reglas + LLM</div>
+      <div class="card-sub">Para decisiones deterministas (umbrales de temperatura, OTIF crítico, umbrales de retraso) se usan reglas de negocio configurables por tenant. El LLM interpreta el contexto y genera recomendaciones en lenguaje natural sobre esas reglas.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h4>Arquitectura del AI Service</h4>
+    <div class="code-block">
+<span class="cm">// AI Service — sistema de prompt dinámico por módulo y tenant</span>
+<span class="kw">interface</span> <span class="cl">AIRequest</span> {
+  module: <span class="str">'dashboard' | 'orders' | 'tracking' | 'procurement' | 'reports'</span>;
+  tenantContext: {
+    tenantId: <span class="op">string</span>;
+    kpis: <span class="cl">KPISnapshot</span>;         <span class="cm">// OTIF, GMV, alertas activas</span>
+    activeOrders: <span class="cl">Order</span>[];      <span class="cm">// Pedidos en curso</span>
+    recentAlerts: <span class="cl">Alert</span>[];      <span class="cm">// Últimas 24h</span>
+    providerRankings: <span class="cl">Provider</span>[]; <span class="cm">// Top providers del tenant</span>
+  };
+  userMessage: <span class="op">string</span>;
+  conversationHistory: <span class="cl">Message</span>[]; <span class="cm">// Últimos 10 turnos</span>
+}
+
+<span class="kw">class</span> <span class="cl">AIOrchestrator</span> {
+  <span class="kw">async</span> <span class="fn">process</span>(req: <span class="cl">AIRequest</span>): <span class="op">Promise</span>&lt;<span class="cl">AIResponse</span>&gt; {
+    <span class="cm">// 1. Construir system prompt contextual</span>
+    <span class="kw">const</span> systemPrompt = <span class="kw">await</span> <span class="fn">buildSystemPrompt</span>(req);
+    <span class="cm">// 2. Revisar cache Redis (respuestas frecuentes)</span>
+    <span class="kw">const</span> cached = <span class="kw">await</span> redis.<span class="fn">get</span>(<span class="fn">cacheKey</span>(req));
+    <span class="kw">if</span> (cached) <span class="kw">return</span> cached;
+    <span class="cm">// 3. Tool use: funciones disponibles según módulo</span>
+    <span class="kw">const</span> tools = <span class="fn">getModuleTools</span>(req.module);
+    <span class="cm">// 4. Llamada a Claude API con contexto completo</span>
+    <span class="kw">return</span> claude.<span class="fn">messages</span>({ system: systemPrompt, tools, ... });
+  }
+}
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-icon gn" style="margin-bottom:.75rem">📦</div>
+      <div class="card-title">Módulo Pedidos</div>
+      <div class="card-sub">Detecta patrones de retraso, sugiere proveedores alternativos, calcula riesgo de incumplimiento de SLA, genera alertas preventivas antes de que ocurra el problema.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon cy" style="margin-bottom:.75rem">🗺️</div>
+      <div class="card-title">Módulo Tracking</div>
+      <div class="card-sub">Analiza desviaciones de ruta en tiempo real, predice ETA con machine learning (histórico de rutas), detecta anomalías de temperatura o velocidad y genera alertas accionables.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon am" style="margin-bottom:.75rem">📊</div>
+      <div class="card-title">Módulo Reportes</div>
+      <div class="card-sub">Genera narrativa ejecutiva del POV mensual, compara con benchmarks del mercado ecuatoriano, propone optimizaciones específicas con estimado de ahorro en dólares.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon pu" style="margin-bottom:.75rem">🛒</div>
+      <div class="card-title">Módulo Procurement</div>
+      <div class="card-sub">Evalúa proveedores candidatos en un RFQ, predice el mejor precio de mercado basado en historial, detecta proveedores con riesgo de incumplimiento antes de adjudicar.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon rd" style="margin-bottom:.75rem">⚠️</div>
+      <div class="card-title">Detección de anomalías</div>
+      <div class="card-sub">Reglas + LLM: OTIF &lt;90%, retraso &gt;2h, temperatura fuera de rango, velocidad excesiva, ruta no autorizada. Genera alertas con prioridad y acción sugerida.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon nv" style="margin-bottom:.75rem">🎓</div>
+      <div class="card-title">Aprendizaje continuo</div>
+      <div class="card-sub">RAG (Retrieval Augmented Generation) con vectores del historial de operaciones del tenant. El asistente mejora sus recomendaciones basándose en el comportamiento específico de cada cliente.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Tools disponibles para el AI Agent (Function Calling)</h4>
+    <div class="code-block">
+<span class="cm">// Herramientas que Claude puede invocar directamente</span>
+<span class="kw">const</span> <span class="nm">KALLPAPRO_TOOLS</span> = [
+  { name: <span class="str">"get_active_orders"</span>,      <span class="cm">// Obtiene pedidos en tránsito del tenant</span>
+    description: <span class="str">"Fetch all active logistics orders with current GPS positions"</span> },
+  { name: <span class="str">"get_provider_ranking"</span>,    <span class="cm">// OTIF y rating de proveedores</span>
+    description: <span class="str">"Get provider performance metrics for a given route/cargo type"</span> },
+  { name: <span class="str">"get_kpi_snapshot"</span>,         <span class="cm">// Dashboard KPIs en tiempo real</span>
+    description: <span class="str">"Retrieve current OTIF, GMV, lead time, and savings metrics"</span> },
+  { name: <span class="str">"create_alert"</span>,            <span class="cm">// Crear alerta en el sistema</span>
+    description: <span class="str">"Create an operational alert with priority and action required"</span> },
+  { name: <span class="str">"get_route_history"</span>,       <span class="cm">// Historial de rutas para predicción</span>
+    description: <span class="str">"Fetch historical route data for ETA prediction and optimization"</span> },
+  { name: <span class="str">"estimate_savings"</span>,        <span class="cm">// Calcular ahorro vs línea base</span>
+    description: <span class="str">"Calculate potential savings vs market baseline for a given scenario"</span> }
+];
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S5: REAL-TIME ============================== -->
+<div class="section" id="s5">
+  <div class="sec-header">
+    <div class="sec-num">05</div>
+    <div>
+      <div class="sec-title">Sistema de Tiempo Real</div>
+      <div class="sec-sub">Arquitectura event-driven de baja latencia para tracking GPS y dashboards en vivo</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h4>Flujo de datos GPS — de la unidad al dashboard</h4>
+    <div class="flow">
+      <div class="flow-step" style="background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2)">📡 GPS Device<br><span style="font-size:10px;color:var(--text3)">Geotab/Mapon API</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step cy">Webhook HTTP<br><span style="font-size:10px">cada 30 seg</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step am">Kafka Topic<br><span style="font-size:10px">gps.positions</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step pu">Stream Processor<br><span style="font-size:10px">Kafka Streams</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step gn">TimescaleDB<br><span style="font-size:10px">persist + query</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step cy">WebSocket Server<br><span style="font-size:10px">Socket.io</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:rgba(26,61,181,.1);border-color:rgba(26,61,181,.2)">Browser/App<br><span style="font-size:10px">Mapa en vivo</span></div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-top"><div class="card-icon gn">📡</div><div class="badge gn">WebSockets</div></div>
+      <div class="card-title">Arquitectura de Sockets</div>
+      <div class="code-block" style="margin-top:.75rem">
+<span class="cm">// Rooms por tenant + por operación</span>
+socket.<span class="fn">join</span>(<span class="str">`tenant:${tenantId}`</span>);
+socket.<span class="fn">join</span>(<span class="str">`order:${orderId}`</span>);
+
+<span class="cm">// Evento GPS recibido → broadcast inmediato</span>
+kafka.<span class="fn">on</span>(<span class="str">'gps.position'</span>, (pos) => {
+  io.to(<span class="str">`order:${pos.orderId}`</span>)
+    .<span class="fn">emit</span>(<span class="str">'gps:update'</span>, {
+      lat: pos.lat, lng: pos.lng,
+      speed: pos.speed,
+      temp: pos.temp,    <span class="cm">// Sensor cadena de frío</span>
+      eta: <span class="fn">calcETA</span>(pos)
+    });
+});
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon pu">⚡</div><div class="badge pu">Event streaming</div></div>
+      <div class="card-title">Kafka Topics diseñados</div>
+      <div class="code-block" style="margin-top:.75rem">
+<span class="cm">// Topics de Kafka para LOGIFI™</span>
+<span class="nm">gps.positions</span>       <span class="cm">// lat,lng,speed,temp cada 30s</span>
+<span class="nm">orders.events</span>       <span class="cm">// created, assigned, pickup, delivered</span>
+<span class="nm">alerts.triggered</span>    <span class="cm">// temperatura, retraso, desvío</span>
+<span class="nm">notifications.send</span>  <span class="cm">// email, WhatsApp, push</span>
+<span class="nm">audit.log</span>           <span class="cm">// todas las acciones de usuario</span>
+<span class="nm">ai.requests</span>         <span class="cm">// métricas de uso del asistente</span>
+<span class="nm">procurement.events</span>  <span class="cm">// RFQ, cotización, adjudicación</span>
+
+<span class="cm">// Retención: 7 días / max 50GB por topic</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Sistema de alertas en tiempo real — Motor de reglas configurables</h4>
+    <div class="grid3" style="margin-top:.75rem">
+      <div style="background:var(--red2);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:.85rem">
+        <div class="badge rd" style="margin-bottom:.5rem">Crítica — &lt;5min</div>
+        <ul><li style="font-size:12px">Temperatura fuera de rango (refrigerado)</li><li style="font-size:12px">Desvío de ruta &gt;5km</li><li style="font-size:12px">Vehículo detenido &gt;2h en ruta</li><li style="font-size:12px">Acceso no autorizado a la plataforma</li></ul>
+      </div>
+      <div style="background:var(--amber2);border:1px solid rgba(245,158,11,.2);border-radius:var(--r);padding:.85rem">
+        <div class="badge am" style="margin-bottom:.5rem">Alta — &lt;30min</div>
+        <ul><li style="font-size:12px">OTIF en riesgo (retraso proyectado)</li><li style="font-size:12px">Sin proveedor asignado (recogida &lt;24h)</li><li style="font-size:12px">Velocidad excesiva (&gt;90 km/h)</li><li style="font-size:12px">OC pendiente de aprobación &gt;2h</li></ul>
+      </div>
+      <div style="background:rgba(0,184,224,.05);border:1px solid rgba(0,184,224,.15);border-radius:var(--r);padding:.85rem">
+        <div class="badge cy" style="margin-bottom:.5rem">Informativa — &lt;2h</div>
+        <ul><li style="font-size:12px">Pedido completado, POD disponible</li><li style="font-size:12px">Nuevo proveedor homologado</li><li style="font-size:12px">Reporte POV generado</li><li style="font-size:12px">Resumen diario de operaciones</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S6: INTEGRATIONS ============================== -->
+<div class="section" id="s6">
+  <div class="sec-header">
+    <div class="sec-num">06</div>
+    <div>
+      <div class="sec-title">Framework de Integraciones</div>
+      <div class="sec-sub">API abierta y conectores nativos para el ecosistema logístico ecuatoriano</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <h4>Estrategia de API pública</h4>
+      <div class="code-block" style="margin-top:.5rem">
+<span class="cm"># API REST v2 — OpenAPI 3.1 spec</span>
+<span class="nm">BASE_URL</span>: https://api.<span class="str">{tenant}</span>.kallpapro.com/v2
+
+<span class="kw">GET</span>    /orders              <span class="cm"># Lista pedidos</span>
+<span class="kw">POST</span>   /orders              <span class="cm"># Crear pedido</span>
+<span class="kw">GET</span>    /orders/<span class="op">{id}</span>/tracking <span class="cm"># Posición GPS actual</span>
+<span class="kw">POST</span>   /rfq                 <span class="cm"># Lanzar RFQ</span>
+<span class="kw">GET</span>    /reports/pov          <span class="cm"># POV mensual</span>
+<span class="kw">POST</span>   /webhooks            <span class="cm"># Registrar webhook</span>
+
+<span class="cm"># Autenticación: OAuth 2.0 + API Keys</span>
+<span class="nm">Authorization</span>: Bearer <span class="op">{jwt}</span>
+<span class="nm">X-Tenant-ID</span>: <span class="op">{tenant_slug}</span>
+<span class="nm">X-API-Key</span>: <span class="op">{api_key}</span>   <span class="cm"># Para M2M</span>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Conectores nativos prioritarios</h4>
+      <div class="tbl-wrap" style="margin-top:.5rem">
+      <table>
+        <tr><th>Sistema</th><th>Método</th><th>Prioridad</th></tr>
+        <tr><td>Geotab / Mapon GPS</td><td>Webhook + polling</td><td><span class="badge gn">Fase 1</span></td></tr>
+        <tr><td>SRI Ecuador (facturación)</td><td>API REST + XML</td><td><span class="badge gn">Fase 1</span></td></tr>
+        <tr><td>WhatsApp Business</td><td>Meta Cloud API</td><td><span class="badge gn">Fase 1</span></td></tr>
+        <tr><td>Odoo ERP</td><td>XML-RPC / REST</td><td><span class="badge am">Fase 2</span></td></tr>
+        <tr><td>SAP B1</td><td>Service Layer REST</td><td><span class="badge am">Fase 2</span></td></tr>
+        <tr><td>Kushki Pagos</td><td>REST API</td><td><span class="badge am">Fase 2</span></td></tr>
+        <tr><td>IoT (sensores temp.)</td><td>MQTT / HTTP</td><td><span class="badge cy">Fase 3</span></td></tr>
+        <tr><td>Cámaras seguridad</td><td>RTSP + API</td><td><span class="badge cy">Fase 3</span></td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Webhooks — Event notification framework</h4>
+    <div class="code-block">
+<span class="cm">// Payload de webhook enviado al ERP del cliente</span>
+<span class="cm">// cuando un pedido cambia de estado</span>
+{
+  "<span class="nm">event</span>": <span class="str">"order.delivered"</span>,
+  "<span class="nm">timestamp</span>": <span class="str">"2026-04-07T16:45:22Z"</span>,
+  "<span class="nm">tenant_id</span>": <span class="str">"pronaca-ec"</span>,
+  "<span class="nm">data</span>": {
+    "<span class="nm">order_id</span>": <span class="str">"KP-2051"</span>,
+    "<span class="nm">status</span>": <span class="str">"delivered"</span>,
+    "<span class="nm">pod_url</span>": <span class="str">"https://r2.kallpapro.com/pods/KP-2051.pdf"</span>,
+    "<span class="nm">otif</span>": <span class="kw">true</span>,
+    "<span class="nm">delivery_time_minutes</span>": <span class="kw">394</span>,
+    "<span class="nm">gps_proof</span>": { "<span class="nm">lat</span>": <span class="kw">-0.2299</span>, "<span class="nm">lng</span>": <span class="kw">-78.5249</span> }
+  },
+  "<span class="nm">signature</span>": <span class="str">"sha256=..."</span>  <span class="cm">// HMAC para validar autenticidad</span>
+}
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S7: MULTI-TENANT ============================== -->
+<div class="section" id="s7">
+  <div class="sec-header">
+    <div class="sec-num">07</div>
+    <div>
+      <div class="sec-title">Gestión de Usuarios y Multi-tenancy</div>
+      <div class="sec-sub">Arquitectura que permite personalización completa por cliente sin comprometer el aislamiento de datos</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <h4>Modelo RBAC + ABAC</h4>
+      <div class="tbl-wrap" style="margin-top:.5rem">
+      <table>
+        <tr><th>Rol</th><th>Módulos accesibles</th><th>Permisos especiales</th></tr>
+        <tr><td>Super Admin</td><td>Todo + Tenants</td><td>Crear tenants, billing</td></tr>
+        <tr><td>Admin Tenant</td><td>Todo del tenant</td><td>Crear usuarios, dominios</td></tr>
+        <tr><td>Gerente</td><td>Operaciones + Reportes</td><td>Aprobar OC &gt;$10K</td></tr>
+        <tr><td>Operador</td><td>Pedidos + Proveedores</td><td>Crear solicitudes</td></tr>
+        <tr><td>Viewer</td><td>Dashboard + Tracking</td><td>Solo lectura</td></tr>
+        <tr><td>Conductor (App)</td><td>Solo su viaje activo</td><td>POD, checklist</td></tr>
+        <tr><td>Proveedor</td><td>Portal de cotizaciones</td><td>Ver RFQ, responder</td></tr>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Domain management — Cómo funciona</h4>
+      <p>Cada tenant puede tener su propio subdominio configurado por el Admin, que controla la experiencia de marca para sus usuarios.</p>
+      <div class="code-block" style="margin-top:.5rem">
+<span class="cm"># Patrones de dominio soportados</span>
+
+<span class="cm"># Subdominio gestionado por KallpaPro</span>
+<span class="str">pronaca</span>.kallpapro.com
+<span class="str">hidalgo-hidalgo</span>.kallpapro.com
+
+<span class="cm"># Dominio propio del cliente (CNAME setup)</span>
+logistica.<span class="str">pronaca.com</span>
+  → CNAME → tenant.kallpapro.com
+
+<span class="cm"># Config de Cloudflare: SSL automático</span>
+<span class="cm"># por cada dominio custom vía Let's Encrypt</span>
+      </div>
+      <div class="exec-highlight" style="margin-top:.75rem;font-size:12px">El admin cambia el dominio en el panel. El cambio propaga en &lt;60 segundos via Cloudflare API. SSL automático. Zero downtime.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Panel de administración de tenants — funcionalidades clave</h4>
+    <div class="grid3" style="margin-top:.75rem">
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:.85rem">
+        <div class="badge cy" style="margin-bottom:.5rem">Usuarios</div>
+        <ul style="margin-top:.5rem"><li>Crear/editar/suspender usuarios</li><li>Asignar roles granulares</li><li>Forzar MFA por rol</li><li>Invitaciones por email con link de onboarding</li><li>SSO via SAML 2.0 / OIDC (enterprise)</li></ul>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:.85rem">
+        <div class="badge am" style="margin-bottom:.5rem">Dominios</div>
+        <ul style="margin-top:.5rem"><li>Configurar subdominio personalizado</li><li>Conectar dominio propio (CNAME)</li><li>Branding: logo, colores primarios</li><li>Nombre de la plataforma personalizable</li><li>Email branding (From: nombre@tudominio)</li></ul>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:.85rem">
+        <div class="badge gn" style="margin-bottom:.5rem">Configuración</div>
+        <ul style="margin-top:.5rem"><li>Umbrales de alertas customizables</li><li>Aprobaciones: monto máximo sin OC</li><li>Integraciones: API keys de ERP/GPS</li><li>Notificaciones: canales preferidos</li><li>Facturación y límites del plan</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S8: UX/UI ============================== -->
+<div class="section" id="s8">
+  <div class="sec-header">
+    <div class="sec-num">08</div>
+    <div>
+      <div class="sec-title">UX/UI Approach</div>
+      <div class="sec-sub">Diseño enterprise que prioriza la eficiencia operacional sobre la estética</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <h4>Principios de diseño</h4>
+      <div class="timeline" style="margin-top:.75rem">
+        <div class="tl-item"><div class="tl-dot cy"></div><div><div class="tl-title">Information density</div><div class="tl-desc">Los usuarios operativos necesitan ver más datos en menos espacio. No un diseño minimalista vacío. Dashboard denso pero legible, similar a Bloomberg Terminal o Linear.</div></div></div>
+        <div class="tl-item"><div class="tl-dot gn"></div><div><div class="tl-title">Acción a 2 clics</div><div class="tl-desc">Cualquier acción crítica (crear pedido, asignar proveedor, confirmar entrega) debe completarse en máximo 2 clics desde cualquier pantalla.</div></div></div>
+        <div class="tl-item"><div class="tl-dot pu"></div><div><div class="tl-title">IA siempre accesible</div><div class="tl-desc">El panel de IA es persistente y contextual. Cambia su comportamiento según el módulo activo. No hay que navegar a él: responde al estado actual.</div></div></div>
+        <div class="tl-item" style="margin-bottom:0"><div class="tl-dot am"></div><div><div class="tl-title">Mobile-first para conductores</div><div class="tl-desc">La app del conductor (PWA) está diseñada para uso con guantes, pantallas con brillo solar, y conexión intermitente. Offline-first con sincronización diferida.</div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Sistema de diseño — Componentes</h4>
+      <div class="code-block" style="margin-top:.5rem">
+<span class="cm">// Design tokens — LOGIFI™ Design System</span>
+<span class="kw">export const</span> <span class="nm">tokens</span> = {
+  colors: {
+    navy: <span class="str">'#0D1F6E'</span>,      <span class="cm">// Confianza, institucional</span>
+    cyan: <span class="str">'#00B8E0'</span>,      <span class="cm">// Tecnología, acción</span>
+    green: <span class="str">'#10B981'</span>,     <span class="cm">// Éxito, entregado, OTIF</span>
+    amber: <span class="str">'#F59E0B'</span>,     <span class="cm">// Advertencia, pendiente</span>
+    red: <span class="str">'#EF4444'</span>,       <span class="cm">// Error, alerta crítica</span>
+  },
+  typography: {
+    display: <span class="str">'Sora'</span>,      <span class="cm">// Headings enterprise</span>
+    body: <span class="str">'Outfit'</span>,      <span class="cm">// Body legible</span>
+    mono: <span class="str">'JetBrains Mono'</span><span class="cm">// IDs, códigos, datos</span>
+  },
+  spacing: <span class="str">'4px base grid'</span>,
+  radius: { sm: <span class="str">'8px'</span>, md: <span class="str">'12px'</span>, lg: <span class="str">'16px'</span> }
+};
+      </div>
+      <div class="tech-pills-wrap">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Storybook (component library)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Figma design tokens sync</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>shadcn/ui base components</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>WCAG 2.1 AA compliance</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Anatomía del dashboard unificado</h4>
+    <div style="background:#020712;border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:1.5rem;margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);line-height:2">
+      <div>┌─ <span style="color:var(--navy2)">SIDEBAR (220px)</span> ──┬─── <span style="color:var(--cyan)">MAIN CONTENT (flexible)</span> ──────────────────┬─ <span style="color:var(--purple)">AI PANEL (360px)</span> ─┐</div>
+      <div>│ Logo + Domain       │ Topbar: Título + Live badge + Notifs + Ajustes │ AI Header          │</div>
+      <div>│                     ├─────────────────────────────────────────────────┤                    │</div>
+      <div>│ ▸ Dashboard         │ KPI Cards (4 col) + Map GPS + Activity Feed     │ Messages thread    │</div>
+      <div>│ ▸ Nueva Solicitud   │─────────────────────────────────────────────────│                    │</div>
+      <div>│ ▸ Pedidos [7]       │ Orders Table / Provider Grid / Full Map         │ Quick action btns  │</div>
+      <div>│ ▸ Proveedores       │─────────────────────────────────────────────────│                    │</div>
+      <div>│ ▸ Rutas Live ●      │ Configurable: drag & drop widget layout         │ Input + Send       │</div>
+      <div>│ ▸ Reportes POV      │─────────────────────────────────────────────────│                    │</div>
+      <div>│ ─────── ADMIN ───── │ Modal overlays: Order detail, User edit, Domain │ Context: module    │</div>
+      <div>│ ▸ Usuarios/Dominios │                                                 │ aware responses    │</div>
+      <div>│ ▸ Seguridad         │                                                 │                    │</div>
+      <div>│ ─────── IA ──────── │                                                 │                    │</div>
+      <div>│ ✦ Asistente Claude  │                                                 │                    │</div>
+      <div>│                     │                                                 │                    │</div>
+      <div>│ User chip + Logout  │                                                 │ Model: claude-3.5  │</div>
+      <div>└─────────────────────┴─────────────────────────────────────────────────┴────────────────────┘</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S9: SECURITY ============================== -->
+<div class="section" id="s9">
+  <div class="sec-header">
+    <div class="sec-num">09</div>
+    <div>
+      <div class="sec-title">Modelo de Seguridad</div>
+      <div class="sec-sub">Defensa en profundidad — múltiples capas de protección para datos logísticos críticos</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-top"><div class="card-icon rd">🔐</div><div class="badge rd">Auth</div></div>
+      <div class="card-title">Autenticación multi-factor</div>
+      <div class="code-block" style="margin-top:.75rem">
+<span class="cm">// Flujo de autenticación LOGIFI™</span>
+<span class="kw">1.</span> Email + Password (<span class="fn">bcrypt</span> 12 rounds)
+<span class="kw">2.</span> MFA: <span class="str">TOTP</span> (Google Auth) <span class="op">|</span> <span class="str">SMS OTP</span>
+   → Obligatorio para Admin y Gerente
+   → Opcional para Viewer/Conductor
+<span class="kw">3.</span> JWT Access Token: <span class="nm">15 minutos</span>
+   JWT Refresh Token: <span class="nm">7 días</span> (httpOnly)
+<span class="kw">4.</span> Session binding: IP + User-Agent hash
+<span class="kw">5.</span> Suspicious login → email alert + block
+<span class="kw">6.</span> Max <span class="nm">5</span> failed attempts → lockout <span class="nm">15min</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon nv">🛡️</div><div class="badge nv">Encryption</div></div>
+      <div class="card-title">Cifrado en reposo y tránsito</div>
+      <ul style="margin-top:.75rem">
+        <li><strong>En tránsito:</strong> TLS 1.3 obligatorio. HTTP Strict Transport Security (HSTS). Certificate pinning en app móvil.</li>
+        <li><strong>En reposo:</strong> AES-256-GCM para datos PII. Claves manejadas por AWS KMS. Rotación automática cada 90 días.</li>
+        <li><strong>Archivos (PODs):</strong> Cloudflare R2 con cifrado side-by-side. URLs firmadas con expiración de 1 hora.</li>
+        <li><strong>API Keys:</strong> HashiCorp Vault. Nunca en código o env vars. Rotación automática.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-top"><div class="card-icon am">📋</div><div class="badge am">Auditoría</div></div>
+      <div class="card-title">Audit trail completo</div>
+      <div class="code-block" style="margin-top:.75rem">
+<span class="cm">// Estructura del log de auditoría (inmutable)</span>
+{
+  "<span class="nm">id</span>": <span class="str">"evt_01HXYZ..."</span>,
+  "<span class="nm">timestamp</span>": <span class="str">"2026-04-07T14:22:11.234Z"</span>,
+  "<span class="nm">tenant_id</span>": <span class="str">"pronaca-ec"</span>,
+  "<span class="nm">user_id</span>": <span class="str">"usr_maria_correa"</span>,
+  "<span class="nm">action</span>": <span class="str">"order.created"</span>,
+  "<span class="nm">resource</span>": { <span class="nm">type</span>: <span class="str">"order"</span>, <span class="nm">id</span>: <span class="str">"KP-2052"</span> },
+  "<span class="nm">ip</span>": <span class="str">"192.168.1.45"</span>,
+  "<span class="nm">user_agent</span>": <span class="str">"Chrome/124..."</span>,
+  "<span class="nm">result</span>": <span class="str">"success"</span>,
+  "<span class="nm">changes</span>": { <span class="nm">before</span>: <span class="kw">null</span>, <span class="nm">after</span>: {...} }
+}
+<span class="cm">// Almacenado en Kafka + S3 (inmutable, 5 años)</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="card-icon pu">🔍</div><div class="badge pu">WAF + SIEM</div></div>
+      <div class="card-title">Detección de amenazas</div>
+      <ul style="margin-top:.75rem">
+        <li><strong>Cloudflare WAF:</strong> Bloqueo de OWASP Top 10. Rate limiting por IP y por API key. Bot detection.</li>
+        <li><strong>SIEM (AWS GuardDuty):</strong> Detección de comportamiento anómalo: accesos fuera de horario, volumen inusual de requests, intentos de SQL injection.</li>
+        <li><strong>Penetration testing:</strong> Trimestral con empresa externa. Reporte de vulnerabilidades mandatory en SLA enterprise.</li>
+        <li><strong>OWASP compliance:</strong> Validación automática en CI/CD pipeline con Semgrep + Snyk.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Compliance y regulación en Ecuador</h4>
+    <div class="grid3" style="margin-top:.75rem">
+      <div class="metric"><span class="metric-val" style="color:var(--cyan);font-size:14px">LOPDP</span><span class="metric-lbl">Ley Orgánica de Datos Personales Ecuador<br><span style="color:var(--text3)">Consentimiento explícito, derecho al olvido</span></span></div>
+      <div class="metric"><span class="metric-val" style="color:var(--green);font-size:14px">SRI</span><span class="metric-lbl">Facturación electrónica integrada<br><span style="color:var(--text3)">Comprobantes XML autorizados</span></span></div>
+      <div class="metric"><span class="metric-val" style="color:var(--purple);font-size:14px">ANT</span><span class="metric-lbl">Registros de transporte<br><span style="color:var(--text3)">POD digital como evidencia legal</span></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S10: SCALABILITY ============================== -->
+<div class="section" id="s10">
+  <div class="sec-header">
+    <div class="sec-num">10</div>
+    <div>
+      <div class="sec-title">Estrategia de Escalabilidad</div>
+      <div class="sec-sub">Del primer tenant a 500 empresas sin refactoring arquitectural</div>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-bottom:1rem">
+    <div class="card">
+      <h4>Horizontal scaling</h4>
+      <p>Kubernetes con Horizontal Pod Autoscaler (HPA). Los pods del Core API escalan automáticamente cuando el CPU supera 70% o la latencia media supera 200ms. Sin cambios en código.</p>
+      <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)">
+        <div>Min replicas: 2 pods</div>
+        <div>Max replicas: 20 pods</div>
+        <div>Scale up: CPU &gt;70%</div>
+        <div>Scale down: CPU &lt;30% / 5min</div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Database scaling</h4>
+      <p>PostgreSQL con Read Replicas para queries de reportes y analytics. Sharding por tenant_id cuando se superan 1M operaciones/mes. Connection pooling con PgBouncer.</p>
+      <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)">
+        <div>Write: 1 primary</div>
+        <div>Read: 2 replicas</div>
+        <div>Max connections: 500</div>
+        <div>Query cache: Redis (TTL 5min)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>WebSocket scaling</h4>
+      <p>Socket.io con Redis adapter para compartir estado entre instancias. Un cliente puede conectarse a cualquier pod y recibir los eventos de sus operaciones correctamente.</p>
+      <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)">
+        <div>Max connections/pod: 10K</div>
+        <div>Redis pub/sub adapter</div>
+        <div>Sticky sessions: deshabilitado</div>
+        <div>Heartbeat: 25 segundos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Proyección de escala — Capacidad por fase</h4>
+    <div class="tbl-wrap">
+    <table>
+      <tr><th>Fase</th><th>Tenants</th><th>Usuarios activos</th><th>Pedidos/mes</th><th>GPS events/seg</th><th>Infra aprox.</th></tr>
+      <tr><td>Fase 1 (Meses 1-6)</td><td>5–15</td><td>50–200</td><td>500–2K</td><td>~5 ev/s</td><td>$880/mes</td></tr>
+      <tr><td>Fase 2 (Meses 7-18)</td><td>15–50</td><td>200–1K</td><td>2K–15K</td><td>~30 ev/s</td><td>$2,200/mes</td></tr>
+      <tr><td>Fase 3 (Meses 19-36)</td><td>50–200</td><td>1K–8K</td><td>15K–100K</td><td>~150 ev/s</td><td>$6,500/mes</td></tr>
+      <tr style="background:rgba(0,184,224,.05)"><td><strong>Fase 4 (Año 3+)</strong></td><td>200–500</td><td>8K–30K</td><td>100K–500K</td><td>~600 ev/s</td><td>$18K/mes</td></tr>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S11: RISKS ============================== -->
+<div class="section" id="s11">
+  <div class="sec-header">
+    <div class="sec-num">11</div>
+    <div>
+      <div class="sec-title">Riesgos y Mitigaciones</div>
+      <div class="sec-sub">Análisis honesto de los principales riesgos técnicos, operativos y de negocio</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <h4 style="margin-bottom:.75rem;color:var(--red)">🔴 Riesgos técnicos</h4>
+      <div class="risk-item"><div class="risk-level hi">Alto</div><div><div class="risk-title">Corte de API de Claude / Anthropic</div><div class="risk-mit"><strong>Mitigación:</strong> Fallback a respuestas basadas en reglas predefinidas. Cache de las 100 consultas más frecuentes en Redis. SLA de Anthropic: 99.9%. Monitoreo activo con alertas a 99.5%.</div></div></div>
+      <div class="risk-item"><div class="risk-level hi">Alto</div><div><div class="risk-title">Pérdida de datos GPS en tiempo real</div><div class="risk-mit"><strong>Mitigación:</strong> Kafka con replicación factor-3. GPS device con buffer local de 1h. Si cae el servidor, el device guarda localmente y sincroniza al reconectarse.</div></div></div>
+      <div class="risk-item"><div class="risk-level md">Medio</div><div><div class="risk-title">Cobertura de internet en zonas remotas (minería)</div><div class="risk-mit"><strong>Mitigación:</strong> Driver app en modo offline-first. Datos sincronizados cuando hay conexión. GPS con SIM card dual para fallback a operadora secundaria.</div></div></div>
+      <div class="risk-item"><div class="risk-level md">Medio</div><div><div class="risk-title">Migración de datos desde sistemas actuales</div><div class="risk-mit"><strong>Mitigación:</strong> Scripts de migración con validación automática. Periodo de doble operación (ambos sistemas en paralelo 30 días). Rollback plan documentado.</div></div></div>
+    </div>
+    <div>
+      <h4 style="margin-bottom:.75rem;color:var(--amber)">🟡 Riesgos de negocio y adopción</h4>
+      <div class="risk-item"><div class="risk-level hi">Alto</div><div><div class="risk-title">Resistencia al cambio por parte de usuarios operativos</div><div class="risk-mit"><strong>Mitigación:</strong> Onboarding guiado de 3 sesiones. Videos tutoriales por rol. Periodo de co-existencia con sistema anterior. Capacitación a los coordinadores que multiplican el conocimiento.</div></div></div>
+      <div class="risk-item"><div class="risk-level md">Medio</div><div><div class="risk-title">Dependencia de proveedores GPS (Geotab/Mapon)</div><div class="risk-mit"><strong>Mitigación:</strong> Abstraction layer que permite cambiar de proveedor GPS sin modificar la plataforma. Contratos con cláusulas de exportabilidad de datos.</div></div></div>
+      <div class="risk-item"><div class="risk-level md">Medio</div><div><div class="risk-title">Brecha de seguridad y exposición de datos de clientes</div><div class="risk-mit"><strong>Mitigación:</strong> Penetration testing trimestral. Bug bounty program. Seguro cibernético. Plan de respuesta a incidentes documentado. Notificación a usuarios en &lt;72h (LOPDP).</div></div></div>
+      <div class="risk-item"><div class="risk-level lo">Bajo</div><div><div class="risk-title">Cambios regulatorios ANT / SRI</div><div class="risk-mit"><strong>Mitigación:</strong> Monitoreo mensual de regulaciones. Integration layer desacoplada permite actualizar el conector SRI sin tocar el core de la plataforma.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== S12: ROADMAP ============================== -->
+<div class="section" id="s12">
+  <div class="sec-header">
+    <div class="sec-num">12</div>
+    <div>
+      <div class="sec-title">Roadmap de Implementación</div>
+      <div class="sec-sub">4 fases de 36 meses — de MVP unificado a plataforma SaaS enterprise regional</div>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot cy"></div>
+      <div class="tl-phase" style="color:var(--cyan)">FASE 1 — Semanas 1–12</div>
+      <div class="tl-title">Unificación y MVP (Quick Wins)</div>
+      <div class="tl-desc">Fusión de KallpaPro Interactive y KallpaPro Secure en una única codebase. Objetivo: tener un sistema funcional para los clientes actuales sin fricciones.</div>
+      <div class="tl-pills">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Migrar autenticación segura al sistema interactivo</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Unificar gestión de usuarios con dominios personalizados</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Claude API integrado en todos los módulos</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>WebSockets para GPS en tiempo real</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Despliegue en AWS (us-east-1)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>CI/CD pipeline GitHub Actions</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--cyan)"></div>Monitoring: Grafana + Sentry</div>
+      </div>
+      <div class="exec-highlight" style="margin-top:.75rem;font-size:12px">KPI de éxito: Plataforma unificada en producción con los clientes actuales migrando sin pérdida de datos.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot gn"></div>
+      <div class="tl-phase" style="color:var(--green)">FASE 2 — Meses 4–9</div>
+      <div class="tl-title">Producto SaaS completo (Operación inicial)</div>
+      <div class="tl-desc">Lanzamiento como producto SaaS con planes de precios, facturación automática, y las integraciones más críticas del ecosistema ecuatoriano.</div>
+      <div class="tl-pills">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Billing automático (Stripe / Kushki Ecuador)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Integración Geotab + Mapon GPS production</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>WhatsApp Business API para alertas</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Módulo de procurement completo (RFQ → OC)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>App móvil conductor (React Native)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Integración SRI facturación electrónica</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Multi-tenancy completa con dominios custom</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--green)"></div>Apache Kafka en producción</div>
+      </div>
+      <div class="exec-highlight" style="margin-top:.75rem;font-size:12px">KPI de éxito: 10+ tenants pagando, MRR $8,000+, NPS &gt;50, uptime 99.5%.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot pu"></div>
+      <div class="tl-phase" style="color:var(--purple)">FASE 3 — Meses 10–24</div>
+      <div class="tl-title">Escalamiento y diferenciación</div>
+      <div class="tl-desc">La plataforma ya es estable. Ahora se construyen las ventajas competitivas difíciles de copiar: IA avanzada, marketplace B2B de productos, y expansión regional.</div>
+      <div class="tl-pills">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>RAG system: IA aprende del historial de cada tenant</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Predicción de ETA con ML (XGBoost)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Optimización de rutas (Vehicle Routing Problem)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Conectores ERP: Odoo + SAP B1</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>API pública documentada (OpenAPI 3.1)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Marketplace B2B capa inicial (insumos)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>Expansión: Colombia + Perú</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--purple)"></div>SSO enterprise (SAML 2.0)</div>
+      </div>
+      <div class="exec-highlight" style="margin-top:.75rem;font-size:12px">KPI de éxito: 50+ tenants, MRR $42,000+, 2 países, primera ronda de inversión cerrada.</div>
+    </div>
+
+    <div class="tl-item" style="margin-bottom:0">
+      <div class="tl-dot am"></div>
+      <div class="tl-phase" style="color:var(--amber)">FASE 4 — Meses 25–36</div>
+      <div class="tl-title">Plataforma regional enterprise</div>
+      <div class="tl-desc">KallpaPro se convierte en la capa de software logístico del comercio B2B latinoamericano. El marketplace de productos usa la logística como canal de distribución nativo.</div>
+      <div class="tl-pills">
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Marketplace B2B completo (products + logistics)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Servicios financieros (factoring logístico)</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>IoT: sensores de temperatura + telemetría avanzada</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Data lake: benchmarks del mercado logístico LATAM</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>White-label para operadores logísticos</div>
+        <div class="tech-pill"><div class="tp-dot" style="background:var(--amber)"></div>Expansión: México + Chile</div>
+      </div>
+      <div class="exec-highlight" style="margin-top:.75rem;font-size:12px">KPI de éxito: 200+ tenants, ARR $5M+, GMV &gt;$30M/mes coordinados en plataforma, referenciados como el "Nowports del transporte terrestre LATAM".</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:2rem;border-color:rgba(0,184,224,.2);background:linear-gradient(135deg,rgba(26,61,181,.1),rgba(0,184,224,.05))">
+    <h4 style="font-size:16px;margin-bottom:1rem">Métricas de éxito de la plataforma unificada</h4>
+    <div class="grid4">
+      <div class="metric"><span class="metric-val cy">&lt;200ms</span><span class="metric-lbl">Latencia P95 de la API principal</span></div>
+      <div class="metric"><span class="metric-val" style="color:var(--green)">99.9%</span><span class="metric-lbl">Uptime SLA garantizado</span></div>
+      <div class="metric"><span class="metric-val" style="color:var(--amber)">&lt;30s</span><span class="metric-lbl">GPS posición actualizada en mapa</span></div>
+      <div class="metric"><span class="metric-val" style="color:var(--purple)">&lt;3s</span><span class="metric-lbl">Respuesta del asistente IA</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- FOOTER -->
+<div style="border-top:1px solid var(--border);padding:2rem;text-align:center;background:var(--bg2)">
+  <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:.5rem">
+    <div class="logo-mark" style="width:24px;height:24px;font-size:10px">KP</div>
+    <span style="font-size:13px;font-weight:700">KallpaPro — LOGIFI™ Platform v2.0</span>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Technical Design Document · Guayaquil, Ecuador · Abril 2026</div>
+</div>
+
+<script>
+function scrollTo(id, btn) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+  document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Scrollspy
+const sections = document.querySelectorAll('.section');
+const pills = document.querySelectorAll('.nav-pill');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const idx = Array.from(sections).indexOf(e.target);
+      pills.forEach(p => p.classList.remove('active'));
+      if (pills[idx]) pills[idx].classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -60% 0px' });
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

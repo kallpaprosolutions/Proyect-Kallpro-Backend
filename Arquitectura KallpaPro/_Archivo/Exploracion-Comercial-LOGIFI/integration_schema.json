@@ -1,0 +1,494 @@
+{
+  "module": "finance",
+  "version": "1.0.0",
+  "description": "LOGIFI™ ERP - Módulo Financiero Integral. Esquema técnico completo para integración con ERP Node.js + Express + PostgreSQL.",
+  "author": "KallpaPro Soluciones Integrales",
+  "stack": {
+    "backend": "Node.js >= 18 + Express >= 4.18",
+    "database": "PostgreSQL >= 14",
+    "api_style": "REST",
+    "real_time": "WebSocket (channel: finance:*)",
+    "scheduler": "node-cron (para refresh de mat_views)"
+  },
+
+  "database_schema": {
+    "schema_name": "finance",
+    "description": "Crear como esquema separado para aislar lógica financiera del ERP base.",
+    "ddl_setup": "CREATE SCHEMA IF NOT EXISTS finance; SET search_path TO finance, public;",
+
+    "tables": {
+      "finance.chart_of_accounts": {
+        "description": "Plan de cuentas NIIF para Pymes/Plenas. Cada empresa cliente tiene el suyo.",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL REFERENCES core.tenants(id)",
+          "code": "VARCHAR(20) NOT NULL",
+          "name": "VARCHAR(255) NOT NULL",
+          "account_type": "VARCHAR(20) NOT NULL CHECK (account_type IN ('ACTIVO','PASIVO','PATRIMONIO','INGRESO','GASTO','COSTO'))",
+          "parent_id": "INTEGER REFERENCES finance.chart_of_accounts(id)",
+          "level": "INTEGER NOT NULL",
+          "is_movement": "BOOLEAN DEFAULT TRUE",
+          "niif_reference": "VARCHAR(50)",
+          "sri_reference": "VARCHAR(50)",
+          "currency": "VARCHAR(3) DEFAULT 'USD'",
+          "active": "BOOLEAN DEFAULT TRUE",
+          "created_at": "TIMESTAMPTZ DEFAULT NOW()",
+          "updated_at": "TIMESTAMPTZ DEFAULT NOW()"
+        },
+        "indexes": ["UNIQUE(tenant_id, code)", "INDEX(parent_id)", "INDEX(account_type)"]
+      },
+
+      "finance.journal_entries": {
+        "description": "Asientos contables. Cada registro inserta debe sumar 0 (debe = haber).",
+        "columns": {
+          "id": "BIGSERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "entry_number": "VARCHAR(30) NOT NULL",
+          "entry_date": "DATE NOT NULL",
+          "description": "TEXT",
+          "source_module": "VARCHAR(50) NOT NULL",
+          "source_id": "BIGINT",
+          "currency": "VARCHAR(3) DEFAULT 'USD'",
+          "exchange_rate": "DECIMAL(12,6) DEFAULT 1.0",
+          "status": "VARCHAR(20) DEFAULT 'POSTED' CHECK (status IN ('DRAFT','POSTED','REVERSED'))",
+          "reversed_by": "BIGINT REFERENCES finance.journal_entries(id)",
+          "created_by": "INTEGER NOT NULL",
+          "created_at": "TIMESTAMPTZ DEFAULT NOW()"
+        },
+        "indexes": ["INDEX(tenant_id, entry_date)", "INDEX(source_module, source_id)", "UNIQUE(tenant_id, entry_number)"]
+      },
+
+      "finance.journal_lines": {
+        "description": "Líneas de asiento (partida doble).",
+        "columns": {
+          "id": "BIGSERIAL PRIMARY KEY",
+          "entry_id": "BIGINT NOT NULL REFERENCES finance.journal_entries(id) ON DELETE CASCADE",
+          "account_id": "INTEGER NOT NULL REFERENCES finance.chart_of_accounts(id)",
+          "cost_center_id": "INTEGER REFERENCES finance.cost_centers(id)",
+          "debit": "DECIMAL(15,2) DEFAULT 0",
+          "credit": "DECIMAL(15,2) DEFAULT 0",
+          "description": "TEXT",
+          "line_number": "INTEGER NOT NULL"
+        },
+        "constraints": ["CHECK ((debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0))"],
+        "indexes": ["INDEX(entry_id)", "INDEX(account_id)", "INDEX(cost_center_id)"]
+      },
+
+      "finance.cost_centers": {
+        "description": "Centros de costo para análisis multi-dimensional.",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "code": "VARCHAR(20)",
+          "name": "VARCHAR(255)",
+          "type": "VARCHAR(50)",
+          "branch_id": "INTEGER REFERENCES core.branches(id)",
+          "active": "BOOLEAN DEFAULT TRUE"
+        }
+      },
+
+      "finance.budgets": {
+        "description": "Presupuestos por cuenta y período. Base para análisis variación.",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "fiscal_year": "INTEGER NOT NULL",
+          "period_month": "INTEGER NOT NULL",
+          "account_id": "INTEGER NOT NULL",
+          "cost_center_id": "INTEGER",
+          "budgeted_amount": "DECIMAL(15,2)",
+          "actual_amount": "DECIMAL(15,2) DEFAULT 0",
+          "variance": "DECIMAL(15,2) GENERATED ALWAYS AS (actual_amount - budgeted_amount) STORED"
+        }
+      },
+
+      "finance.savings_log": {
+        "description": "Registro de cada ahorro generado por el módulo de Compras (vinculado a la mega-card del dashboard ejecutivo).",
+        "columns": {
+          "id": "BIGSERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "purchase_order_id": "BIGINT REFERENCES purchasing.orders(id)",
+          "savings_type": "VARCHAR(30) NOT NULL CHECK (savings_type IN ('HARD_SAVINGS','COST_AVOIDANCE','CONSOLIDATION','DOWNTIME_AVOIDED'))",
+          "category": "VARCHAR(100)",
+          "amount_usd": "DECIMAL(15,2) NOT NULL",
+          "calculation_basis": "TEXT",
+          "verified_by": "INTEGER",
+          "verified_at": "TIMESTAMPTZ",
+          "period": "DATE NOT NULL",
+          "created_at": "TIMESTAMPTZ DEFAULT NOW()"
+        },
+        "indexes": ["INDEX(tenant_id, period)", "INDEX(savings_type)"]
+      },
+
+      "finance.dcf_models": {
+        "description": "Modelos DCF guardados por el usuario para comparación.",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "name": "VARCHAR(255)",
+          "assumptions": "JSONB NOT NULL",
+          "results": "JSONB",
+          "created_by": "INTEGER NOT NULL",
+          "created_at": "TIMESTAMPTZ DEFAULT NOW()",
+          "updated_at": "TIMESTAMPTZ DEFAULT NOW()"
+        },
+        "example_assumptions": {
+          "growth_rate": 0.12,
+          "ebitda_margin": 0.19,
+          "tax_rate": 0.3625,
+          "wacc": 0.119,
+          "perpetual_growth": 0.03,
+          "capex_pct": 0.05,
+          "wc_change_pct": 0.02,
+          "projection_years": 5,
+          "base_revenue": 1180000
+        }
+      },
+
+      "finance.scenarios": {
+        "description": "Escenarios pre-calibrados y custom (optimista/base/pesimista).",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "name": "VARCHAR(100)",
+          "scenario_type": "VARCHAR(20) CHECK (scenario_type IN ('OPTIMIST','BASE','PESSIMIST','CUSTOM'))",
+          "probability": "DECIMAL(5,2)",
+          "assumptions": "JSONB",
+          "results": "JSONB"
+        }
+      },
+
+      "finance.sri_filings": {
+        "description": "Registro de declaraciones SRI presentadas y pendientes.",
+        "columns": {
+          "id": "SERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "form_code": "VARCHAR(10) NOT NULL",
+          "form_name": "VARCHAR(255)",
+          "fiscal_period": "VARCHAR(10) NOT NULL",
+          "due_date": "DATE NOT NULL",
+          "filed_date": "DATE",
+          "status": "VARCHAR(30) CHECK (status IN ('PENDING','GENERATING','GENERATED','FILED','REJECTED','OVERDUE'))",
+          "amount_due": "DECIMAL(15,2)",
+          "xml_path": "VARCHAR(500)",
+          "receipt_number": "VARCHAR(100)"
+        },
+        "indexes": ["INDEX(tenant_id, due_date)", "INDEX(form_code)"]
+      },
+
+      "finance.three_way_match": {
+        "description": "Validación cruzada OC ↔ Recepción ↔ Factura.",
+        "columns": {
+          "id": "BIGSERIAL PRIMARY KEY",
+          "tenant_id": "INTEGER NOT NULL",
+          "purchase_order_id": "BIGINT NOT NULL",
+          "reception_id": "BIGINT",
+          "invoice_id": "BIGINT",
+          "po_amount": "DECIMAL(15,2)",
+          "received_amount": "DECIMAL(15,2)",
+          "invoiced_amount": "DECIMAL(15,2)",
+          "match_status": "VARCHAR(20) CHECK (match_status IN ('MATCHED','DISCREPANCY','PENDING_INVOICE','PENDING_RECEPTION'))",
+          "discrepancy_amount": "DECIMAL(15,2)",
+          "discrepancy_reason": "TEXT",
+          "validated_at": "TIMESTAMPTZ"
+        }
+      }
+    },
+
+    "materialized_views": {
+      "finance.mv_balance_sheet": {
+        "description": "Balance General consolidado en tiempo real. Refresh cada 60 segundos.",
+        "refresh_strategy": "REFRESH MATERIALIZED VIEW CONCURRENTLY finance.mv_balance_sheet",
+        "cron_schedule": "*/1 * * * *"
+      },
+      "finance.mv_income_statement": {
+        "description": "Estado de Resultados con drill-down por cuenta.",
+        "cron_schedule": "*/1 * * * *"
+      },
+      "finance.mv_cash_flow": {
+        "description": "Flujo de efectivo método indirecto (NIC 7).",
+        "cron_schedule": "*/5 * * * *"
+      },
+      "finance.mv_kpis_realtime": {
+        "description": "Todos los 60+ ratios financieros calculados en vivo.",
+        "cron_schedule": "*/1 * * * *"
+      },
+      "finance.mv_savings_summary": {
+        "description": "Agregación de ahorros para mega-card del dashboard.",
+        "cron_schedule": "*/5 * * * *"
+      }
+    }
+  },
+
+  "rest_endpoints": {
+    "executive_summary": {
+      "method": "GET",
+      "path": "/api/finance/executive-summary",
+      "query_params": {
+        "period": "current_month | YTD | Q1 | Q2 | Q3 | Q4 | custom",
+        "compare_with": "previous_period | previous_year | budget"
+      },
+      "response_schema": {
+        "savings_total": "number (USD)",
+        "savings_breakdown": {
+          "hard_savings": "number",
+          "cost_avoidance": "number",
+          "consolidation": "number",
+          "downtime_avoided": "number"
+        },
+        "kpis_4d": {
+          "tiempo": { "cycle_time_days": "number", "trend": "number" },
+          "dinero": { "working_capital_usd": "number", "trend_pct": "number" },
+          "calidad": { "defect_rate_pct": "number", "trend_pp": "number" },
+          "logistica": { "cost_per_km_usd": "number", "trend_pct": "number" }
+        },
+        "pl_pulse": {
+          "revenue": "number",
+          "cogs_pct": "number",
+          "ebitda": "number",
+          "fcf": "number"
+        },
+        "alerts": "array of alert objects"
+      },
+      "websocket_channel": "finance:executive"
+    },
+
+    "optimization_dimension": {
+      "method": "GET",
+      "path": "/api/finance/optimization/:dimension",
+      "params": {
+        "dimension": "tiempo | dinero | calidad | logistica"
+      },
+      "response_schema": {
+        "kpis": "array of {code, name, value, unit, target, formula, trend, traffic_light}"
+      }
+    },
+
+    "balance_sheet": {
+      "method": "GET",
+      "path": "/api/finance/statements/balance-sheet",
+      "query_params": {
+        "period": "YYYY-MM",
+        "framework": "niif_pymes | niif_full",
+        "compare_with": "YYYY-MM"
+      },
+      "response_schema": {
+        "currency": "USD",
+        "framework": "niif_full",
+        "period": "2026-04",
+        "sections": {
+          "activo_corriente": "array of accounts",
+          "activo_no_corriente": "array of accounts",
+          "pasivo_corriente": "array of accounts",
+          "pasivo_no_corriente": "array of accounts",
+          "patrimonio": "array of accounts"
+        },
+        "totals": {
+          "total_activo": "number",
+          "total_pasivo": "number",
+          "total_patrimonio": "number"
+        }
+      }
+    },
+
+    "income_statement": {
+      "method": "GET",
+      "path": "/api/finance/statements/income-statement",
+      "query_params": {
+        "period_from": "YYYY-MM",
+        "period_to": "YYYY-MM",
+        "framework": "niif_pymes | niif_full",
+        "include_ecuador_taxes": "boolean (default true) — incluye 15% PT + 25% IR"
+      }
+    },
+
+    "cash_flow": {
+      "method": "GET",
+      "path": "/api/finance/statements/cash-flow",
+      "query_params": {
+        "period_from": "YYYY-MM",
+        "period_to": "YYYY-MM",
+        "method": "indirect (default) | direct"
+      },
+      "notes": "Por defecto usa método indirecto (más común en Ecuador para PyMES)."
+    },
+
+    "ratios": {
+      "method": "GET",
+      "path": "/api/finance/ratios",
+      "query_params": {
+        "period": "YYYY-MM",
+        "category": "liquidez | solvencia | rentabilidad | eficiencia | all"
+      },
+      "response_schema": {
+        "ratios": "array of {code, category, name, value, formula, benchmark, status}"
+      }
+    },
+
+    "dcf_calculate": {
+      "method": "POST",
+      "path": "/api/finance/dcf/calculate",
+      "body_schema": {
+        "growth_rate": "number (0-1)",
+        "ebitda_margin": "number (0-1)",
+        "tax_rate": "number (0-1)",
+        "wacc": "number (0-1)",
+        "perpetual_growth": "number (0-1)",
+        "capex_pct": "number (0-1)",
+        "wc_change_pct": "number (0-1)",
+        "projection_years": "integer (default 5)",
+        "base_revenue": "number (default: pull from latest period)"
+      },
+      "response_schema": {
+        "enterprise_value": "number USD",
+        "equity_value": "number USD",
+        "pv_explicit_flows": "number",
+        "pv_terminal": "number",
+        "yearly_projections": "array of {year, revenue, ebitda, fcf, pv_fcf}",
+        "sensitivity_analysis": {
+          "wacc_pm_2pct": "number range",
+          "growth_pm_3pct": "number range"
+        }
+      }
+    },
+
+    "scenarios_simulate": {
+      "method": "POST",
+      "path": "/api/finance/scenarios/simulate",
+      "body_schema": {
+        "scenario_type": "OPTIMIST | BASE | PESSIMIST | CUSTOM",
+        "overrides": "object — sobrescribe assumptions del scenario_type"
+      }
+    },
+
+    "what_if": {
+      "method": "POST",
+      "path": "/api/finance/what-if",
+      "body_schema": {
+        "dso_reduction_days": "integer",
+        "otif_increase_pp": "number",
+        "cogs_reduction_pct": "number",
+        "route_optimization_pct": "number"
+      },
+      "response_schema": {
+        "cash_release_usd": "number",
+        "ebitda_increase_usd": "number",
+        "revenue_increase_usd": "number",
+        "ev_impact_usd": "number"
+      }
+    },
+
+    "sri_forms": {
+      "method": "GET",
+      "path": "/api/finance/sri/forms",
+      "query_params": {
+        "fiscal_year": "integer",
+        "status": "all | pending | filed | overdue"
+      }
+    },
+
+    "sri_generate_form": {
+      "method": "POST",
+      "path": "/api/finance/sri/generate-form/:form_code",
+      "params": {
+        "form_code": "101 | 103 | 104 | 107 | 115 | RDEP | ATS"
+      },
+      "body_schema": {
+        "fiscal_period": "YYYY-MM (mensual) | YYYY (anual)",
+        "output_format": "xml | pdf | both"
+      }
+    },
+
+    "three_way_matching": {
+      "method": "GET",
+      "path": "/api/finance/three-way-matching",
+      "query_params": {
+        "period": "YYYY-MM",
+        "status": "matched | discrepancy | pending"
+      }
+    },
+
+    "ai_insights": {
+      "method": "GET",
+      "path": "/api/finance/ai-insights",
+      "query_params": {
+        "type": "executive | financial_states | dcf | what_if",
+        "period": "YYYY-MM"
+      },
+      "response_schema": {
+        "insights": "array of {title, description, impact_usd, action_suggested, priority}"
+      },
+      "notes": "Usa Claude API (function calling) en backend para generar análisis. Ver INTEGRATION_GUIDE.md."
+    },
+
+    "data_sources_health": {
+      "method": "GET",
+      "path": "/api/finance/data-sources/health",
+      "response_schema": {
+        "sources": "array of {module, last_sync, latency_ms, status, kpis_count}"
+      }
+    }
+  },
+
+  "websocket_channels": {
+    "finance:executive": "Push de KPIs ejecutivos cada vez que cambian",
+    "finance:alerts": "Alertas IA en tiempo real",
+    "finance:savings": "Cada nuevo ahorro registrado en compras dispara update",
+    "finance:sri:warnings": "Vencimientos próximos de formularios SRI"
+  },
+
+  "frontend_routes": {
+    "/finance/executive": "Dashboard ejecutivo (vista 1)",
+    "/finance/optimization": "Optimización 4D (vista 2)",
+    "/finance/states": "Estados financieros (vista 3)",
+    "/finance/kpis": "Ratios financieros (vista 4)",
+    "/finance/dcf": "Valuación DCF (vista 5)",
+    "/finance/scenarios": "Escenarios y what-if (vista 6)",
+    "/finance/sri": "Cumplimiento SRI (vista 7)",
+    "/finance/integrations": "Fuentes de datos (vista 8)"
+  },
+
+  "permissions_rbac": {
+    "finance:read": "Ver dashboards y reportes",
+    "finance:write_journal": "Crear/editar asientos contables",
+    "finance:close_period": "Cerrar período contable",
+    "finance:dcf_models": "Crear/guardar modelos DCF",
+    "finance:sri_file": "Presentar declaraciones SRI",
+    "finance:audit": "Acceso a logs y auditoría",
+    "finance:admin": "Configuración del módulo"
+  },
+
+  "ecuador_specific_constants": {
+    "tax_rates": {
+      "iva_general": 0.15,
+      "iva_zero_rated": 0.0,
+      "income_tax_corporate": 0.25,
+      "workers_participation": 0.15,
+      "effective_tax_rate": 0.3625
+    },
+    "sri_form_due_days": {
+      "form_101": "Anual - Abril del siguiente ejercicio",
+      "form_103": "Mensual - 9 a 28 del siguiente mes según noveno dígito RUC",
+      "form_104": "Mensual - 9 a 28 del siguiente mes según noveno dígito RUC",
+      "form_107": "Anual - Enero",
+      "form_115_ats": "Mensual - 28 del siguiente mes",
+      "rdep": "Anual - Enero"
+    },
+    "central_bank_reference_rates": {
+      "active_referencial": 0.085,
+      "country_risk_premium": 0.034,
+      "url_source": "https://contenido.bce.fin.ec/"
+    }
+  },
+
+  "ai_function_calling": {
+    "description": "Claude API se invoca desde backend para generar insights. Ver INTEGRATION_GUIDE.md sección 'Configuración del agente IA financiero'.",
+    "tools_to_register": [
+      "get_financial_state(period, framework)",
+      "calculate_dcf(assumptions)",
+      "compare_scenarios(scenario_a, scenario_b)",
+      "detect_anomalies(account_id, period)",
+      "suggest_optimizations(target_kpi)"
+    ]
+  }
+}

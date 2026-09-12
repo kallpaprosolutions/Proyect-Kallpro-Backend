@@ -1,0 +1,31 @@
+hay alguna manera que con un activador, mando solo con dar clic se corran todos los comandos para correr el demo del erp, podrias crearlo y asi mismo para pararlo cuando no este programando. (opcion correr, y opcion parar)
+
+
+Creado 2 archivos
+Listo. Verifica que los archivos están en la carpeta
+
+
+Ejecutado 2 comandos
+Los 2 archivos están creados. Así es cómo usarlos
+
+▶️ Para iniciar KallpaPro
+Abre el Explorador de Windows, navega a
+
+C:\Users\ACER\OneDrive\Documentos\Archivos Claude\Proyect-Kallpro\
+
+Doble clic en INICIAR KallpaPro.bat
+
+Lo que hace automáticamente
+
+Arranca la base de datos Docker
+Abre ventana del Backend y corre npm run dev
+Espera 7 segundos a que el backend esté listo
+Abre ventana del Frontend y corre npm run dev
+Abre ventana de Ollama AI
+Espera 10 segundos y abre el navegador en localhost3001login
+⏹️ Para parar todo
+Doble clic en PARAR KallpaPro.bat
+
+Cierra Frontend, Backend, Ollama y detiene el contenedor Docker.
+
+⚠️ La primera vez que abras el .bat Windows puede pedir confirmación de seguridad — clic en Ejecutar de todas formas o Más información → Ejecutar de todas formas.
