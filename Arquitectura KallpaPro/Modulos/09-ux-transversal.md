@@ -98,8 +98,74 @@ en `auth/permissions-matrix.ts` (puro), expuesto en `GET /auth/me/permissions` �
 desincroniza del enforcement real porque no es una lista aparte, es el mismo dato. Verificado
 e2e real en navegador (rol ADMIN: "Control total" + matriz completa por módulo).
 
+## Ejecutado ✅ (2026-09-16 — D2 "Panel de indicadores" configurable, Fase D del plan Odoo)
+Tarjetas KPI arrastrables/redimensionables en Inicio (`react-grid-layout`), con posición
+persistida por usuario. **Hallazgo de paso**: `home-summary.service.ts` (`GET /dashboard/
+home-summary`) ya calculaba ventas/compras del mes, requisiciones/OC pendientes, pipeline CRM,
+leads, producción activa, bajo stock y por cobrar — pero el endpoint estaba huérfano, ningún
+componente del frontend lo consumía. D2 reutiliza esa agregación tal cual (sin tocar la
+consulta), solo la muestra.
+
+Catálogo de 10 tarjetas en `dashboardLayout.ts` (frontend, puro), cada una con el `Subject`
+CASL que la habilita — mismo filtro `useCan()` que ya usaban las tarjetas de módulo de
+`Dashboard.tsx`, sin duplicar la matriz de permisos. `mergeDashboardLayout()` (puro, 7 tests
+unitarios) combina el layout guardado con las tarjetas disponibles en la sesión: conserva
+posición/tamaño de las que siguen, descarta las que ya no aplican (p. ej. le quitaron un
+permiso), agrega al final las nuevas. Reutiliza `StatCard`/`Sparkline` ya existentes — sin
+componente de tarjeta nuevo.
+
+Persistencia: `User.dashboardLayout` (`Json?`, migración `user_dashboard_layout`) — `null`
+hasta que el usuario personaliza el panel por primera vez. `GET/PUT /dashboard/layout`
+(`dashboard-layout.service.ts`), validado con Zod (`dashboard-layout.schema.ts`). Modo
+"Personalizar" activa drag/resize/quitar (botón ✕ por tarjeta) y un selector "Agregar tarjeta"
+para las que el usuario ocultó; el guardado se debounce 600ms tras cada cambio.
+
+3 tests de integración con BD real (`tests/integration/dashboard-layout.test.ts`) + 7
+unitarios del merge (`dashboardLayout.test.ts`), 748/748 backend (1 falla preexistente por
+timeout de firma XAdES-BES ajena a este cambio, flag aparte) + 124/124 frontend, `tsc --noEmit`
+limpio en ambos. Verificado e2e real en el navegador como admin: 10 tarjetas con datos reales,
+quitar/re-agregar una tarjeta persistido en BD, layout sobrevive un reload de página.
+
+## Ejecutado ✅ (2026-09-24 — propuestas de internet, doc 09: 16/16)
+- **Centro de avisos in-app** (`Notification` + `ux.service.notifyUsers`): canal primario. Genera
+  avisos desde el punto exacto del servicio: seguidores de un documento ante cambio de estado o
+  mensaje (`chatter.logFieldChange`/`postMessage`, quien actúa queda como seguidor), actividad
+  asignada a otra persona, aprobación de pago pendiente (CRITICAL → correo inmediato). Resumen
+  diario/semanal opcional por correo (job `ux-daily.job.ts`, 07:00). Preferencias por usuario en
+  `User.uiPrefs` (menú del usuario → "Preferencias de avisos"). Sin push nativo (no hay app ni
+  servicio de push): lo crítico va por correo.
+- **Campana del header** (`NotificationCenter.tsx`): Avisos + Mis actividades agrupadas
+  vencidas/hoy/próximas; completar/posponer con la máquina XState `machines/activity.machine.ts`
+  y `PATCH /activities/:id/snooze`.
+- **Lista / Kanban / Calendario** (`kanban/ViewSwitcher.tsx` + `DocumentCalendar.tsx`) en
+  Pedidos, Facturas y Requisiciones; vista recordada por usuario (localStorage).
+- **Breadcrumbs apilables** (`routeLabels.pushCrumb` + `location.state.crumbStack`) al saltar
+  desde smart buttons.
+- **Inicio por rol** (`lib/roleHome.ts` + `dashboard/RoleShortcuts.tsx`, filtrado por CASL) y
+  **recorrido guiado** por rol (`onboarding/OnboardingTour.tsx`, marcado en servidor por rol).
+  **Bug corregido 2026-10-01**: `OnboardingTour.tsx` entraba en loop infinito ("Maximum update
+  depth exceeded") y dejaba la app en blanco en el primer login de un rol sin tour visto — `steps`
+  se recalculaba con `.filter()` en cada render, dándole una identidad nueva a `step` siempre, lo
+  que hacía que `measure` (`useCallback` con dep `[step]`) disparara el `useLayoutEffect` en loop.
+  Corregido memoizando `steps` con `useMemo` (deps `[user?.role, open]`). Verificado e2e real.
+- **Búsqueda sin acentos**: migración `CREATE EXTENSION unaccent`; `search.service.unaccentIds`
+  (lista blanca de tablas/columnas) en la búsqueda global y el buscador de productos;
+  `DataTable` filtra con `normalizeText`.
+- **Centro de reportes** `/reportes/centro` (Ventas/Compras/CxC × mes/categoría/tercero) con
+  drill-down por barra, export Excel/PDF y resumen en lenguaje natural (`kpiNarrative`,
+  determinístico).
+- **Copiloto por documento** (`CopilotPanel.tsx` + `GET /ux/copilot/:type/:id`, motor
+  `copilotSuggestions`) en factura/OC/pedido/requisición: aceptar/editar/descartar → actividad.
+- **Autonomía IA** (`settings.autonomy`): Compras (reorden → requisición en borrador; aprobación
+  rápida de montos bajos) y Ventas (prioridad de pedidos). Piloto automático solo prepara
+  borradores; nunca aprueba/paga/confirma.
+- **Captura móvil** `/movil`, `/movil/recepcion`, `/movil/pedido` (escáner primero).
+- Motor puro `services/engines/ux.engine.ts` (16 tests) + integración `tests/integration/ux-pro.test.ts` (7).
+
 ## Mejoras propuestas
-- ❌ Búsqueda sensible a acentos ("tornilleria" no encuentra "tornillería") — falta extensión `unaccent` de PostgreSQL (deuda técnica del entorno).
+- ✅ ~~Búsqueda sensible a acentos~~ — cerrado 2026-09-24 con `unaccent` (ver arriba).
+- ❌ Push nativo al celular para eventos críticos (requiere service worker + VAPID o app nativa).
+- ❌ Más tipos de documento en el copiloto (cotización, NC, guía) y más módulos en el centro de reportes (inventario, producción).
 
 ## Ver también
 - [[plan-mejoras-odoo18|Plan de mejoras Odoo 18]] (Fase A completa + hallazgos de la exploración en vivo)

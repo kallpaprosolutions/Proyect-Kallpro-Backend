@@ -14,7 +14,7 @@ export const financialApi = {
     client.get(`/financial/invoices/${invoiceId}/creditable`),
   getCreditNotes: (invoiceId: string) =>
     client.get(`/financial/invoices/${invoiceId}/credit-notes`),
-  createCreditNote: (invoiceId: string, data: { reason: string; restock?: boolean; lines: Array<{ salesOrderItemId: string; quantity: number }> }) =>
+  createCreditNote: (invoiceId: string, data: { reason: string; reasonCode?: string; restock?: boolean; lines: Array<{ salesOrderItemId: string; quantity: number }> }) =>
     client.post(`/financial/invoices/${invoiceId}/credit-notes`, data),
   getCreditNote: (id: string) => client.get(`/financial/credit-notes/${id}`),
 
@@ -90,6 +90,38 @@ export const financialApi = {
   // Declaraciones por casillas + tablero contable accionable (Sprint 11)
   getForm104Casillas: (period: string) => client.get(`/financial/sri/form-104-casillas/${period}`),
   getForm103Casillas: (period: string) => client.get(`/financial/sri/form-103-casillas/${period}`),
+  // Réplica llenable del Formulario 104 oficial (2026-09-28): layout real + mapeo de cuentas + edición.
+  getForm104ReplicaLayout: () => client.get('/financial/sri/form104-replica/layout'),
+  getForm104ReplicaMappings: () => client.get('/financial/sri/form104-replica/mappings'),
+  saveForm104ReplicaMapping: (casillaCode: string, accounts: { code: string; name: string; sign: 1 | -1 }[]) =>
+    client.put('/financial/sri/form104-replica/mappings', { casillaCode, accounts }),
+  deleteForm104ReplicaMapping: (casillaCode: string) => client.delete(`/financial/sri/form104-replica/mappings/${casillaCode}`),
+  getForm104Replica: (period: string) => client.get('/financial/sri/form104-replica', { params: { period } }),
+  saveForm104ReplicaOverride: (period: string, casillaCode: string, value: number) =>
+    client.put('/financial/sri/form104-replica/override', { period, casillaCode, value }),
+  deleteForm104ReplicaOverride: (period: string, casillaCode: string) =>
+    client.delete(`/financial/sri/form104-replica/override/${casillaCode}`, { params: { period } }),
+  // Réplica llenable del Formulario 103 oficial (2026-09-28) — mismo patrón que el 104.
+  getForm103ReplicaMappings: () => client.get('/financial/sri/form103-replica/mappings'),
+  saveForm103ReplicaMapping: (casillaCode: string, accounts: { code: string; name: string; sign: 1 | -1 }[]) =>
+    client.put('/financial/sri/form103-replica/mappings', { casillaCode, accounts }),
+  deleteForm103ReplicaMapping: (casillaCode: string) => client.delete(`/financial/sri/form103-replica/mappings/${casillaCode}`),
+  getForm103Replica: (period: string) => client.get('/financial/sri/form103-replica', { params: { period } }),
+  saveForm103ReplicaOverride: (period: string, casillaCode: string, value: number) =>
+    client.put('/financial/sri/form103-replica/override', { period, casillaCode, value }),
+  deleteForm103ReplicaOverride: (period: string, casillaCode: string) =>
+    client.delete(`/financial/sri/form103-replica/override/${casillaCode}`, { params: { period } }),
+  // Réplica llenable del Formulario 101 oficial (2026-10-01) — mismo patrón, período ANUAL (AAAA).
+  getForm101ReplicaMappings: () => client.get('/financial/sri/form101-replica/mappings'),
+  saveForm101ReplicaMapping: (casillaCode: string, accounts: { code: string; name: string; sign: 1 | -1 }[]) =>
+    client.put('/financial/sri/form101-replica/mappings', { casillaCode, accounts }),
+  deleteForm101ReplicaMapping: (casillaCode: string) => client.delete(`/financial/sri/form101-replica/mappings/${casillaCode}`),
+  getForm101Replica: (period: string, rates?: { tarifaGeneral: number; tarifaReinversion: number }) =>
+    client.get('/financial/sri/form101-replica', { params: { period, ...(rates ? { tarifaGeneral: rates.tarifaGeneral, tarifaReinversion: rates.tarifaReinversion } : {}) } }),
+  saveForm101ReplicaOverride: (period: string, casillaCode: string, value: number) =>
+    client.put('/financial/sri/form101-replica/override', { period, casillaCode, value }),
+  deleteForm101ReplicaOverride: (period: string, casillaCode: string) =>
+    client.delete(`/financial/sri/form101-replica/override/${casillaCode}`, { params: { period } }),
   getAts: (period: string) => client.get(`/financial/sri/ats/${period}`),
   getAtsXml: (period: string) => client.get(`/financial/sri/ats/${period}/xml`, { responseType: 'text' }),
   // Cierre de impuestos automático (Etapa 6 del plan SRI)
@@ -104,6 +136,10 @@ export const financialApi = {
   // ── Contabilidad: plan de cuentas, balanza y estados financieros ────────────
   seedAccounts: () => client.post('/financial/seed-accounts'),
   getChartOfAccounts: () => client.get('/financial/chart-of-accounts'),
+  setAccountDeductible: (id: string, isDeductible: boolean) =>
+    client.put(`/financial/chart-of-accounts/${id}/deductible`, { isDeductible }),
+  getForm101: (year: number, tasaPct?: number, perdidas?: number) =>
+    client.get('/financial/form101', { params: { year, tasaPct, perdidas } }),
   getTrialBalance: (from?: string, to?: string) =>
     client.get('/financial/trial-balance', { params: { from, to } }),
   getBalanceSheet: (asOf?: string) =>
@@ -158,8 +194,8 @@ export const financialApi = {
     client.get('/financial/fiscal-periods', { params: { monthsBack } }),
   closeFiscalPeriod: (year: number, month: number, notes?: string) =>
     client.post('/financial/fiscal-periods/close', { year, month, notes }),
-  reopenFiscalPeriod: (year: number, month: number) =>
-    client.post('/financial/fiscal-periods/reopen', { year, month }),
+  reopenFiscalPeriod: (year: number, month: number, reason: string) =>
+    client.post('/financial/fiscal-periods/reopen', { year, month, reason }),
 
   /** Descarga un export CSV del backend (con el token del cliente) y dispara el guardado. */
   downloadCsv: async (path: string, params: Record<string, string | number | undefined>, filename: string) => {
@@ -197,6 +233,10 @@ export const financialApi = {
   downloadCashFlowExcel: (from: string | undefined, to: string | undefined, method: 'direct' | 'indirect') =>
     financialApi.downloadFile('/financial/cash-flow/export.xlsx', { from, to, method }, `flujo-de-efectivo-${method}.xlsx`),
 
+  /** Pivot/Gráfico genérico sobre el diario (D3 del plan Odoo 18) */
+  getJournalPivot: (params: Record<string, string | undefined>) =>
+    client.get('/financial/pivot/journal', { params }),
+
   // Asientos contables
   getJournalEntries: (params?: Record<string, string>) =>
     client.get('/financial/journal-entries', { params }),
@@ -207,8 +247,8 @@ export const financialApi = {
     client.get('/financial/journal-entries', { params: { page: 1, ...params } }),
   createJournalEntry: (data: { date?: string; description: string; lines: any[] }) =>
     client.post('/financial/journal-entries', data),
-  reverseJournalEntry: (id: string) =>
-    client.post(`/financial/journal-entries/${id}/reverse`),
+  reverseJournalEntry: (id: string, reason: string) =>
+    client.post(`/financial/journal-entries/${id}/reverse`, { reason }),
 
   // Configuración de cuentas (posting setup)
   getAccountMappings: () => client.get('/financial/account-mappings'),
@@ -262,8 +302,8 @@ export const financialApi = {
   /** Enlaza manualmente una nota de crédito a la factura que debe netear. */
   linkCreditNote: (creditNoteId: string, sriDocumentId: string) =>
     client.post(`/financial/ap/credit-notes/${creditNoteId}/link`, { sriDocumentId }),
-  unlinkCreditNote: (creditNoteId: string) =>
-    client.post(`/financial/ap/credit-notes/${creditNoteId}/unlink`),
+  unlinkCreditNote: (creditNoteId: string, reason: string) =>
+    client.post(`/financial/ap/credit-notes/${creditNoteId}/unlink`, { reason }),
   /** Reclasifica una línea de un asiento contabilizado a otra cuenta (regularización de un mal registro), sin editar el asiento original. */
   reclassifyEntry: (data: { entryId: string; lineId: string; toAccountCode: string; reason: string }) =>
     client.post('/financial/journal-entries/reclassify', data),

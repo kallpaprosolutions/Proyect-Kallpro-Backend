@@ -3,8 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { financialApi } from '../../api/financial';
 import { useToast } from '../../components/ui/Toast';
 import { useConfirm } from '../../hooks/useConfirm';
-import { useAuthStore } from '../../store/auth.store';
-import { checkPermission } from '../../lib/permissions';
+import { useCan } from '../../hooks/useCan';
+import { useReasonPrompt, CloseChecklistPanel, AuditTimeline, controlsApi } from '../../components/financial/AccountingControls';
 import { downloadClientCsv } from '../../lib/csv';
 import BalanceSheet from '../../components/financial/BalanceSheet';
 import IncomeStatement from '../../components/financial/IncomeStatement';
@@ -15,27 +15,33 @@ import ManualJournalForm from '../../components/financial/ManualJournalForm';
 import TaxConfigPanel from '../../components/financial/TaxConfigPanel';
 import FiscalConfigPanel from '../../components/financial/FiscalConfigPanel';
 import PeriodPicker from '../../components/financial/PeriodPicker';
+import Form104OfficialReplica from '../../components/financial/Form104OfficialReplica';
+import Form103OfficialReplica from '../../components/financial/Form103OfficialReplica';
+import Form101OfficialReplica from '../../components/financial/Form101OfficialReplica';
+import PivotView from '../../components/common/PivotView';
 import { CuentasPorPagarTab, CuentasPorCobrarTab } from '../../components/financial/ApArTabs';
 import CollapsiblePanel from '../../components/ui/CollapsiblePanel';
 import StatCard from '../../components/ui/StatCard';
 import {
   BarChart3, BookOpen, Scale, BookText, Droplets, Lock,
   Receipt, Library, Scissors, Settings, ArrowDownCircle,
-  ArrowUpCircle, Cog, Building2, Landmark, FileSignature, PieChart, FileBarChart2,
+  ArrowUpCircle, Cog, Building2, Landmark, FileSignature, PieChart, FileBarChart2, LayoutGrid, ShieldCheck,
 } from 'lucide-react';
 
-type Sub = 'resumen' | 'reporte' | 'mayor' | 'comprobacion' | 'flujo-efectivo' | 'patrimonio' | 'asientos' | 'cierres' | 'tributario' | 'plan' | 'retenciones' | 'impuestos' | 'cxp' | 'cxc' | 'facturacion-electronica';
+type Sub = 'resumen' | 'reporte' | 'mayor' | 'comprobacion' | 'flujo-efectivo' | 'patrimonio' | 'asientos' | 'pivot' | 'cierres' | 'auditoria' | 'tributario' | 'plan' | 'retenciones' | 'impuestos' | 'cxp' | 'cxc' | 'facturacion-electronica';
 const TABS: { key: Sub; label: string; icon: ReactNode; perm: string }[] = [
   { key: 'resumen', label: 'Resumen', icon: <BarChart3 className="w-4 h-4" />, perm: 'view' },
   { key: 'reporte', label: 'Reporte', icon: <FileBarChart2 className="w-4 h-4" />, perm: 'view' },
   { key: 'mayor', label: 'Mayor', icon: <BookOpen className="w-4 h-4" />, perm: 'view' },
   { key: 'comprobacion', label: 'Comprobación', icon: <Scale className="w-4 h-4" />, perm: 'view' },
   { key: 'asientos', label: 'Asientos', icon: <BookText className="w-4 h-4" />, perm: 'view' },
+  { key: 'pivot', label: 'Pivot', icon: <LayoutGrid className="w-4 h-4" />, perm: 'view' },
   { key: 'flujo-efectivo', label: 'Flujo de Efectivo', icon: <Droplets className="w-4 h-4" />, perm: 'view' },
   { key: 'patrimonio', label: 'Patrimonio y NIIF', icon: <PieChart className="w-4 h-4" />, perm: 'view' },
   { key: 'cxp', label: 'Cuentas por Pagar', icon: <ArrowUpCircle className="w-4 h-4" />, perm: 'view' },
   { key: 'cxc', label: 'Cuentas por Cobrar', icon: <ArrowDownCircle className="w-4 h-4" />, perm: 'view' },
   { key: 'cierres', label: 'Cierres', icon: <Lock className="w-4 h-4" />, perm: 'view' },
+  { key: 'auditoria', label: 'Auditoría', icon: <ShieldCheck className="w-4 h-4" />, perm: 'view' },
   { key: 'tributario', label: 'Declaraciones', icon: <Receipt className="w-4 h-4" />, perm: 'taxes' },
   { key: 'plan', label: 'Plan de Cuentas', icon: <Library className="w-4 h-4" />, perm: 'view' },
   { key: 'retenciones', label: 'Retenciones', icon: <Scissors className="w-4 h-4" />, perm: 'view' },
@@ -441,9 +447,9 @@ const ENTRY_LABELS: Record<string, string> = {
   PURCHASE_ORDER: 'Compra', SALES_ORDER: 'Venta', INVOICE: 'Cobro/Pago', SRI_DOCUMENT: 'Retención',
   INVENTORY: 'Inventario', MANUAL: 'Manual', REVERSAL: 'Reversa', PAYROLL: 'Nómina', TREASURY: 'Tesorería',
 };
-function AsientosTab({ canPost, canReverse, canExport }: { canPost: boolean; canReverse: boolean; canExport: boolean }) {
+function AsientosTab({ canPost, canReverse, canExport, canReview }: { canPost: boolean; canReverse: boolean; canExport: boolean; canReview: boolean }) {
   const toast = useToast();
-  const confirmAction = useConfirm();
+  const [askReason, reasonDialog] = useReasonPrompt();
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -470,16 +476,24 @@ function AsientosTab({ canPost, canReverse, canExport }: { canPost: boolean; can
   const exportCsv = () => financialApi.downloadCsv('/financial/journal-entries', cleanParams(), 'libro-diario.csv');
   const entries = result?.items ?? [];
   const reverse = async (id: string) => {
-    const ok = await confirmAction({ title: 'Reversar asiento', message: '¿Reversar este asiento? Se creará un asiento espejo.', variant: 'danger' });
-    if (!ok) return;
-    try { await financialApi.reverseJournalEntry(id); toast.success('Asiento reversado', '✓'); load(); }
+    // Propuesta 06: el reverso exige motivo (catálogo + detalle) y queda en la bitácora encadenada.
+    const reason = await askReason('REVERSAL', 'Reversar asiento', 'Se creará un asiento espejo. Indica por qué.');
+    if (!reason) return;
+    try { await financialApi.reverseJournalEntry(id, reason); toast.success('Asiento reversado', '✓'); load(); }
     catch (e: any) { toast.error(e?.response?.data?.error || 'Error', 'Error'); }
+  };
+  // Revisión continua: marcar asientos revisados día a día (el cierre lo exige como tarea).
+  const review = async (ids: string[], reviewed: boolean) => {
+    if (!ids.length) return;
+    try { await controlsApi.review(ids, reviewed); toast.success(reviewed ? `${ids.length} asiento(s) marcado(s) como revisado(s)` : 'Revisión quitada', '✓'); load(); }
+    catch (e: any) { toast.error(e?.response?.data?.error || 'No se pudo marcar', 'Error'); }
   };
   const setF = (k: string, v: string) => setFilters((f) => ({ ...f, [k]: v }));
   const inputCls = 'bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-900 dark:text-white';
 
   return (
     <div className="space-y-5">
+      {reasonDialog}
       {canPost && <ManualJournalForm onSaved={load} />}
 
       {/* Barra de filtros del libro diario */}
@@ -532,6 +546,11 @@ function AsientosTab({ canPost, canReverse, canExport }: { canPost: boolean; can
       <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft overflow-hidden">
         <div className="px-4 py-3 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between flex-wrap gap-2">
           <span className="font-semibold text-surface-900 dark:text-white">Libro Diario</span>
+          {canReview && entries.some((x: any) => !x.reviewedAt) && (
+            <button onClick={() => review(entries.filter((x: any) => !x.reviewedAt).map((x: any) => x.id), true)} className="text-xs px-3 py-1 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300">
+              ✓ Marcar página como revisada
+            </button>
+          )}
           {result && (
             <span className="text-xs text-surface-500">
               {result.total} asiento{result.total === 1 ? '' : 's'} · Debe {money(result.totals.debit)} · Haber {money(result.totals.credit)}
@@ -550,6 +569,11 @@ function AsientosTab({ canPost, canReverse, canExport }: { canPost: boolean; can
                   <span className="text-xs text-surface-500">{new Date(e.entryDate).toLocaleDateString('es')}</span>
                   <span className="font-mono text-sm text-surface-900 dark:text-white">{money(Number(e.totalDebit))}</span>
                   {e.status === 'REVERSED' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400">REVERSADO</span>}
+                  {canReview ? (
+                    <label className="text-[11px] flex items-center gap-1 text-surface-500" onClick={(ev) => ev.stopPropagation()} title="Revisión continua del período">
+                      <input type="checkbox" checked={!!e.reviewedAt} onChange={(ev) => review([e.id], ev.target.checked)} /> Revisado
+                    </label>
+                  ) : e.reviewedAt ? <span className="text-[11px] text-green-600 dark:text-green-400">✓ Revisado</span> : null}
                   {canReverse && e.status !== 'REVERSED' && e.entityType !== 'REVERSAL' && (
                     <button onClick={(ev) => { ev.stopPropagation(); reverse(e.id); }} className="text-xs text-surface-400 hover:text-red-600 dark:hover:text-red-400">Reversar</button>
                   )}
@@ -714,9 +738,10 @@ function ComprobacionTab({ canExport, onAccountClick }: { canExport: boolean; on
 }
 
 // ─── Cierres de período (candado contable mensual) ───────────────────────────
-function CierresTab({ canClose }: { canClose: boolean }) {
+function CierresTab({ canClose, canEditTasks }: { canClose: boolean; canEditTasks: boolean }) {
   const toast = useToast();
-  const confirmAction = useConfirm();
+  const [askReason, reasonDialog] = useReasonPrompt();
+  const [openChecklist, setOpenChecklist] = useState<string | null>(null);
   const [periods, setPeriods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -729,18 +754,16 @@ function CierresTab({ canClose }: { canClose: boolean }) {
 
   const act = async (p: any, action: 'close' | 'reopen') => {
     const label = `${MONTHS_ES[p.month - 1]} ${p.year}`;
-    if (action === 'close') {
-      const ok = await confirmAction({ title: 'Cerrar período', message: `¿Cerrar ${label}? No se podrán crear ni reversar asientos con fecha en ese mes.`, variant: 'danger' });
-      if (!ok) return;
-    }
+    let reason = '';
     if (action === 'reopen') {
-      const ok = await confirmAction({ title: 'Reabrir período', message: `¿Reabrir ${label}? Quedará registrado en la auditoría.` });
-      if (!ok) return;
+      const r = await askReason('PERIOD_REOPEN', `Reabrir ${label}`, 'Quedará registrado en la bitácora de auditoría.');
+      if (!r) return;
+      reason = r;
     }
     setBusy(`${p.year}-${p.month}`);
     try {
       if (action === 'close') await financialApi.closeFiscalPeriod(p.year, p.month);
-      else await financialApi.reopenFiscalPeriod(p.year, p.month);
+      else await financialApi.reopenFiscalPeriod(p.year, p.month, reason);
       toast.success(`${label} ${action === 'close' ? 'cerrado' : 'reabierto'}`);
       load();
     } catch (e: any) {
@@ -752,6 +775,7 @@ function CierresTab({ canClose }: { canClose: boolean }) {
 
   return (
     <div className="space-y-4">
+      {reasonDialog}
       <p className="text-sm text-surface-500">
         Cerrar un mes bloquea la creación y el reverso de asientos con fecha dentro de él (compras, ventas, inventario y manuales).
         {!canClose && ' Solo el Contador o el Administrador pueden cerrar/reabrir.'}
@@ -782,7 +806,7 @@ function CierresTab({ canClose }: { canClose: boolean }) {
                   <td className="px-4 py-2.5 text-right">
                     {p.status === 'CLOSED'
                       ? <button disabled={busy === `${p.year}-${p.month}`} onClick={() => act(p, 'reopen')} className="text-xs text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50">Reabrir</button>
-                      : <button disabled={busy === `${p.year}-${p.month}`} onClick={() => act(p, 'close')} className="text-xs text-surface-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50">Cerrar</button>}
+                      : <button onClick={() => setOpenChecklist(openChecklist === `${p.year}-${p.month}` ? null : `${p.year}-${p.month}`)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">Checklist de cierre</button>}
                   </td>
                 )}
               </tr>
@@ -790,6 +814,16 @@ function CierresTab({ canClose }: { canClose: boolean }) {
           </tbody>
         </table>
       </div>
+      {openChecklist && (() => {
+        const [y, m] = openChecklist.split('-').map(Number);
+        const p = periods.find((x) => x.year === y && x.month === m);
+        return (
+          <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft">
+            <div className="px-4 pt-3 font-semibold text-surface-900 dark:text-white">{MONTHS_ES[m - 1]} {y}</div>
+            <CloseChecklistPanel year={y} month={m} canEdit={canEditTasks} canClose={canClose} onClose={async () => { if (p) await act(p, 'close'); }} />
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -827,10 +861,14 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
   const now = new Date();
   const defaultPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [period, setPeriod] = useState(defaultPeriod);
-  const [form, setForm] = useState<'104' | '103' | 'ATS'>('104');
+  const [form, setForm] = useState<'104' | '104-oficial' | '103' | '103-oficial' | 'ATS' | '101' | '101-oficial'>('104');
   const [f104, setF104] = useState<any>(null);
   const [f103, setF103] = useState<any>(null);
   const [ats, setAts] = useState<any>(null);
+  const [f101Year, setF101Year] = useState(now.getFullYear() - 1); // el 101 se declara en abril sobre el ejercicio anterior
+  const [f101Tasa, setF101Tasa] = useState(25);
+  const [f101, setF101] = useState<any>(null);
+  const [f101Loading, setF101Loading] = useState(false);
   const [warnings, setWarnings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingXml, setDownloadingXml] = useState(false);
@@ -847,6 +885,15 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
       .finally(() => setLoading(false));
     loadTaxClosing();
   }, [period]);
+
+  useEffect(() => {
+    if (form !== '101') return;
+    setF101Loading(true);
+    financialApi.getForm101(f101Year, f101Tasa)
+      .then((r) => setF101(r.data))
+      .catch(() => setF101(null))
+      .finally(() => setF101Loading(false));
+  }, [form, f101Year, f101Tasa]);
 
   async function handleCloseTaxes() {
     if (!f104) return;
@@ -910,21 +957,38 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
       {/* Barra de control: formulario + período + estado + export */}
       <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft p-3 flex gap-3 items-center flex-wrap">
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-900 rounded-lg p-1">
-          {(['104', '103', 'ATS'] as const).map((f) => (
+          {(['104', '104-oficial', '103', '103-oficial', 'ATS', '101', '101-oficial'] as const).map((f) => (
             <button key={f} onClick={() => setForm(f)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${form === f ? 'bg-brand-500 text-white' : 'text-surface-500 hover:text-surface-900 dark:hover:text-white'}`}>
-              {f === 'ATS' ? 'ATS · Anexo Transaccional' : `Form ${f} · ${f === '104' ? 'IVA' : 'Retenciones'}`}
+              {f === 'ATS' ? 'ATS · Anexo Transaccional' : f === '101' ? 'Form 101 · Renta (anual)' : f === '101-oficial' ? 'Form 101 · Réplica oficial' : f === '104-oficial' ? 'Form 104 · Réplica oficial' : f === '103-oficial' ? 'Form 103 · Réplica oficial' : `Form ${f} · ${f === '104' ? 'IVA' : 'Retenciones'}`}
             </button>
           ))}
         </div>
-        <PeriodPicker value={period} onChange={setPeriod} />
-        {periodStatus && periodStatus !== 'NONE' && (
-          <span className={`text-xs px-2.5 py-1 rounded-full ${periodStatus === 'CLOSED' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400'}`}>
-            {periodStatus === 'CLOSED' ? '🔒 Período cerrado' : 'Período abierto'}
-          </span>
+        {form !== '101' && form !== '101-oficial' ? (
+          <>
+            <PeriodPicker value={period} onChange={setPeriod} />
+            {periodStatus && periodStatus !== 'NONE' && (
+              <span className={`text-xs px-2.5 py-1 rounded-full ${periodStatus === 'CLOSED' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400'}`}>
+                {periodStatus === 'CLOSED' ? '🔒 Período cerrado' : 'Período abierto'}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <div>
+              <label className="block text-[10px] text-surface-400 mb-0.5">Ejercicio</label>
+              <input type="number" value={f101Year} onChange={(e) => setF101Year(Number(e.target.value))}
+                className="w-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-2 py-1.5 text-sm text-surface-900 dark:text-white focus:outline-none" />
+            </div>
+            <div>
+              <label className="block text-[10px] text-surface-400 mb-0.5">Tasa IR sociedades (%)</label>
+              <input type="number" step="0.5" value={f101Tasa} onChange={(e) => setF101Tasa(Number(e.target.value))}
+                className="w-28 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-2 py-1.5 text-sm text-surface-900 dark:text-white focus:outline-none" />
+            </div>
+          </>
         )}
         <div className="flex-1" />
-        {canExport && active && (
+        {canExport && active && form !== '101' && form !== '101-oficial' && (
           <button onClick={form === '104' ? export104 : export103}
             className="text-sm px-3 py-1.5 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700">
             ⬇️ CSV
@@ -985,6 +1049,9 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
         </div>
       )}
 
+      {/* Form 104 — réplica llenable del formulario oficial (2026-09-28) */}
+      {form === '104-oficial' && <Form104OfficialReplica period={period} />}
+
       {/* Form 103 — retenciones */}
       {!loading && form === '103' && (
         <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft overflow-hidden max-w-3xl">
@@ -1020,6 +1087,9 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
           ) : <p className="p-6 text-center text-surface-400 text-sm">Sin retenciones registradas en el período.</p>}
         </div>
       )}
+
+      {/* Form 103 — réplica llenable del formulario oficial (2026-09-28) */}
+      {form === '103-oficial' && <Form103OfficialReplica period={period} />}
 
       {/* ATS — Anexo Transaccional Simplificado */}
       {!loading && form === 'ATS' && (
@@ -1111,6 +1181,74 @@ function TributarioTab({ canExport, canClose }: { canExport: boolean; canClose: 
           </div>
         </div>
       )}
+
+      {/* Formulario 101 — conciliación tributaria IR sociedades (borrador anual) */}
+      {form === '101' && (
+        <div className="space-y-4">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
+            ⚠️ Es la <strong>conciliación tributaria básica</strong> (utilidad contable → participación laboral →
+            gastos no deducibles → base imponible), no el formulario 101 completo con sus ~800 casillas oficiales.
+            Confirma las casillas exactas en DIMM Formularios antes de presentar — igual que con el ATS. No incluye
+            anticipo de Impuesto a la Renta (Formulario 115), créditos tributarios ni exoneraciones sectoriales.
+          </div>
+          {f101Loading && <p className="text-sm text-surface-400 p-6 text-center">Calculando…</p>}
+          {!f101Loading && f101 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft overflow-hidden">
+                <div className="px-4 py-3 border-b border-surface-100 dark:border-surface-700 font-semibold text-surface-900 dark:text-white">
+                  Conciliación tributaria — ejercicio {f101.year}
+                </div>
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                    <tr><td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">Utilidad contable del ejercicio</td><td className="px-4 py-2.5 text-right font-mono">{money(f101.utilidadContable)}</td></tr>
+                    <tr><td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">(−) 15% participación a trabajadores</td><td className="px-4 py-2.5 text-right font-mono text-red-600 dark:text-red-400">−{money(f101.participacionTrabajadores)}</td></tr>
+                    <tr><td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">(+) Gastos no deducibles</td><td className="px-4 py-2.5 text-right font-mono text-green-600 dark:text-green-400">+{money(f101.gastosNoDeducibles)}</td></tr>
+                    {f101.perdidasTributariasAnteriores > 0 && (
+                      <tr><td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">(−) Pérdidas tributarias amortizadas</td><td className="px-4 py-2.5 text-right font-mono text-red-600 dark:text-red-400">−{money(f101.perdidasTributariasAnteriores)}</td></tr>
+                    )}
+                    <tr className="bg-surface-50 dark:bg-surface-900/50 font-semibold">
+                      <td className="px-4 py-2.5">Base imponible</td><td className="px-4 py-2.5 text-right font-mono">{money(f101.baseImponible)}</td>
+                    </tr>
+                    <tr><td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">Tasa aplicada</td><td className="px-4 py-2.5 text-right font-mono">{f101.tasaPct}%</td></tr>
+                    <tr className="bg-brand-50 dark:bg-brand-500/10 font-semibold text-brand-700 dark:text-brand-400">
+                      <td className="px-4 py-2.5">Impuesto a la renta causado</td><td className="px-4 py-2.5 text-right font-mono">{money(f101.impuestoCausado)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-soft overflow-hidden">
+                <div className="px-4 py-3 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
+                  <span className="font-semibold text-surface-900 dark:text-white">Gastos no deducibles del ejercicio</span>
+                  <span className="text-xs text-surface-400">{f101.gastosNoDeduciblesDetalle.length} cuenta(s)</span>
+                </div>
+                {f101.gastosNoDeduciblesDetalle.length > 0 ? (
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-surface-50 dark:bg-surface-900/50 text-surface-500 uppercase">
+                      <th className="text-left px-3 py-2">Código</th><th className="text-left px-3 py-2">Cuenta</th><th className="text-right px-3 py-2">Monto</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-surface-100 dark:divide-surface-700">
+                      {f101.gastosNoDeduciblesDetalle.map((g: any) => (
+                        <tr key={g.code}>
+                          <td className="px-3 py-2 font-mono text-surface-400">{g.code}</td>
+                          <td className="px-3 py-2 text-surface-700 dark:text-surface-300">{g.name}</td>
+                          <td className="px-3 py-2 text-right font-mono">{money(g.balance)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="p-6 text-center text-surface-400 text-sm">
+                    Ninguna cuenta de gasto está marcada como no deducible. Márcalas desde Contabilidad → Plan de Cuentas.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Form 101 — réplica llenable del formulario oficial (2026-10-01) */}
+      {form === '101-oficial' && <Form101OfficialReplica year={f101Year} />}
     </div>
   );
 }
@@ -1124,8 +1262,15 @@ export default function ContabilidadPage() {
   const goLedger = (code: string) => setParams({ sub: 'mayor', account: code }, { replace: true });
 
   // Perfil contable del usuario (Sprint 6): las pestañas y acciones dependen del rol.
-  const role = useAuthStore((s) => s.user?.role ?? 'USER');
-  const can = (action: string) => checkPermission(role, 'accounting', action);
+  // Una sola fuente de permisos (propuesta 06 #7): las reglas CASL que envía el backend, las mismas
+  // que valida `authorize()` en cada ruta — cada acción de la UI mapea al gate real del servidor.
+  const { can: canDo } = useCan();
+  const PERM: Record<string, boolean> = {
+    view: canDo('read', 'Accounting'), export: canDo('read', 'Accounting'), postManual: canDo('create', 'Journal'),
+    reverse: canDo('post', 'Journal'), close: canDo('configure', 'Accounting'), taxes: canDo('update', 'Accounting'),
+    configure: canDo('configure', 'Accounting'), pay: canDo('pay', 'Payment'), review: canDo('update', 'Journal'),
+  };
+  const can = (action: string) => !!PERM[action];
   const visibleTabs = TABS.filter((t) => can(t.perm));
 
   return (
@@ -1151,13 +1296,24 @@ export default function ContabilidadPage() {
       {sub === 'reporte' && <ReporteTab onAccountClick={goLedger} />}
       {sub === 'mayor' && <MayorTab key={account ?? 'none'} initialAccount={account} canExport={can('export')} />}
       {sub === 'comprobacion' && <ComprobacionTab canExport={can('export')} onAccountClick={goLedger} />}
-      {sub === 'cierres' && <CierresTab canClose={can('close')} />}
+      {sub === 'cierres' && <CierresTab canClose={can('close')} canEditTasks={can('review')} />}
       {sub === 'tributario' && can('taxes') && <TributarioTab canExport={can('export')} canClose={can('close')} />}
       {sub === 'flujo-efectivo' && <FlujoEfectivoTab />}
       {sub === 'patrimonio' && <PatrimonioNiifTab canEditNotes={can('taxes')} />}
-      {sub === 'cxp' && <CuentasPorPagarTab canPay={can('postManual') || can('approveGerencial')} />}
-      {sub === 'cxc' && <CuentasPorCobrarTab canCollect={can('postManual') || can('approveGerencial')} />}
-      {sub === 'asientos' && <AsientosTab canPost={can('postManual')} canReverse={can('reverse')} canExport={can('export')} />}
+      {sub === 'cxp' && <CuentasPorPagarTab canPay={can('pay')} />}
+      {sub === 'cxc' && <CuentasPorCobrarTab canCollect={can('pay')} />}
+      {sub === 'asientos' && <AsientosTab canPost={can('postManual')} canReverse={can('reverse')} canExport={can('export')} canReview={can('review')} />}
+      {sub === 'auditoria' && <AuditTimeline />}
+      {sub === 'pivot' && (
+        <PivotView
+          fetchPivot={(params) => financialApi.getJournalPivot(params as any)}
+          dimLabels={{ accountCode: 'Cuenta', accountName: 'Nombre de cuenta', entityType: 'Origen', status: 'Estado', month: 'Mes' }}
+          measureLabels={{ debit: 'Debe', credit: 'Haber' }}
+          defaultRowDim="accountCode"
+          defaultMeasure="debit"
+          defaultColDim="month"
+        />
+      )}
       {sub === 'plan' && <ChartOfAccountsTree />}
       {sub === 'retenciones' && <RetencionesTab />}
       {sub === 'impuestos' && can('configure') && <TaxConfigPanel />}

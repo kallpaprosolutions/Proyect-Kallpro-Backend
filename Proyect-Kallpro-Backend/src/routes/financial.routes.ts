@@ -7,6 +7,7 @@ import * as ctrl from '../controllers/financial.controller';
 import * as creditNoteCtrl from '../controllers/credit-note.controller';
 import * as debitNoteCtrl from '../controllers/debit-note.controller';
 import * as journalCtrl from '../controllers/journal.controller';
+import * as pivotCtrl from '../controllers/pivot.controller';
 import * as executiveCtrl from '../controllers/finance/executive.controller';
 import * as ratiosCtrl from '../controllers/finance/ratios.controller';
 import * as dcfCtrl from '../controllers/finance/dcf.controller';
@@ -26,6 +27,11 @@ import * as eDebitNoteCtrl from '../controllers/finance/electronic-debitnote.con
 import * as notesCtrl from '../controllers/finance/financial-notes.controller';
 import { runDunning } from '../services/finance/dunning.service';
 import { asyncHandler } from '../middleware/error-handler';
+import * as controlsCtrl from '../controllers/finance/accounting-controls.controller';
+import * as form104ReplicaCtrl from '../controllers/finance/sri-form104-replica.controller';
+import * as form103ReplicaCtrl from '../controllers/finance/sri-form103-replica.controller';
+import * as form101ReplicaCtrl from '../controllers/finance/sri-form101-replica.controller';
+import * as arapCtrl from '../controllers/finance/arap-pro.controller';
 
 const router = Router();
 router.use(authMiddleware);
@@ -192,6 +198,9 @@ router.post('/sri/retry-pending', authorize('post', 'Journal'), sriRetryCtrl.ret
 // Contabilidad: plan de cuentas, balanza y estados financieros
 router.post('/seed-accounts', authorize('configure', 'Accounting'), accountingCtrl.seedAccounts);
 router.get('/chart-of-accounts', accountingCtrl.getChart);
+// Formulario 101: marcar cuentas de gasto como no deducibles (LORTI art. 10) — mismo gate que
+// configurar el plan de cuentas.
+router.put('/chart-of-accounts/:id/deductible', authorize('configure', 'Accounting'), accountingCtrl.setAccountDeductible);
 router.get('/trial-balance', accountingCtrl.getTrialBalance);
 router.get('/trial-balance-v2', accountingCtrl.getTrialBalance2); // saldo inicial + movimientos + saldo final (+CSV)
 
@@ -201,6 +210,7 @@ router.post('/fiscal-periods/close', authorize('configure', 'Accounting'), accou
 router.post('/fiscal-periods/reopen', authorize('configure', 'Accounting'), accountingCtrl.reopenFiscalPeriod);
 router.get('/balance-sheet', accountingCtrl.getBalanceSheet);
 router.get('/income-statement', accountingCtrl.getIncomeStatement);
+router.get('/form101', accountingCtrl.getForm101); // conciliación tributaria IR sociedades (borrador)
 router.get('/ledger/:accountCode', accountingCtrl.getLedger);     // mayor por cuenta (drill-down)
 router.get('/cash-flow', accountingCtrl.getCashFlow);             // estado de flujo de efectivo (NIC 7)
 router.get('/equity-statement', accountingCtrl.getEquityStatement); // estado de cambios en el patrimonio (NIC 1)
@@ -238,6 +248,9 @@ router.get('/taxes/iva', accountingCtrl.listIva);
 router.post('/taxes/iva', authorize('update', 'Accounting'), accountingCtrl.upsertIva);
 router.get('/taxes/retentions', accountingCtrl.listRetentions);
 router.post('/taxes/retentions', authorize('update', 'Accounting'), accountingCtrl.upsertRetention);
+
+// Pivot/Gráfico genérico sobre el diario (D3 del plan Odoo 18)
+router.get('/pivot/journal', pivotCtrl.getJournalPivot);
 
 // Journal entries (GL)
 router.get('/journal-entries', journalCtrl.listJournalEntries);
@@ -279,6 +292,34 @@ router.get('/sri/form-103/:period', sriCtrl.getForm103Handler);
 // Declaraciones por casillas SRI + tablero contable (Sprint 11)
 router.get('/sri/form-104-casillas/:period', sriCtrl.getForm104CasillasHandler);
 router.get('/sri/form-103-casillas/:period', sriCtrl.getForm103CasillasHandler);
+
+// Réplica llenable del Formulario 104 oficial (2026-09-28): layout real + mapeo de cuentas
+// parametrizable + edición manual antes de presentar.
+router.get('/sri/form104-replica/layout', form104ReplicaCtrl.getLayout);
+router.get('/sri/form104-replica/mappings', authorize('configure', 'Accounting'), form104ReplicaCtrl.getMappings);
+router.put('/sri/form104-replica/mappings', authorize('configure', 'Accounting'), form104ReplicaCtrl.saveMapping);
+router.delete('/sri/form104-replica/mappings/:casillaCode', authorize('configure', 'Accounting'), form104ReplicaCtrl.deleteMapping);
+router.get('/sri/form104-replica', form104ReplicaCtrl.getReplica);
+router.put('/sri/form104-replica/override', authorize('update', 'Accounting'), form104ReplicaCtrl.saveOverride);
+router.delete('/sri/form104-replica/override/:casillaCode', authorize('update', 'Accounting'), form104ReplicaCtrl.deleteOverride);
+
+// Réplica llenable del Formulario 103 oficial (2026-09-28) — mismo patrón exacto que el 104.
+router.get('/sri/form103-replica/layout', form103ReplicaCtrl.getLayout);
+router.get('/sri/form103-replica/mappings', authorize('configure', 'Accounting'), form103ReplicaCtrl.getMappings);
+router.put('/sri/form103-replica/mappings', authorize('configure', 'Accounting'), form103ReplicaCtrl.saveMapping);
+router.delete('/sri/form103-replica/mappings/:casillaCode', authorize('configure', 'Accounting'), form103ReplicaCtrl.deleteMapping);
+router.get('/sri/form103-replica', form103ReplicaCtrl.getReplica);
+router.put('/sri/form103-replica/override', authorize('update', 'Accounting'), form103ReplicaCtrl.saveOverride);
+router.delete('/sri/form103-replica/override/:casillaCode', authorize('update', 'Accounting'), form103ReplicaCtrl.deleteOverride);
+
+// Réplica llenable del Formulario 101 oficial (2026-10-01) — mismo patrón, período ANUAL (AAAA).
+router.get('/sri/form101-replica/layout', form101ReplicaCtrl.getLayout);
+router.get('/sri/form101-replica/mappings', authorize('configure', 'Accounting'), form101ReplicaCtrl.getMappings);
+router.put('/sri/form101-replica/mappings', authorize('configure', 'Accounting'), form101ReplicaCtrl.saveMapping);
+router.delete('/sri/form101-replica/mappings/:casillaCode', authorize('configure', 'Accounting'), form101ReplicaCtrl.deleteMapping);
+router.get('/sri/form101-replica', form101ReplicaCtrl.getReplica);
+router.put('/sri/form101-replica/override', authorize('update', 'Accounting'), form101ReplicaCtrl.saveOverride);
+router.delete('/sri/form101-replica/override/:casillaCode', authorize('update', 'Accounting'), form101ReplicaCtrl.deleteOverride);
 // Cierre de impuestos automático (Etapa 6 del plan SRI): mismo gate que fiscal-periods/close,
 // es el mismo candado contable (FiscalPeriod), solo que con el asiento de liquidación de IVA.
 router.get('/sri/tax-closing/:period', sriCtrl.getTaxClosingPreviewHandler);
@@ -334,5 +375,29 @@ router.post('/ar/collection/run-dunning', authorize('pay', 'Payment'), asyncHand
 // AI Insights
 router.get('/insights/:period', insightsCtrl.getInsightsHandler);
 router.get('/insights', insightsCtrl.getInsightsHandler);
+
+// ── Análisis CxP/CxC pro (propuesta 08): pronto pago, predicción de pago, exposición, avisos de pago ──
+router.get('/ap/payables/:id/discount-advice', arapCtrl.apDiscountAdvice);
+router.post('/ap/payables/:id/pay-with-discount', authorize('pay', 'Payment'), arapCtrl.payWithDiscount);
+router.get('/ap/exposure', arapCtrl.supplierExposure);
+router.get('/ap/payables/:id/credit-note-matches', arapCtrl.creditNoteMatches);
+router.get('/ar/predictions', arapCtrl.predictions);
+router.get('/ar/receivables/:id/discount-advice', arapCtrl.arDiscountAdvice);
+router.post('/ar/receivables/:id/collect-with-discount', authorize('pay', 'Payment'), arapCtrl.collectWithDiscount);
+router.get('/ar/payment-notices', arapCtrl.listNotices);
+router.post('/ar/payment-notices/:id/decide', authorize('pay', 'Payment'), arapCtrl.decideNotice);
+
+// ── Controles contables (propuesta 06): bitácora encadenada, motivos, checklist de cierre,
+// revisión continua de asientos y matriz de segregación de funciones.
+router.get('/controls/audit', authorize('read', 'Accounting'), controlsCtrl.listAudit);
+router.get('/controls/audit/verify', authorize('read', 'Accounting'), controlsCtrl.verifyAudit);
+router.get('/controls/request-audit', authorize('read', 'Accounting'), controlsCtrl.listRequestAudit); // auditoría transversal (usuario/IP/ruta) de todo el ERP
+router.get('/controls/reasons', controlsCtrl.listReasons);
+router.post('/controls/reasons', authorize('configure', 'Accounting'), controlsCtrl.saveReason);
+router.put('/controls/reasons/:id', authorize('configure', 'Accounting'), controlsCtrl.saveReason);
+router.get('/controls/close-checklist', authorize('read', 'Accounting'), controlsCtrl.getChecklist);
+router.post('/controls/close-checklist/task', authorize('update', 'Journal'), controlsCtrl.setTask);
+router.post('/journal-entries/review', authorize('update', 'Journal'), controlsCtrl.markReviewed);
+router.get('/controls/sod', authorize('read', 'Accounting'), controlsCtrl.sodMatrix);
 
 export default router;
