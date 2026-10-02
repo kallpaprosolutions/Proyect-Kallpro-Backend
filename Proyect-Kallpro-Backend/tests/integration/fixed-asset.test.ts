@@ -35,10 +35,12 @@ afterAll(async () => {
 });
 
 describe('fixed-asset.service — e2e con BD real', () => {
-  it('genera el asiento de depreciación del período, balanceado, y actualiza el activo', async () => {
+  it('nunca se corrió antes → recupera TODOS los meses transcurridos de una vez (catch-up, NIC 16)', async () => {
     if (!dbAvailable) { console.warn('⏭  BD no disponible — omitiendo e2e'); return; }
 
-    // Equipo de cómputo $3,600, sin residual, 3 años → $100/mes.
+    // Equipo de cómputo $3,600, sin residual, 3 años → $100/mes. Se da de alta en enero y se
+    // genera la depreciación recién en septiembre (nunca se corrió en medio) — debe recuperar
+    // los 9 meses completos (ene-sep), no solo el mes de la fecha de corte.
     const asset = await createFixedAsset(companyId, {
       name: 'Laptop de gerencia', category: 'EQUIPO_COMPUTO',
       acquisitionDate: new Date('2026-01-01T00:00:00Z'),
@@ -48,18 +50,19 @@ describe('fixed-asset.service — e2e con BD real', () => {
     const asOf = new Date('2026-09-05T00:00:00Z');
     const result = await generateDueDepreciation(companyId, undefined, asOf);
     expect(result.generated).toHaveLength(1);
-    expect(result.generated[0].amount).toBe(100);
+    expect(result.generated[0].amount).toBe(900); // 9 meses (ene-sep) × $100, no solo $100
 
     const entry = await prisma.journalEntry.findFirst({ where: { id: result.generated[0].entryId }, include: { lines: true } });
     expect(entry).not.toBeNull();
     expect(entry!.status).toBe('POSTED');
-    expect(Number(entry!.totalDebit)).toBe(100);
-    expect(Number(entry!.totalCredit)).toBe(100);
-    expect(entry!.lines.find((l) => l.accountCode === '52022101' && Number(l.debit) === 100)).toBeDefined();
-    expect(entry!.lines.find((l) => l.accountCode === '1020112' && Number(l.credit) === 100)).toBeDefined();
+    expect(Number(entry!.totalDebit)).toBe(900);
+    expect(Number(entry!.totalCredit)).toBe(900);
+    expect(entry!.description).toContain('recupera 2026-01→2026-09');
+    expect(entry!.lines.find((l) => l.accountCode === '52022101' && Number(l.debit) === 900)).toBeDefined();
+    expect(entry!.lines.find((l) => l.accountCode === '1020112' && Number(l.credit) === 900)).toBeDefined();
 
     const updated = await prisma.fixedAsset.findFirst({ where: { id: asset.id } });
-    expect(Number(updated!.accumulatedDepreciation)).toBe(100);
+    expect(Number(updated!.accumulatedDepreciation)).toBe(900);
     expect(updated!.lastDepreciatedPeriod).toBe('2026-09');
     expect(updated!.status).toBe('ACTIVE');
   });
@@ -68,6 +71,15 @@ describe('fixed-asset.service — e2e con BD real', () => {
     if (!dbAvailable) return;
     const result = await generateDueDepreciation(companyId, undefined, new Date('2026-09-25T00:00:00Z'));
     expect(result.generated).toHaveLength(0);
+  });
+
+  it('corrida el mes siguiente solo recupera ese único mes (sin volver a repetir el catch-up)', async () => {
+    if (!dbAvailable) return;
+    const result = await generateDueDepreciation(companyId, undefined, new Date('2026-10-05T00:00:00Z'));
+    expect(result.generated).toHaveLength(1);
+    expect(result.generated[0].amount).toBe(100); // un solo mes, octubre
+    const entry = await prisma.journalEntry.findFirst({ where: { id: result.generated[0].entryId } });
+    expect(entry!.description).not.toContain('recupera'); // sin catch-up, nota de rango ausente
   });
 
   it('al llegar al costo depreciable, capa el último período y marca FULLY_DEPRECIATED', async () => {

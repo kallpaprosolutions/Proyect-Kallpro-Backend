@@ -303,6 +303,105 @@ documenta ahí el detalle de A5/tour — este fix es puro bugfix, no cambia comp
 **No queda backlog pendiente de los 3 formularios SRI** (104, 103, 101) — los tres tienen réplica
 llenable con numeración oficial real, mapeo de cuentas parametrizable y edición manual.
 
+## Ejecutado ✅ (2026-10-01 — Auditoría NIC/NIIF de motores puros: depreciación y diferidos)
+Punto (a) del pedido grande de 2026-09-28 ("verificar cumplimiento NIC/NIIF línea por línea en
+los motores puros"). Se auditaron `fixed-asset.engine.ts` (NIC 16), `deferred.engine.ts` (NIC 1
+§27-28, devengo) y `equity-statement.engine.ts` (NIC 1 §106, patrimonio).
+
+**Bug real encontrado y corregido en depreciación y diferidos** (idéntico en los dos motores):
+`isDepreciationDue`/`isRecognitionDue` solo comparaban "¿ya se generó el período de `asOf`?" —
+si el generador (bajo demanda + cron diario `month-end-accruals.job.ts` 02:15, ver línea 69) se
+saltea varios meses seguidos (servidor caído, fallo transitorio por activo que persiste varios
+días, empresa creada a mitad de período), esos meses se perdían PARA SIEMPRE: la siguiente corrida
+solo generaba el mes de `asOf`, nunca recuperaba los salteados. Eso rompe el devengo exigido por
+NIC 1 §27-28 (diferidos) y la asignación sistemática de NIC 16 §50 (depreciación) — el activo
+terminaría sub-depreciado/sub-reconocido indefinidamente, nunca llegando a su costo/monto total
+dentro de la vida útil/plazo nominal.
+
+**Fix** (sin migración, compatible con el reverso de asientos ya existente):
+- `computeDueDepreciationPeriods`/`computeDueRecognitionPeriods` (nuevas, puras): en vez de un
+  booleano, devuelven cuántos períodos (meses) hay pendientes desde el último generado (o desde
+  el alta/inicio si nunca corrió) hasta `asOf`, inclusive — `isDepreciationDue`/`isRecognitionDue`
+  quedan como atajo booleano de estas, mismo contrato para quien solo necesita el conteo de
+  "pendientes" (`accounting-controls.service.ts`).
+- `computeMonthlyDepreciation`/`computeMonthlyRecognition` aceptan un nuevo parámetro `periods`
+  (default 1, retrocompatible) que multiplica la cuota mensual, siempre capado al saldo restante
+  — igual que antes, solo que ahora puede cubrir varios meses de una sola vez.
+- `fixed-asset.service.ts`/`deferred.service.ts` generan UN solo asiento por catch-up (no uno por
+  mes salteado) con el monto total recuperado; la descripción queda `"Depreciación {toPeriod}
+  (recupera {fromPeriod}→{toPeriod}) · ..."` — el período relevante (`toPeriod`, el que se
+  guarda en `lastDepreciatedPeriod`) va SIEMPRE primero para que el regex de
+  `journal.service.reverseEntry` lo siga capturando sin cambios. Reversar un asiento de catch-up
+  revierte el monto completo y reabre el campo a `null`, igual que antes — probado con la
+  suite `reverse-entry-sync-2.test.ts` ya existente (el caso de un activo dado de alta en 2020
+  y depreciado por primera vez "hoy" ya ejercitaba un catch-up grande sin saberlo, y pasó).
+
+**Patrimonio** (`equity-statement.engine.ts`, NIC 1 §106): revisado, sin bugs — agrupa en 4
+categorías (Capital/Reservas/Resultados Acumulados/Otros Patrimonio) en vez de una fila por cada
+componente individual de ORI (ver Etapa 8 ya cerrada en `plan-contabilidad-tributaria-sri.md`).
+Es una simplificación de alcance ya deliberada y probada, no una brecha de cumplimiento.
+
+Tests nuevos: 9 casos en `fixed-asset-engine.test.ts` (catch-up puro) + 3 en `deferred-engine.test.ts`
++ 2 casos nuevos de catch-up en `computeMonthlyDepreciation`/`computeMonthlyRecognition`; el test
+de integración `fixed-asset.test.ts` se corrigió (codificaba el comportamiento VIEJO e incorrecto
+de perder 8 meses) y se agregó un caso de "corrida normal tras el catch-up" para blindar que no
+se repite. 1080/1080 backend, `tsc --noEmit` limpio, sin regresiones (el test de reverso
+`reverse-entry-sync-2.test.ts` ya ejercitaba sin saberlo un catch-up grande — activo dado de alta
+en 2020, depreciado por primera vez "hoy" — y ya pasaba antes del fix porque reversar solo
+depende del monto total del asiento, no de cuántos períodos cubre).
+
+**Verificado e2e real en el navegador**: activo de prueba dado de alta el 2026-01-01 ($3.600,
+equipo de cómputo, 3 años → $100/mes), "Correr depreciación" ejecutado el 2026-10-02 (nunca antes)
+→ generó UN asiento de $1.000,00 (10 meses, ene-oct) con la descripción
+`"Depreciación 2026-10 (recupera 2026-01→2026-10) · ACT-0001 · ..."`. Reversado ese asiento desde
+el Libro Diario (motivo "Error de digitación") → el activo volvió a $0,00 acumulado y "— nunca —"
+en última depreciación, confirmando que el reverso deshace el catch-up completo de una sola vez,
+tal como antes. Datos de prueba revertidos (activo + asientos eliminados vía script).
+
+**Quedó pendiente**: no se tocó la parte (b) del pedido grande (reconciliar migraciones Prisma,
+`task_ff9a163f`) — sigue como próximo paso.
+
+## Ejecutado ✅ (2026-10-01 — Reconciliación del historial de migraciones Prisma, cierra task_ff9a163f)
+Causa raíz encontrada (no era un drift de esquema, era un drift de ORDEN): dos carpetas de
+migración tenían timestamps que NO coincidían con el orden real en que se aplicaron a la base de
+datos real (`_prisma_migrations.started_at`), algo que solo importa para el replay desde cero que
+hace el shadow DB de `prisma migrate dev`/`migrate reset` — la base de datos real siempre estuvo
+bien (por eso la app nunca tuvo problemas, solo ese comando específico).
+
+- `20260925011140_sales_segments_credit_portal` (crea `customer_segments`) en realidad se aplicó
+  ANTES que el bloque de migraciones `202609242...` — pero su timestamp (925) ordena DESPUÉS de
+  `20260924220852_arap_pro`, que hace `ALTER TABLE customer_segments ADD COLUMN dunningSteps`.
+  Al reproducir desde cero en orden alfabético, `arap_pro` intentaba alterar una tabla que
+  todavía no existía → `P3006`.
+- `20260924200000_ux_notifications_unaccent` (crea `notifications` + extensión `unaccent`) es el
+  caso inverso: se aplicó DESPUÉS de `arap_pro`, pero su timestamp (924-200000) ordena ANTES.
+
+**Fix** (sin tocar el contenido SQL de ninguna migración, sin re-crear nada, sin downtime):
+1. Renombradas las dos carpetas a timestamps que sí respetan el orden real:
+   `20260925011140_sales_segments_credit_portal` → `20260924100000_sales_segments_credit_portal`
+   (entre `production_quality_pro` y `logistics_catalogs_pod_returns`, su posición real) y
+   `20260924200000_ux_notifications_unaccent` → `20260925020000_ux_notifications_unaccent`
+   (justo después de `arap_pro`, su posición real).
+2. `UPDATE _prisma_migrations SET migration_name = '...'` para los 2 registros correspondientes
+   (la única forma soportada de renombrar una migración ya aplicada — Prisma matchea por ese
+   campo, no por timestamp).
+3. Verificado SIN tocar la base de datos real ni sus datos de demo: se creó una base de datos
+   Postgres descartable (`kallpapro_shadow_test`, mismo contenedor Docker) y se corrió
+   `prisma migrate deploy` apuntando ahí — replay limpio de las 58 migraciones desde cero, **sin
+   el error P3006**, confirmando que el drift de orden quedó resuelto. Base descartable eliminada
+   después. La base de datos real (`kallpapro`) nunca se tocó más allá del `UPDATE` del punto 2.
+4. `npx prisma migrate status` sobre la base real: `Database schema is up to date!`.
+
+Verificado también que ninguna otra migración dependía de las dos reordenadas (grep de
+`customer_segments`/`portalToken`/`creditHold` y de `notifications`/`uiPrefs`/`unaccent` en todo
+`prisma/migrations/` — solo las ya conocidas). 1080/1080 backend, sin regresiones — el reinicio
+del servidor y la sesión del navegador siguieron funcionando con normalidad.
+
+**Cierra `task_ff9a163f`**: `npx prisma migrate dev` ya no debería fallar con `P3006` para
+cualquier sesión futura que necesite migrar el esquema (detener el backend antes, por el EPERM de
+nodemon sobre el `.dll.node`, ese gotcha documentado en `CLAUDE.md` sigue vigente y es un problema
+aparte).
+
 ## Mejoras propuestas
 - El plan `plan-contabilidad-tributaria-sri.md` (facturación electrónica SRI + NIIF/Supercías)
   queda **completo (Etapas 1-8)** — no repetir ítems de ahí. También: emitir facturas FAC-

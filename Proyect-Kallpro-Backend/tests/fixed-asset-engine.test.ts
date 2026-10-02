@@ -1,4 +1,4 @@
-import { computeMonthlyDepreciation, isDepreciationDue, periodKey, FixedAssetDueRef } from '../src/services/finance/engines/fixed-asset.engine';
+import { computeMonthlyDepreciation, isDepreciationDue, computeDueDepreciationPeriods, periodKey, FixedAssetDueRef } from '../src/services/finance/engines/fixed-asset.engine';
 
 describe('fixed-asset.engine', () => {
   describe('computeMonthlyDepreciation', () => {
@@ -35,6 +35,20 @@ describe('fixed-asset.engine', () => {
       expect(r.amount).toBe(0);
       expect(r.fullyDepreciated).toBe(true);
     });
+
+    it('catch-up: periods > 1 multiplica la cuota mensual (recupera meses salteados)', () => {
+      // $3,600, 3 años → $100/mes × 9 meses salteados = $900
+      const r = computeMonthlyDepreciation(3600, 0, 3, 0, 9);
+      expect(r.amount).toBe(900);
+      expect(r.newAccumulated).toBe(900);
+    });
+
+    it('catch-up: igual se capa al saldo restante aunque periods sea grande', () => {
+      const r = computeMonthlyDepreciation(1000, 0, 1, 950, 12); // cuota normal 83.33 × 12 se pasaría del costo
+      expect(r.amount).toBe(50);
+      expect(r.newAccumulated).toBe(1000);
+      expect(r.fullyDepreciated).toBe(true);
+    });
   });
 
   describe('periodKey', () => {
@@ -61,6 +75,34 @@ describe('fixed-asset.engine', () => {
     it('ignora activos no ACTIVE (totalmente depreciados o dados de baja)', () => {
       expect(isDepreciationDue({ ...base, status: 'FULLY_DEPRECIATED' }, new Date('2026-09-10T00:00:00Z'))).toBe(false);
       expect(isDepreciationDue({ ...base, status: 'DISPOSED' }, new Date('2026-09-10T00:00:00Z'))).toBe(false);
+    });
+  });
+
+  describe('computeDueDepreciationPeriods (catch-up — NIC 16, el devengo no debe perder meses salteados)', () => {
+    const base: FixedAssetDueRef = { status: 'ACTIVE', acquisitionDate: new Date('2026-01-01T00:00:00Z'), lastDepreciatedPeriod: null };
+
+    it('nunca se corrió: cuenta desde el mes de alta hasta el de corte, inclusive', () => {
+      const due = computeDueDepreciationPeriods(base, new Date('2026-09-10T00:00:00Z'));
+      expect(due).toEqual({ periodsElapsed: 9, fromPeriod: '2026-01', toPeriod: '2026-09' });
+    });
+
+    it('ya se corrió el mes pasado: solo cuenta el mes en curso', () => {
+      const due = computeDueDepreciationPeriods({ ...base, lastDepreciatedPeriod: '2026-08' }, new Date('2026-09-10T00:00:00Z'));
+      expect(due).toEqual({ periodsElapsed: 1, fromPeriod: '2026-09', toPeriod: '2026-09' });
+    });
+
+    it('se saltearon varios meses: recupera todos de una vez, no solo el actual', () => {
+      const due = computeDueDepreciationPeriods({ ...base, lastDepreciatedPeriod: '2026-02' }, new Date('2026-07-10T00:00:00Z'));
+      expect(due).toEqual({ periodsElapsed: 5, fromPeriod: '2026-03', toPeriod: '2026-07' });
+    });
+
+    it('ya al día: null (nada pendiente)', () => {
+      expect(computeDueDepreciationPeriods({ ...base, lastDepreciatedPeriod: '2026-09' }, new Date('2026-09-20T00:00:00Z'))).toBeNull();
+    });
+
+    it('cruza de año correctamente (diciembre → enero)', () => {
+      const due = computeDueDepreciationPeriods({ ...base, lastDepreciatedPeriod: '2026-11' }, new Date('2027-02-10T00:00:00Z'));
+      expect(due).toEqual({ periodsElapsed: 3, fromPeriod: '2026-12', toPeriod: '2027-02' });
     });
   });
 });

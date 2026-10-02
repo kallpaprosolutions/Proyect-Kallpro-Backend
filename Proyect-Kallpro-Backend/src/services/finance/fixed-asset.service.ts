@@ -12,7 +12,7 @@ import { logger } from '../../lib/logger';
 import { getNextDocumentNumber } from '../../utils/sequence.helper';
 import { createDepreciationEntry } from '../journal.service';
 import {
-  FIXED_ASSET_CATEGORIES, FixedAssetCategory, isDepreciationDue, computeMonthlyDepreciation, periodKey,
+  FIXED_ASSET_CATEGORIES, FixedAssetCategory, computeDueDepreciationPeriods, computeMonthlyDepreciation, periodKey,
 } from './engines/fixed-asset.engine';
 
 export interface FixedAssetInput {
@@ -133,23 +133,26 @@ export async function generateDueDepreciation(companyId: string, actorId?: strin
   const result: GenerateResult = { generated: [], skipped: [] };
 
   for (const asset of assets) {
-    if (!isDepreciationDue(asset, asOf)) continue;
+    const due = computeDueDepreciationPeriods(asset, asOf);
+    if (!due) continue;
     try {
       const dep = computeMonthlyDepreciation(
-        Number(asset.acquisitionCost), Number(asset.residualValue), asset.usefulLifeYears, Number(asset.accumulatedDepreciation),
+        Number(asset.acquisitionCost), Number(asset.residualValue), asset.usefulLifeYears, Number(asset.accumulatedDepreciation), due.periodsElapsed,
       );
       if (dep.amount <= 0) {
         // Vida útil 0 (terreno) o ya totalmente depreciado: no genera asiento, pero sí marca
         // el período para no volver a evaluarlo cada vez que se dispare la generación.
         await prisma.fixedAsset.update({
           where: { id: asset.id },
-          data: { lastDepreciatedPeriod: periodKey(asOf), status: dep.fullyDepreciated ? 'FULLY_DEPRECIATED' : undefined },
+          data: { lastDepreciatedPeriod: due.toPeriod, status: dep.fullyDepreciated ? 'FULLY_DEPRECIATED' : undefined },
         });
         continue;
       }
 
       const entry = await createDepreciationEntry(companyId, {
-        assetId: asset.id, assetNumber: asset.assetNumber, assetName: asset.name, period: periodKey(asOf), amount: dep.amount, entryDate: asOf,
+        assetId: asset.id, assetNumber: asset.assetNumber, assetName: asset.name,
+        period: due.toPeriod, fromPeriod: due.periodsElapsed > 1 ? due.fromPeriod : undefined,
+        amount: dep.amount, entryDate: asOf,
       });
       if (!entry) continue;
 
@@ -157,7 +160,7 @@ export async function generateDueDepreciation(companyId: string, actorId?: strin
         where: { id: asset.id },
         data: {
           accumulatedDepreciation: new Prisma.Decimal(dep.newAccumulated),
-          lastDepreciatedPeriod: periodKey(asOf),
+          lastDepreciatedPeriod: due.toPeriod,
           status: dep.fullyDepreciated ? 'FULLY_DEPRECIATED' : 'ACTIVE',
         },
       });

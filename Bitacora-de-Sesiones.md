@@ -16,7 +16,76 @@
 
 ---
 
-## 2026-10-01 (sesión más reciente) — Réplica llenable del Formulario 101 oficial del SRI
+## 2026-10-01 (sesión más reciente) — Reconciliación del historial de migraciones Prisma (cierra task_ff9a163f)
+**Se hizo**: continuación directa de la sesión anterior (mismo día) — último punto pendiente del
+pedido grande de 2026-09-28. Encontrada la causa raíz exacta del `P3006` que bloqueaba
+`prisma migrate dev` desde el 26-09-28: NO era un problema de esquema, era un drift de ORDEN —
+dos carpetas de migración (`sales_segments_credit_portal`, `ux_notifications_unaccent`) tenían
+timestamps que no coincidían con el orden real en que se aplicaron a la base de datos real
+(verificado consultando `_prisma_migrations.started_at` directo en Postgres vía `docker exec`).
+La base de datos real nunca tuvo un problema real — solo el replay-desde-cero que hace el shadow
+DB de `migrate dev`/`migrate reset`, que sigue el orden alfabético de las carpetas.
+
+**Fix**: renombradas las dos carpetas a timestamps que sí respetan el orden real de aplicación +
+`UPDATE _prisma_migrations SET migration_name = ...` para los 2 registros correspondientes (sin
+tocar el contenido SQL de ninguna migración). Verificado SIN arriesgar los datos de demo de la
+base real: se creó una base Postgres descartable en el mismo contenedor Docker, se corrió
+`prisma migrate deploy` ahí (replay limpio de las 58 migraciones desde cero, sin P3006), y se
+eliminó. `prisma migrate status` sobre la base real confirma "up to date". Ver [[06-contabilidad]]
+"Ejecutado 2026-10-01 — Reconciliación del historial de migraciones Prisma" para el detalle
+completo (qué migración dependía de qué, por qué el orden importaba).
+
+1080/1080 backend, sin regresiones — reiniciado el backend (parado antes de migrar, por el EPERM
+de nodemon ya documentado) y confirmado que la sesión del navegador y la app siguen funcionando
+con normalidad tras el reinicio.
+
+**Con esto se cierran las 3 partes del pedido grande de 2026-09-28**: (a) auditoría NIC/NIIF de
+motores puros, (b) reconciliar migraciones Prisma, y el trabajo de los 3 formularios SRI oficiales
+(104/103/101) de las sesiones anteriores del mismo día. No queda backlog abierto de ese pedido.
+
+**Quedó pendiente / decisión del usuario**: ninguno de los puntos conocidos queda pendiente — la
+próxima sesión debería preguntar qué sigue (revisar `plan-mejoras-odoo18.md` §7 y
+`Arquitectura KallpaPro/Modulos/*.md` por brechas activas, o esperar instrucción directa).
+
+**Próximo paso sugerido**: preguntar al usuario qué prioridad sigue.
+
+---
+
+## 2026-10-01 — Auditoría NIC/NIIF de motores puros (depreciación/diferidos)
+**Se hizo**: continuación directa de la sesión anterior (mismo día) — el usuario eligió seguir con
+la auditoría NIC/NIIF de los motores puros, punto (a) pendiente del pedido grande de 2026-09-28.
+Se auditaron `fixed-asset.engine.ts` (NIC 16), `deferred.engine.ts` (NIC 1 §27-28) y
+`equity-statement.engine.ts` (NIC 1 §106) — ver [[06-contabilidad]] "Ejecutado 2026-10-01 —
+Auditoría NIC/NIIF de motores puros" para el detalle técnico completo.
+
+**Bug real encontrado y corregido** (idéntico en depreciación y diferidos): el generador bajo
+demanda (+ cron diario `month-end-accruals.job.ts`) solo comparaba "¿ya se generó el período de
+hoy?" — si se saltea varios meses seguidos (servidor caído, fallo transitorio persistente), esos
+meses se perdían PARA SIEMPRE, violando el devengo exigido por NIC 1/NIC 16. Corregido con
+funciones puras de catch-up (`computeDueDepreciationPeriods`/`computeDueRecognitionPeriods`) que
+recuperan TODOS los meses pendientes de una sola vez en un solo asiento, manteniendo compatible
+el reverso de asientos ya existente (la descripción pone el período relevante primero).
+Patrimonio (equity-statement.engine.ts): revisado, sin bugs — simplificación de alcance ya
+deliberada (4 categorías en vez de una fila por componente de ORI), no una brecha real.
+
+1080/1080 backend + 159/159 frontend, `tsc --noEmit` limpio en ambos, sin regresiones. Tests
+nuevos (catch-up puro + test de integración corregido que antes codificaba el bug). **Verificado
+e2e real en el navegador**: activo de alta en enero, "Correr depreciación" por primera vez en
+octubre → generó un solo asiento de $1.000 (10 meses recuperados), con la nota "recupera
+2026-01→2026-10" en la descripción; reversado desde el Libro Diario → el activo volvió a $0 y
+"nunca depreciado", confirmando que el reverso deshace el catch-up completo. Datos de prueba
+revertidos.
+
+**Quedó pendiente / decisión del usuario**: queda el punto (b) del pedido grande de 2026-09-28 —
+reconciliar el historial de migraciones Prisma (`task_ff9a163f`, drift preexistente que bloquea
+`prisma migrate dev` desde el 104/103, se viene usando `db push` como workaround).
+
+**Próximo paso sugerido**: reconciliar el historial de migraciones Prisma (`task_ff9a163f`) —
+el usuario ya indicó que sigue con esto a continuación.
+
+---
+
+## 2026-10-01 — Réplica llenable del Formulario 101 oficial del SRI
 **Se hizo**: el usuario eligió continuar con el Formulario 101 entre las 3 opciones pendientes
 (101, auditoría NIC/NIIF, reconciliar migraciones). Se investigó la estructura real con
 WebSearch/WebFetch — el PDF oficial `cyte.com.ec/.../pdf-formulario-101.pdf` (Resolución
